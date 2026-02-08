@@ -27,8 +27,6 @@ class OptimizedWarpSpecializedPipelineEnhancedBenchmark(CudaBinaryBenchmark):
             warmup=5,
             timeout_seconds=180,
             workload_params={
-                "PIPELINE_STAGES": 2,
-                "tile_iter": 0,
                 "shared_bytes": 3,
                 "iterations": 10,
                 "dtype": 'float32',

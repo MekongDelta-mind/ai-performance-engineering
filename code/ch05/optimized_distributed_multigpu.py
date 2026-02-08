@@ -19,6 +19,7 @@ class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def __init__(self):
         super().__init__()
         self.data: List[torch.Tensor] = []
+        self.reduced: List[torch.Tensor] = []
         self.device_ids: List[int] = []
         self.output: Optional[torch.Tensor] = None
         self.num_elements = 200_000_000
@@ -37,6 +38,7 @@ class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
             torch.randn(self.num_elements, device=f"cuda:{device_id}")
             for device_id in self.device_ids
         ]
+        self.reduced = [torch.empty_like(t) for t in self.data]
         total_tokens = self.num_elements * len(self.device_ids)
         self._workload = WorkloadMetadata(
             requests_per_iteration=float(len(self.device_ids)),
@@ -52,17 +54,27 @@ class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
         with self._nvtx_range("optimized_distributed_multigpu"):
             if not self.data:
                 raise RuntimeError("setup() must be called before benchmark_fn()")
-            torch.cuda.nccl.all_reduce(self.data)
-            self.output = self.data[0].sum()
+            if not self.reduced:
+                raise RuntimeError("setup() must be called before benchmark_fn()")
+            torch.cuda.nccl.all_reduce(self.data, outputs=self.reduced)
+            # Ensure the all-reduce is complete for timing and for post-timing verification.
+            # torch.cuda.nccl may use non-default streams, so we must synchronize before
+            # consuming outputs elsewhere.
             self._synchronize()
 
     def capture_verification_payload(self) -> None:
-        if self.output is None or not self.data:
+        if not self.data:
             raise RuntimeError("setup() and benchmark_fn() must be called before capture_verification_payload()")
+        if not self.reduced:
+            raise RuntimeError("reduced buffers not initialized")
         probe = self.data[0][:256].detach().cpu()
+        output = self.reduced[0].sum()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize(output.device)
+        self.output = output
         self._set_verification_payload(
             inputs={"data_probe": probe},
-            output=self.output.detach().clone(),
+            output=output.detach().clone(),
             batch_size=int(probe.shape[0]),
             parameter_count=0,
             precision_flags={
@@ -76,6 +88,7 @@ class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
     def teardown(self) -> None:
         self.data = []
+        self.reduced = []
         self.output = None
         torch.cuda.empty_cache()
 

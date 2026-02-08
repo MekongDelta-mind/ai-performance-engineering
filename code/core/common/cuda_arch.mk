@@ -17,6 +17,20 @@ CUDA_VERSION ?= 13.0
 NVCC ?= nvcc
 PYTHON ?= python3
 
+# Some environments install nvcc under /usr/local/cuda but don't add it to PATH.
+# Make builds more robust by falling back to common install locations when NVCC
+# is left at its default value.
+ifeq ($(NVCC),nvcc)
+  _NVCC_IN_PATH := $(strip $(shell command -v nvcc 2>/dev/null))
+  ifeq ($(_NVCC_IN_PATH),)
+    ifneq ($(wildcard /usr/local/cuda/bin/nvcc),)
+      NVCC := /usr/local/cuda/bin/nvcc
+    else ifneq ($(wildcard /usr/local/cuda-$(CUDA_VERSION)/bin/nvcc),)
+      NVCC := /usr/local/cuda-$(CUDA_VERSION)/bin/nvcc
+    endif
+  endif
+endif
+
 CUDA_ARCH_MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CUDA_COMMON_DIR := $(dir $(CUDA_ARCH_MK_PATH))
 
@@ -110,8 +124,8 @@ endif
 $(NVTX_STUB_LIB):
 	$(PYTHON) $(NVTX_STUB_SCRIPT) --output $@
 
-# Enable NVTX profiling helpers by default. Set NVTX_ENABLED=0 to disable.
-NVTX_ENABLED ?= 1
+# NVTX profiling helpers are opt-in. Set NVTX_ENABLED=1 to enable.
+NVTX_ENABLED ?= 0
 ifeq ($(strip $(NVTX_ENABLED)),1)
 CUDA_NVTX_CFLAGS := -DENABLE_NVTX_PROFILING
 CUDA_NVTX_LDFLAGS := -L$(NVTX_STUB_DIR) -lnvToolsExt

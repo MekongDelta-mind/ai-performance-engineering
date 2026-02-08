@@ -1,0 +1,181 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 157
+      },
+      "global_rank": 7,
+      "local_rank": 3,
+      "node": "node2",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "node": "node1",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 142
+      },
+      "global_rank": 5,
+      "local_rank": 1,
+      "node": "node2",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 4,
+      "local_rank": 0,
+      "node": "node2",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "node": "node1",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 6,
+      "local_rank": 2,
+      "node": "node2",
+      "physical_gpu": 2
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/cluster/results/raw/2026-02-07_cluster_validation_node1node2_hosts.txt --map-by ppr:4:node --bind-to none --mca routed direct --mca plm_rsh_args -i\\ /home/ubuntu/.ssh/ssh_key.pem\\ -o\\ IdentitiesOnly=yes\\ -o\\ StrictHostKeyChecking=accept-new --mca oob_tcp_if_include enP22p3s0f3 --mca btl_tcp_if_include enP22p3s0f3 -np 8 -x NCCL_DEBUG=INFO -x NCCL_DEBUG_SUBSYS=INIT -x NCCL_SOCKET_IFNAME=enP22p3s0f3 -x NCCL_IB_HCA=mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5 /home/ubuntu/cluster_validation/run_nccl.sh reduce_scatter_perf -b 64M -e 4G -f 2 -g 1 -w 5 -n 10 ",
+  "gpus_per_node": 4,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "raw_log": "/home/ubuntu/ai-performance-engineering/cluster/results/raw/2026-02-07_cluster_validation_node1node2_nccl_reduce_scatter_perf.log",
+  "results": [
+    {
+      "algbw_gbps": 188.53,
+      "busbw_gbps": 164.96,
+      "count": 2097152,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 67108864,
+      "time_us": 355.97
+    },
+    {
+      "algbw_gbps": 312.14,
+      "busbw_gbps": 273.12,
+      "count": 4194304,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 134217728,
+      "time_us": 429.99
+    },
+    {
+      "algbw_gbps": 317.5,
+      "busbw_gbps": 277.81,
+      "count": 8388608,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 268435456,
+      "time_us": 845.47
+    },
+    {
+      "algbw_gbps": 319.4,
+      "busbw_gbps": 279.48,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 536870912,
+      "time_us": 1680.87
+    },
+    {
+      "algbw_gbps": 348.02,
+      "busbw_gbps": 304.51,
+      "count": 33554432,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1073741824,
+      "time_us": 3085.32
+    },
+    {
+      "algbw_gbps": 352.14,
+      "busbw_gbps": 308.13,
+      "count": 67108864,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2147483648,
+      "time_us": 6098.31
+    },
+    {
+      "algbw_gbps": 361.11,
+      "busbw_gbps": 315.97,
+      "count": 134217728,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4294967296,
+      "time_us": 11893.9
+    }
+  ],
+  "run_id": "2026-02-07_cluster_validation",
+  "total_ranks": 8
+}

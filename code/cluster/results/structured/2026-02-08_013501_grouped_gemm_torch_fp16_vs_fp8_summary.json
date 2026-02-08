@@ -1,0 +1,1214 @@
+{
+  "counts": {
+    "deepgemm_datapoints_ok": 0,
+    "deepgemm_lines_seen": true,
+    "shapes": 48
+  },
+  "deepgemm": {
+    "unsupported_reason": "Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types"
+  },
+  "input_log": "results/structured/2026-02-08_013501_grouped_gemm_torch_fp16_vs_fp8.txt",
+  "shapes": [
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 0.8772356734395912
+      },
+      "shape": {
+        "groups": 4,
+        "k": 7168,
+        "m": 8192,
+        "n": 6144
+      },
+      "torch_fp16": {
+        "elapsed_ms": 2.002,
+        "tflops": 1442.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.756,
+        "tflops": 1643.8
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.0923720863101682
+      },
+      "shape": {
+        "groups": 4,
+        "k": 3072,
+        "m": 8192,
+        "n": 7168
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.953,
+        "tflops": 1513.7
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.041,
+        "tflops": 1385.7
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.250795128384144
+      },
+      "shape": {
+        "groups": 4,
+        "k": 4096,
+        "m": 8192,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.682,
+        "tflops": 1612.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.853,
+        "tflops": 1289.1
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.6592285945072698
+      },
+      "shape": {
+        "groups": 4,
+        "k": 2048,
+        "m": 8192,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.335,
+        "tflops": 1643.3
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.555,
+        "tflops": 990.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.272077004592017
+      },
+      "shape": {
+        "groups": 8,
+        "k": 7168,
+        "m": 4096,
+        "n": 6144
+      },
+      "torch_fp16": {
+        "elapsed_ms": 2.004,
+        "tflops": 1440.5
+      },
+      "torch_fp8": {
+        "elapsed_ms": 2.549,
+        "tflops": 1132.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.4245151711979216
+      },
+      "shape": {
+        "groups": 8,
+        "k": 3072,
+        "m": 4096,
+        "n": 7168
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.94,
+        "tflops": 1535.2
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.339,
+        "tflops": 1077.7
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.6248981255093724
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.689,
+        "tflops": 1595.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.12,
+        "tflops": 981.6
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.0873596876525133
+      },
+      "shape": {
+        "groups": 8,
+        "k": 2048,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.321,
+        "tflops": 1710.8
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.671,
+        "tflops": 819.6
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 3.369981751824818
+      },
+      "shape": {
+        "groups": 8,
+        "k": 7168,
+        "m": 1024,
+        "n": 2048
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.163,
+        "tflops": 1477.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.549,
+        "tflops": 438.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.358051459959526
+      },
+      "shape": {
+        "groups": 8,
+        "k": 7168,
+        "m": 2048,
+        "n": 2048
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.295,
+        "tflops": 1631.3
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.695,
+        "tflops": 691.8
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.6342721995269833
+      },
+      "shape": {
+        "groups": 8,
+        "k": 7168,
+        "m": 4096,
+        "n": 2048
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.633,
+        "tflops": 1520.2
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.034,
+        "tflops": 930.2
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 4.037876900074757
+      },
+      "shape": {
+        "groups": 8,
+        "k": 2048,
+        "m": 1024,
+        "n": 7168
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.148,
+        "tflops": 1620.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.599,
+        "tflops": 401.3
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.976931142957008
+      },
+      "shape": {
+        "groups": 8,
+        "k": 2048,
+        "m": 2048,
+        "n": 7168
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.282,
+        "tflops": 1703.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.841,
+        "tflops": 572.2
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.9407450523864958
+      },
+      "shape": {
+        "groups": 8,
+        "k": 2048,
+        "m": 4096,
+        "n": 7168
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.577,
+        "tflops": 1667.1
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.12,
+        "tflops": 859.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 4.213010204081633
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 1024,
+        "n": 5632
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.229,
+        "tflops": 1651.5
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.964,
+        "tflops": 392.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.5920498830865157
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 2048,
+        "n": 5632
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.455,
+        "tflops": 1662.8
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.178,
+        "tflops": 641.5
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.4629350893697084
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 4096,
+        "n": 5632
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.972,
+        "tflops": 1555.1
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.422,
+        "tflops": 1063.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 4.210159876224858
+      },
+      "shape": {
+        "groups": 8,
+        "k": 5632,
+        "m": 1024,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.231,
+        "tflops": 1632.7
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.975,
+        "tflops": 387.8
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.5112825738826614
+      },
+      "shape": {
+        "groups": 8,
+        "k": 5632,
+        "m": 2048,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.438,
+        "tflops": 1725.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.1,
+        "tflops": 686.9
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.5289712627539083
+      },
+      "shape": {
+        "groups": 8,
+        "k": 5632,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.926,
+        "tflops": 1633.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.415,
+        "tflops": 1068.3
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 3.85978285978286
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 1024,
+        "n": 14336
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.144,
+        "tflops": 1670.9
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.556,
+        "tflops": 432.9
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.698168839230292
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 2048,
+        "n": 14336
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.277,
+        "tflops": 1738.7
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.747,
+        "tflops": 644.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.6780612244897959
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 4096,
+        "n": 14336
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.585,
+        "tflops": 1644.5
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.982,
+        "tflops": 980.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 3.830137604331153
+      },
+      "shape": {
+        "groups": 2,
+        "k": 14336,
+        "m": 1024,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.142,
+        "tflops": 1697.9
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.543,
+        "tflops": 443.3
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.251511169513798
+      },
+      "shape": {
+        "groups": 2,
+        "k": 14336,
+        "m": 2048,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.281,
+        "tflops": 1713.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.632,
+        "tflops": 761.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.6619718309859155
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.162,
+        "tflops": 1699.2
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.269,
+        "tflops": 1022.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.09471766848816
+      },
+      "shape": {
+        "groups": 4,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.319,
+        "tflops": 1725.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.668,
+        "tflops": 823.5
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.7155073521743665
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.668,
+        "tflops": 1645.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.147,
+        "tflops": 958.9
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.3174673260332037
+      },
+      "shape": {
+        "groups": 16,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 1.474,
+        "tflops": 1491.9
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.942,
+        "tflops": 1132.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.2585600274607398
+      },
+      "shape": {
+        "groups": 32,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 2.999,
+        "tflops": 1466.6
+      },
+      "torch_fp8": {
+        "elapsed_ms": 3.774,
+        "tflops": 1165.3
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 10.594347464671655
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 256,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.054,
+        "tflops": 1274.5
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.571,
+        "tflops": 120.3
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 5.64294631710362
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 512,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.101,
+        "tflops": 1356.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.572,
+        "tflops": 240.3
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 4.562482527257479
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 1024,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.168,
+        "tflops": 1632.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.768,
+        "tflops": 357.7
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.6617031177291763
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 2048,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.32,
+        "tflops": 1716.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.853,
+        "tflops": 644.7
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.607245190339746
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.7,
+        "tflops": 1570.6
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.125,
+        "tflops": 977.2
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.035754189944134
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 8192,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 1.483,
+        "tflops": 1483.2
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.536,
+        "tflops": 1432.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 3.963983562968335
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 1024,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.168,
+        "tflops": 1639.9
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.664,
+        "tflops": 413.7
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.5271238485158647
+      },
+      "shape": {
+        "groups": 8,
+        "k": 4096,
+        "m": 2048,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.318,
+        "tflops": 1728.3
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.804,
+        "tflops": 683.9
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 4.258467023172906
+      },
+      "shape": {
+        "groups": 16,
+        "k": 4096,
+        "m": 1024,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.329,
+        "tflops": 1672.3
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.4,
+        "tflops": 392.7
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.4258600237247925
+      },
+      "shape": {
+        "groups": 16,
+        "k": 4096,
+        "m": 2048,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.672,
+        "tflops": 1636.0
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.63,
+        "tflops": 674.4
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.347919655667145
+      },
+      "shape": {
+        "groups": 8,
+        "k": 7168,
+        "m": 2048,
+        "n": 2048
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.294,
+        "tflops": 1636.5
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.69,
+        "tflops": 697.0
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 2.7859586251832544
+      },
+      "shape": {
+        "groups": 8,
+        "k": 2048,
+        "m": 2048,
+        "n": 7168
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.281,
+        "tflops": 1710.3
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.784,
+        "tflops": 613.9
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.388935668575278
+      },
+      "shape": {
+        "groups": 1,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.083,
+        "tflops": 1649.5
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.116,
+        "tflops": 1187.6
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.329445610761216
+      },
+      "shape": {
+        "groups": 1,
+        "k": 4096,
+        "m": 8192,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.161,
+        "tflops": 1709.8
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.214,
+        "tflops": 1286.1
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.6009809578765148
+      },
+      "shape": {
+        "groups": 1,
+        "k": 4096,
+        "m": 4096,
+        "n": 14336
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.289,
+        "tflops": 1664.7
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.463,
+        "tflops": 1039.8
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.576108963740107
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.161,
+        "tflops": 1712.6
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.253,
+        "tflops": 1086.6
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.3660561850069843
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 8192,
+        "n": 4096
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.312,
+        "tflops": 1760.3
+      },
+      "torch_fp8": {
+        "elapsed_ms": 0.427,
+        "tflops": 1288.6
+      }
+    },
+    {
+      "deepgemm_fp8": {
+        "detail": "N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)",
+        "status": "na"
+      },
+      "ratios": {
+        "fp16_over_fp8": 1.9196355565938559
+      },
+      "shape": {
+        "groups": 2,
+        "k": 4096,
+        "m": 4096,
+        "n": 14336
+      },
+      "torch_fp16": {
+        "elapsed_ms": 0.585,
+        "tflops": 1643.4
+      },
+      "torch_fp8": {
+        "elapsed_ms": 1.124,
+        "tflops": 856.1
+      }
+    }
+  ],
+  "stats": {
+    "best5_by_ratio": [
+      {
+        "groups": 4,
+        "k": 7168,
+        "m": 8192,
+        "n": 6144,
+        "ratio": 0.8772356734395912
+      },
+      {
+        "groups": 8,
+        "k": 4096,
+        "m": 8192,
+        "n": 4096,
+        "ratio": 1.035754189944134
+      },
+      {
+        "groups": 4,
+        "k": 3072,
+        "m": 8192,
+        "n": 7168,
+        "ratio": 1.0923720863101682
+      },
+      {
+        "groups": 4,
+        "k": 4096,
+        "m": 8192,
+        "n": 4096,
+        "ratio": 1.250795128384144
+      },
+      {
+        "groups": 32,
+        "k": 4096,
+        "m": 4096,
+        "n": 4096,
+        "ratio": 1.2585600274607398
+      }
+    ],
+    "fp16_over_fp8_ratio": {
+      "count_fp8_faster_than_fp16": 1,
+      "count_fp8_slower_than_fp16": 47,
+      "count_ratio_ge_10": 1,
+      "count_ratio_ge_2": 24,
+      "count_ratio_ge_5": 2,
+      "max": 10.594347464671655,
+      "min": 0.8772356734395912,
+      "p50": 2.0140523700195043
+    },
+    "torch_fp16_tflops": {
+      "max": 1760.3,
+      "min": 1274.5,
+      "p50": 1643.35
+    },
+    "torch_fp8_tflops": {
+      "max": 1643.8,
+      "min": 120.3,
+      "p50": 839.8
+    },
+    "worst5_by_ratio": [
+      {
+        "groups": 8,
+        "k": 4096,
+        "m": 256,
+        "n": 4096,
+        "ratio": 10.594347464671655
+      },
+      {
+        "groups": 8,
+        "k": 4096,
+        "m": 512,
+        "n": 4096,
+        "ratio": 5.64294631710362
+      },
+      {
+        "groups": 8,
+        "k": 4096,
+        "m": 1024,
+        "n": 4096,
+        "ratio": 4.562482527257479
+      },
+      {
+        "groups": 16,
+        "k": 4096,
+        "m": 1024,
+        "n": 4096,
+        "ratio": 4.258467023172906
+      },
+      {
+        "groups": 8,
+        "k": 4096,
+        "m": 1024,
+        "n": 5632,
+        "ratio": 4.213010204081633
+      }
+    ]
+  },
+  "timestamp": "2026-02-08T07:18:10+0000"
+}

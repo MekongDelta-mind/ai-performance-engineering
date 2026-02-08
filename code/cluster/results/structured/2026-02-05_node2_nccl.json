@@ -1,0 +1,125 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 165
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "node": "node2",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 172
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "node": "node2",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "node": "node2",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "node": "node2",
+      "physical_gpu": 0
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-05_node2_local_hosts.txt --map-by ppr:4:node --bind-to none --mca routed direct -np 4 -x PYTHONPATH=/home/ubuntu/ai-performance-engineering/code -x NCCL_DEBUG=INFO -x NCCL_DEBUG_SUBSYS=INIT -x PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin -x LD_LIBRARY_PATH= /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 1M -e 64M -f 2 -g 1 -w 5 -n 20 ",
+  "gpus_per_node": 4,
+  "hosts": [
+    "127.0.0.1"
+  ],
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-05_node2_local_nccl_all_reduce.log",
+  "results": [
+    {
+      "algbw_gbps": 21.11,
+      "busbw_gbps": 49.67,
+      "count": 262144,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 1048576,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 25.69,
+      "busbw_gbps": 81.62,
+      "count": 524288,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 2097152,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 41.65,
+      "busbw_gbps": 100.7,
+      "count": 1048576,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 4194304,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 49.18,
+      "busbw_gbps": 170.56,
+      "count": 2097152,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 8388608,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 76.75,
+      "busbw_gbps": 218.6,
+      "count": 4194304,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 16777216,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 122.77,
+      "busbw_gbps": 273.31,
+      "count": 8388608,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 33554432,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 181.54,
+      "busbw_gbps": 369.67,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 67108864,
+      "time_us": -1.0
+    }
+  ],
+  "run_id": "2026-02-05",
+  "total_ranks": 4
+}

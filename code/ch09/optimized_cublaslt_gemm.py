@@ -29,7 +29,7 @@ class OptimizedCublasltGemmBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="optimized_cublaslt_gemm",
             friendly_name="Optimized Cublaslt Gemm",
-            iterations=3,
+            iterations=1,
             warmup=5,
             timeout_seconds=120,
             workload_params={

@@ -1,0 +1,44 @@
+Source meta: results/structured/2026-02-07_neocloud_case_study_node1_meta.json
+
+# ibstat excerpt (State/Rate/Link layer per CA)
+
+CA 'mlx5_0'
+		State: Active
+		Physical state: LinkUp
+		Rate: 400
+		Link layer: InfiniBand
+CA 'mlx5_1'
+		State: Active
+		Physical state: LinkUp
+		Rate: 400
+		Link layer: InfiniBand
+CA 'mlx5_2'
+		State: Down
+		Physical state: Disabled
+		Rate: 200
+		Link layer: Ethernet
+CA 'mlx5_3'
+		State: Down
+		Physical state: Disabled
+		Rate: 200
+		Link layer: Ethernet
+CA 'mlx5_4'
+		State: Active
+		Physical state: LinkUp
+		Rate: 400
+		Link layer: InfiniBand
+CA 'mlx5_5'
+		State: Active
+		Physical state: LinkUp
+		Rate: 400
+		Link layer: InfiniBand
+CA 'mlx5_6'
+		State: Down
+		Physical state: Disabled
+		Rate: 200
+		Link layer: Ethernet
+CA 'mlx5_7'
+		State: Down
+		Physical state: Disabled
+		Rate: 200
+		Link layer: Ethernet

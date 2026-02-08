@@ -1,0 +1,100 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+ 32KiB: 1 32KiB: 2 32KiB: 3 32KiB: 4 32KiB: 5 32KiB: 6 32KiB: 7 32KiB: 8 32KiB: 9 32KiB: 10 32KiB: 11 32KiB: 12 32KiB: 13 32KiB: 14 32KiB: 15 32KiB: 16 32KiB: 17 32KiB: 18 32KiB: 19 32KiB: 20
+ 64KiB: 1 64KiB: 2 64KiB: 3 64KiB: 4 64KiB: 5 64KiB: 6 64KiB: 7 64KiB: 8 64KiB: 9 64KiB: 10 64KiB: 11 64KiB: 12 64KiB: 13 64KiB: 14 64KiB: 15 64KiB: 16 64KiB: 17 64KiB: 18 64KiB: 19 64KiB: 20
+128KiB: 1128KiB: 2128KiB: 3128KiB: 4128KiB: 5128KiB: 6128KiB: 7128KiB: 8128KiB: 9128KiB: 10128KiB: 11128KiB: 12128KiB: 13128KiB: 14128KiB: 15128KiB: 16128KiB: 17128KiB: 18128KiB: 19128KiB: 20
+256KiB: 1256KiB: 2256KiB: 3256KiB: 4256KiB: 5256KiB: 6256KiB: 7256KiB: 8256KiB: 9256KiB: 10256KiB: 11256KiB: 12256KiB: 13256KiB: 14256KiB: 15256KiB: 16256KiB: 17256KiB: 18256KiB: 19256KiB: 20
+512KiB: 1512KiB: 2512KiB: 3512KiB: 4512KiB: 5512KiB: 6512KiB: 7512KiB: 8512KiB: 9512KiB: 10512KiB: 11512KiB: 12512KiB: 13512KiB: 14512KiB: 15512KiB: 16512KiB: 17512KiB: 18512KiB: 19512KiB: 20
+  1MiB: 1  1MiB: 2  1MiB: 3  1MiB: 4  1MiB: 5  1MiB: 6  1MiB: 7  1MiB: 8  1MiB: 9  1MiB: 10  1MiB: 11  1MiB: 12  1MiB: 13  1MiB: 14  1MiB: 15  1MiB: 16  1MiB: 17  1MiB: 18  1MiB: 19  1MiB: 20
+  2MiB: 1  2MiB: 2  2MiB: 3  2MiB: 4  2MiB: 5  2MiB: 6  2MiB: 7  2MiB: 8  2MiB: 9  2MiB: 10  2MiB: 11  2MiB: 12  2MiB: 13  2MiB: 14  2MiB: 15  2MiB: 16  2MiB: 17  2MiB: 18  2MiB: 19  2MiB: 20
+  4MiB: 1  4MiB: 2  4MiB: 3  4MiB: 4  4MiB: 5  4MiB: 6  4MiB: 7  4MiB: 8  4MiB: 9  4MiB: 10  4MiB: 11  4MiB: 12  4MiB: 13  4MiB: 14  4MiB: 15  4MiB: 16  4MiB: 17  4MiB: 18  4MiB: 19  4MiB: 20
+  8MiB: 1  8MiB: 2  8MiB: 3  8MiB: 4  8MiB: 5  8MiB: 6  8MiB: 7  8MiB: 8  8MiB: 9  8MiB: 10  8MiB: 11  8MiB: 12  8MiB: 13  8MiB: 14  8MiB: 15  8MiB: 16  8MiB: 17  8MiB: 18  8MiB: 19  8MiB: 20
+ 16MiB: 1 16MiB: 2 16MiB: 3 16MiB: 4 16MiB: 5 16MiB: 6 16MiB: 7 16MiB: 8 16MiB: 9 16MiB: 10 16MiB: 11 16MiB: 12 16MiB: 13 16MiB: 14 16MiB: 15 16MiB: 16 16MiB: 17 16MiB: 18 16MiB: 19 16MiB: 20
+ 32MiB: 1 32MiB: 2 32MiB: 3 32MiB: 4 32MiB: 5 32MiB: 6 32MiB: 7 32MiB: 8 32MiB: 9 32MiB: 10 32MiB: 11 32MiB: 12 32MiB: 13 32MiB: 14 32MiB: 15 32MiB: 16 32MiB: 17 32MiB: 18 32MiB: 19 32MiB: 20
+ 64MiB: 1 64MiB: 2 64MiB: 3 64MiB: 4 64MiB: 5 64MiB: 6 64MiB: 7 64MiB: 8 64MiB: 9 64MiB: 10 64MiB: 11 64MiB: 12 64MiB: 13 64MiB: 14 64MiB: 15 64MiB: 16 64MiB: 17 64MiB: 18 64MiB: 19 64MiB: 20
+128MiB: 1128MiB: 2128MiB: 3128MiB: 4128MiB: 5128MiB: 6128MiB: 7128MiB: 8128MiB: 9128MiB: 10128MiB: 11128MiB: 12128MiB: 13128MiB: 14128MiB: 15128MiB: 16128MiB: 17128MiB: 18128MiB: 19128MiB: 20
+256MiB: 1256MiB: 2256MiB: 3256MiB: 4256MiB: 5256MiB: 6256MiB: 7256MiB: 8256MiB: 9256MiB: 10256MiB: 11256MiB: 12256MiB: 13256MiB: 14256MiB: 15256MiB: 16256MiB: 17256MiB: 18256MiB: 19256MiB: 20
+512MiB: 1512MiB: 2512MiB: 3512MiB: 4512MiB: 5512MiB: 6512MiB: 7512MiB: 8512MiB: 9512MiB: 10512MiB: 11512MiB: 12512MiB: 13512MiB: 14512MiB: 15512MiB: 16512MiB: 17512MiB: 18512MiB: 19512MiB: 20
+  1GiB: 1  1GiB: 2  1GiB: 3  1GiB: 4  1GiB: 5  1GiB: 6  1GiB: 7  1GiB: 8  1GiB: 9  1GiB: 10  1GiB: 11  1GiB: 12  1GiB: 13  1GiB: 14  1GiB: 15  1GiB: 16  1GiB: 17  1GiB: 18  1GiB: 19  1GiB: 20
+  2GiB: 1  2GiB: 2  2GiB: 3  2GiB: 4  2GiB: 5  2GiB: 6  2GiB: 7  2GiB: 8  2GiB: 9  2GiB: 10  2GiB: 11  2GiB: 12  2GiB: 13  2GiB: 14  2GiB: 15  2GiB: 16  2GiB: 17  2GiB: 18  2GiB: 19  2GiB: 20
+  4GiB: 1  4GiB: 2  4GiB: 3  4GiB: 4  4GiB: 5  4GiB: 6  4GiB: 7  4GiB: 8  4GiB: 9  4GiB: 10  4GiB: 11  4GiB: 12  4GiB: 13  4GiB: 14  4GiB: 15  4GiB: 16  4GiB: 17  4GiB: 18  4GiB: 19  4GiB: 20
+  8GiB: 1  8GiB: 2  8GiB: 3  8GiB: 4  8GiB: 5  8GiB: 6  8GiB: 7  8GiB: 8  8GiB: 9  8GiB: 10  8GiB: 11  8GiB: 12  8GiB: 13  8GiB: 14  8GiB: 15  8GiB: 16  8GiB: 17  8GiB: 18  8GiB: 19  8GiB: 20
+ 16GiB: 1 16GiB: 2 16GiB: 3 16GiB: 4 16GiB: 5 16GiB: 6 16GiB: 7 16GiB: 8 16GiB: 9 16GiB: 10 16GiB: 11 16GiB: 12 16GiB: 13 16GiB: 14 16GiB: 15 16GiB: 16 16GiB: 17 16GiB: 18 16GiB: 19 16GiB: 20
+
+Environment:
+- software: torch=2.10.0a0+a36e1d39eb.nv26.01.42222806, cuda=13.1, nccl=(2, 29, 2)
+- hardware: _CudaDeviceProperties(name='NVIDIA GB200', major=10, minor=0, total_memory=188416MB, multi_processor_count=152, uuid=053fb1c8-9ea5-ebd7-c333-5c68bb6d13f9, pci_bus_id=1, pci_device_id=0, pci_domain_id=8, L2_cache_size=129MB)
+
+The average bandwidth of all_reduce over 4 ranks (5 warmups / 20 trials):
+
+| payload |    busbw   |    algbw   |
+| ------: | ---------: | ---------: |
+|   32KiB |   0.57GBps |   0.38GBps |
+|   64KiB |   0.81GBps |   0.54GBps |
+|  128KiB |   1.62GBps |   1.08GBps |
+|  256KiB |   3.24GBps |   2.16GBps |
+|  512KiB |   6.40GBps |   4.27GBps |
+|    1MiB |  12.37GBps |   8.25GBps |
+|    2MiB |  25.25GBps |  16.83GBps |
+|    4MiB |  50.34GBps |  33.56GBps |
+|    8MiB |  74.16GBps |  49.44GBps |
+|   16MiB | 136.87GBps |  91.24GBps |
+|   32MiB | 244.19GBps | 162.80GBps |
+|   64MiB | 373.43GBps | 248.95GBps |
+|  128MiB | 476.24GBps | 317.49GBps |
+|  256MiB | 549.89GBps | 366.59GBps |
+|  512MiB | 591.05GBps | 394.03GBps |
+|    1GiB | 623.69GBps | 415.79GBps |
+|    2GiB | 652.26GBps | 434.84GBps |
+|    4GiB | 665.09GBps | 443.39GBps |
+|    8GiB | 672.35GBps | 448.23GBps |
+|   16GiB | 677.46GBps | 451.64GBps |
+
+*** Plotting results into busbw-None.png
+
+Legend: 1KiB = 2**10Bytes, 1MiB = 2**20Bytes, 1GiB = 2**30Bytes
+        1GBps = 10**9Bytes per second (networking bw spec convention)
+Elapsed time: 0:00:35
+
+*** Benchmark results saved to: logs/allreduce_benchmark_results_None_df3d5785c50e_20260208_012341.json
+    Average busbw: 291.86 GBps
+    Maximum busbw: 677.46 GBps
+    Average algbw: 194.58 GBps
+    Maximum algbw: 451.64 GBps

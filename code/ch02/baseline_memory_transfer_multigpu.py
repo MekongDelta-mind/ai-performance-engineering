@@ -7,15 +7,19 @@ import sys
 from pathlib import Path
 
 repo_root = Path(__file__).parent.parent
+import torch
+
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from core.harness.benchmark_harness import BaseBenchmark
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
 
 
 class BaselineMemoryTransferMultigpuBenchmark(CudaBinaryBenchmark):
     """Wraps the baseline CUDA binary."""
+
+    multi_gpu_required = True
 
     def __init__(self) -> None:
         chapter_dir = Path(__file__).parent
@@ -27,11 +31,16 @@ class BaselineMemoryTransferMultigpuBenchmark(CudaBinaryBenchmark):
             warmup=5,
             timeout_seconds=180,
             workload_params={
-                "device_count": 0,
+                "device_count": int(torch.cuda.device_count()) if torch.cuda.is_available() else 0,
                 "dtype": 'float32',
                 "batch_size": 1,
             },
         )
+
+    def get_config(self) -> BenchmarkConfig:
+        cfg = super().get_config()
+        cfg.multi_gpu_required = True
+        return cfg
 
     def get_custom_metrics(self) -> Optional[dict]:
         return None

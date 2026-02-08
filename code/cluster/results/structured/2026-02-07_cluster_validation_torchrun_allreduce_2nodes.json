@@ -1,0 +1,140 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "node": "node1"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "node": "node1"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "node": "node1"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "node": "node1"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 4,
+      "local_rank": 0,
+      "node": "node2"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 5,
+      "local_rank": 1,
+      "node": "node2"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 6,
+      "local_rank": 2,
+      "node": "node2"
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 7,
+      "local_rank": 3,
+      "node": "node2"
+    }
+  ],
+  "measure_iters": 20,
+  "results": [
+    {
+      "algbw_gbps": 21.11939832205319,
+      "busbw_gbps": 36.95894706359308,
+      "dtype": "float32",
+      "size_bytes": 1048576,
+      "time_s": 4.964989930158481e-05
+    },
+    {
+      "algbw_gbps": 114.9647217360028,
+      "busbw_gbps": 201.1882630380049,
+      "dtype": "float32",
+      "size_bytes": 8388608,
+      "time_s": 7.29668012354523e-05
+    },
+    {
+      "algbw_gbps": 240.5653362753814,
+      "busbw_gbps": 420.98933848191746,
+      "dtype": "float32",
+      "size_bytes": 67108864,
+      "time_s": 0.0002789631500490941
+    },
+    {
+      "algbw_gbps": 374.3314183887876,
+      "busbw_gbps": 655.0799821803782,
+      "dtype": "float32",
+      "size_bytes": 268435456,
+      "time_s": 0.0007171064004069194
+    },
+    {
+      "algbw_gbps": 415.6186414851212,
+      "busbw_gbps": 727.3326225989621,
+      "dtype": "float32",
+      "size_bytes": 1073741824,
+      "time_s": 0.0025834784988546743
+    }
+  ],
+  "run_id": "2026-02-07_cluster_validation",
+  "sizes_bytes": [
+    1048576,
+    8388608,
+    67108864,
+    268435456,
+    1073741824
+  ],
+  "warmup_iters": 5,
+  "world_size": 8
+}

@@ -130,14 +130,14 @@ class OptimizedMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if TE_AVAILABLE:
             return
         raise RuntimeError(
-            f"Transformer Engine is required for optimized MXFP8 benchmarks: {TE_IMPORT_ERROR}"
+            f"SKIPPED: Transformer Engine is required for optimized MXFP8 benchmarks: {TE_IMPORT_ERROR}"
         )
 
     def setup(self) -> None:
         require_blackwell("ch19 optimized_mxfp8_moe")
         self._maybe_log_missing_te()
         if not arch_config.USE_TE_FP8:
-            raise RuntimeError("MXFP8 path disabled via arch_config.USE_TE_FP8.")
+            raise RuntimeError("SKIPPED: MXFP8 path disabled via arch_config.USE_TE_FP8.")
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
         self.inputs = torch.randn(

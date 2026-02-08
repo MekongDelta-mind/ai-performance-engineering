@@ -1,0 +1,59 @@
+{
+  "files": [
+    "results/raw/2026-02-08_gb200_fullflags_2nodes_212627_suite/discovery.log",
+    "results/raw/2026-02-08_gb200_fullflags_2nodes_212627_suite/preflight_services.log",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_dcgmi_discovery_node1.txt",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_container_runtime.txt",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_meta.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_software_versions.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_storage.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_tcp_sysctl.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_tcp_sysctl.txt",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_container_runtime.txt",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_meta.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_software_versions.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_storage.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_tcp_sysctl.json",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_tcp_sysctl.txt",
+    "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_tcp_sysctl_diff.json"
+  ],
+  "manifest_version": 1,
+  "nodes": [
+    {
+      "host": "node1",
+      "label": "node1"
+    },
+    {
+      "host": "node2",
+      "label": "node2"
+    }
+  ],
+  "run_id": "2026-02-08_gb200_fullflags_2nodes_212627",
+  "summary": {
+    "artifact_counts": {
+      "json": 9,
+      "log": 2,
+      "txt": 5
+    },
+    "file_count": 16,
+    "sha256": {
+      "results/raw/2026-02-08_gb200_fullflags_2nodes_212627_suite/discovery.log": "40a8b3ca19a5664e8ba5bf654be8ae624de7b5ae7e675c62684fb6c66109cb6f",
+      "results/raw/2026-02-08_gb200_fullflags_2nodes_212627_suite/preflight_services.log": "73a27d79d97a8b8bcc0fdd2506b8255386b3bd9ec0d697375fb34c3793205c7b",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_dcgmi_discovery_node1.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_container_runtime.txt": "d9d2aaa2679212c9a94490a650dcd5cdd068a15dd2114520ff9e40e1b4167da8",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_meta.json": "09821df54fb4c8277eb6ac7a71205a76015a102521a4bd8f18f5a468487b2125",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_software_versions.json": "ec0ae3b8ad235de3044bbb904ed30ab8fd980f12ee40e616003f60280e99dab5",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_storage.json": "c07107b3d9945d11fb27bbd566dde11d1b07485a482a14b9dddaf1e2db348776",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_tcp_sysctl.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node1_tcp_sysctl.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_container_runtime.txt": "318602f98ad9e43e1100f74f32f84870ccfa33295bbb6795769130e92d962811",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_meta.json": "f6a4043a773953ae03b667a9f7394b7daeeb553ddd6fdcb52d12674d746c13d8",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_software_versions.json": "8eb3ee7dcc5dba09e636c7fd08d27be965e94cdd85f15388877e5a87b36d634e",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_storage.json": "7f4d7bffff88716121aaaa8e0bbde6a844fb0f76696de668bda7970f8ec27bf6",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_tcp_sysctl.json": "ba7e6567ec3bc008602bdb39d726b75b686194fe44443de766a4ba7915b87dde",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_node2_tcp_sysctl.txt": "28fa230bfbfe54ff1fc373ef891e72a3c946204d1ebbfb7d499588794a05f552",
+      "results/structured/2026-02-08_gb200_fullflags_2nodes_212627_tcp_sysctl_diff.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  },
+  "timestamp_utc": "2026-02-08T21:27:44.225472+00:00"
+}

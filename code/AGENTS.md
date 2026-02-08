@@ -13,6 +13,83 @@
 - If a file is already modified or open in the editor, keep its current contents as-is and include it in the final change list; you may continue editing without asking.
 - The Amazon book link in `README.md` is expected to fail automated link checks due to bot protection; treat it as an allowlisted exception.
 
+## Cluster Field Report Mode (ONLY when working in `code/cluster*` or writing the cluster field report)
+- This section adds constraints specific to cluster evaluation work; all other rules in this file still apply.
+- Discovery/inventory may use `nvidia-smi` and related commands. Benchmarks/profiling must still lock clocks via the harness (`lock_gpu_clocks`); do not manually lock clocks via `nvidia-smi`.
+- Cluster eval scripts MUST fail unless clock locking succeeds. Do not add bypass flags; any run without locked clocks is invalid and should not be produced by the harness.
+
+### Engagement Scope (CRITICAL)
+- Explicitly declare the evaluation scope: which hosts/nodes are in-scope, GPU count per host, and any excluded nodes. Never use excluded nodes for discovery or benchmarks.
+- Preserve SSH trust by default: do not rotate SSH host keys or machine-ids unless explicitly requested and logged, with pre/post identity snapshots.
+
+### Case Study Field Report (CRITICAL)
+- Treat this as a mini product review: first-contact experience, what is weird/new, and 1-2 benchmarks that explain behavior.
+- Deliverables must separate: first-contact experience, weird/new/interesting findings, two benchmark plot arcs, and a reproducibility package.
+- Do not mention the origin of the challenge; only reference Semianalysis when explicitly describing the cluster evaluation tooling expectations baseline.
+
+#### Discovery + Metadata (CRITICAL)
+- Run discovery first and write a single JSON metadata file (Appendix + reproducibility).
+- Compute/topology capture: `nvidia-smi`, `nvcc --version`, `nvidia-smi topo -m`, `lscpu`, `numactl -H`, `nvidia-smi -q -d CLOCK,POWER`.
+- Networking capture: interface types and speeds via `ibstat`, `rdma link`, `ethtool`, `NCCL_*` defaults, node-to-node latency sanity check via `ping` and `iperf3` only if allowed.
+- Storage capture: `lsblk`, `df -hT`, `mount`, plus baseline sequential/random IO only if storage is the benchmark focus.
+- Orchestration capture: multi-node launcher (Slurm/K8s/etc), image/container flow (Docker/Podman/Enroot/Singularity), and constraints (no root, egress limits, outbound internet).
+- Runtime/CVE capture: collect per-node container runtime evidence and record CVE status in structured outputs (at minimum CVE-2025-23266 and CVE-2025-23267).
+- Consistency: full eval suite and health suite must both run the runtime/CVE collection by default; optional skip flags are allowed only as explicit opt-outs and must default to enabled.
+- Outcome: 5-10 crisp bullets that describe the cluster personality (HPC vs cloud UX, network behavior, storage behavior, job launch overhead).
+- Always establish what "normal" looks like for compute, network, storage, and launch so weirdness is detectable.
+
+#### Benchmarks (CRITICAL)
+- Tell the story with 1-2 benchmark arcs, but run a complete eval suite when feasible so results are reusable across clusters.
+- Benchmark A (Networking story): `nccl-tests` `all_reduce_perf` (single-node + multi-node) to explain multi-GPU/multi-node scaling behavior.
+- Benchmark B (Inference story): vLLM online serving concurrency sweep (`vllm serve` + `vllm bench serve`) to capture tok/s, TTFT/TPOT, and tail latency knees.
+- Benchmark C (Compute sanity): dense GEMM (BF16) to quickly detect per-node/per-GPU throughput deltas.
+- Benchmark D (System): `iperf3` + IB perftest + torch distributed all-reduce sanity + `fio` (sequential + random IO) to explain bottlenecks outside kernels.
+- If vLLM is blocked (egress/model download), pivot quickly and document the constraint as an insight.
+- Inference fallback options: NanoGPT token/sec speedrun, torch GEMM/matmul microbench, or a smaller open model.
+
+#### Repro Harness + Repo Conventions (CRITICAL)
+- Use the `code/cluster*/` layout (whichever you are working in) with `scripts/`, `analysis/`, `results/raw/`, `results/structured/`, `docs/figures/`.
+- Use `RUN_ID=YYYY-MM-DD` (default in scripts). If uniqueness is needed, append a suffix but keep the date prefix (recommended: `_neocloud_<nodecount>nodes_<gpu>_<gitsha>`).
+- Required outputs (written under `results/structured/`):
+- `${RUN_ID}_${label}_meta.json` with hardware/software/env and exact commands.
+- `${RUN_ID}_manifest.json` with file hashes + artifact counts.
+- `${RUN_ID}_nccl*.json` with message size to algbw/busbw plus topology context, and `app_clocks` captured.
+- `${RUN_ID}_vllm*.csv` / `.jsonl` with concurrency, prompt/gen lengths, tok/s, latency metrics, GPU util, memory, and `app_clocks` captured.
+- `${RUN_ID}_gemm*.csv` with TFLOPS and `app_clocks` captured.
+- `${RUN_ID}_fio*.json` with seq MB/s + rand IOPS (and test parameters).
+- Raw logs belong in `results/raw/`. Plots belong in `docs/figures/`.
+
+#### Charts That Tell The Story (CRITICAL)
+- NCCL charts: all-reduce bus bandwidth vs message size (single-node and multi-node) and scaling efficiency vs GPU count for 2-3 message sizes.
+- vLLM charts: tokens/sec vs concurrency and p50/p99 latency vs concurrency.
+- Interpretation bullets must explain intra-node vs inter-node behavior, latency knees, oversubscription/routing signals, KV-cache/memory bottlenecks, and stability/tail latency behavior.
+
+#### Operator Reality Insights (CRITICAL)
+- Capture time-to-first-job, launch ergonomics, observability, stability, multi-tenancy noise, data path/caching, and support responsiveness.
+- Maintain a running "Normal vs Weird" log; identifying weirdness is the primary goal.
+
+#### Questions To Ask Early (CRITICAL)
+- Preferred container/runtime and any golden path examples.
+- Outbound internet policy for model downloads.
+- Recommended NCCL settings and network interfaces.
+- Expected topology (full bisection vs oversubscription) and multi-tenancy constraints.
+- Known gotchas (MTU, RoCE tuning, NCCL timeouts, filesystem caching).
+
+#### Write-up Format (CRITICAL)
+- Deliver as Google Doc or 10-12 slide deck.
+- Required sections: TL;DR, cluster story, weird/new findings, benchmark A, benchmark B, implications for small AI teams, repro steps, appendix.
+- Where helpful, compare against public benchmarks for context (e.g., MLPerf), without referencing the source of the challenge.
+
+#### Quality Bar (CRITICAL)
+- Taste in what to measure, reproducibility, rigor (multiple runs + warmups + noise notes), systems intuition, communication clarity, and practical empathy.
+
+#### Execution Order (CRITICAL)
+1. Discovery to meta.json.
+2. Choose benchmark pair.
+3. Run NCCL and plot.
+4. Run inference/training benchmark and plot.
+5. Write narrative around the plots.
+
 ## Deprecations (CRITICAL)
 - Do not add or keep deprecated entrypoints, shims, compatibility wrappers, or transitional aliases.
 - Deprecations are not allowed to persist anywhere: remove them immediately from code, docs, READMEs, and tests.

@@ -1,0 +1,92 @@
+{
+  "test": "allreduce_stability",
+  "payload_gib": 0.0625,
+  "payload_bytes": 67108864,
+  "world_size": 2,
+  "warmup_iters": 1,
+  "measurement_iters": 10,
+  "hostname": "node1",
+  "app_clocks": [
+    {
+      "rank": 0,
+      "hostname": "node1",
+      "logical_device": 0,
+      "physical_device": 0,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 1,
+      "hostname": "node1",
+      "logical_device": 1,
+      "physical_device": 1,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    }
+  ],
+  "summary": {
+    "busbw_mean_gbps": 225.068,
+    "busbw_median_gbps": 216.775,
+    "busbw_std_gbps": 221.821,
+    "busbw_cv_pct": 98.557,
+    "busbw_min_gbps": 14.708,
+    "busbw_max_gbps": 444.565,
+    "busbw_p01_gbps": 14.708,
+    "busbw_p50_gbps": 418.777,
+    "busbw_p99_gbps": 440.142,
+    "p99_p50_ratio": 1.051,
+    "max_min_ratio": 30.2257,
+    "jitter_assessment": "high_jitter",
+    "algbw_mean_gbps": 225.068
+  },
+  "per_iteration": {
+    "busbw_gbps": [
+      418.777,
+      14.712,
+      433.847,
+      14.727,
+      440.142,
+      14.772,
+      444.565,
+      14.712,
+      439.715,
+      14.708
+    ],
+    "algbw_gbps": [
+      418.777,
+      14.712,
+      433.847,
+      14.727,
+      440.142,
+      14.772,
+      444.565,
+      14.712,
+      439.715,
+      14.708
+    ],
+    "duration_ms": [
+      0.1592,
+      4.574,
+      0.1515,
+      4.5748,
+      0.1513,
+      4.5769,
+      0.15,
+      4.5795,
+      0.1498,
+      4.5774
+    ]
+  },
+  "software": {
+    "torch_version": "2.9.1+cu130",
+    "cuda_version": "13.0",
+    "nccl_version": "2.27.7",
+    "clock_lock_required": true
+  }
+}

@@ -1,0 +1,165 @@
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Sun Feb  8 20:46:06 2026
+Driver Version                            : 580.105.08
+CUDA Version                              : 13.0
+
+Attached GPUs                             : 4
+GPU 00000018:01:00.0
+    Performance State                     : P0
+    Clocks Event Reasons
+        Idle                              : Active
+        Applications Clocks Setting       : Not Active
+        SW Power Cap                      : Not Active
+        HW Slowdown                       : Not Active
+            HW Thermal Slowdown           : Not Active
+            HW Power Brake Slowdown       : Not Active
+        Sync Boost                        : Not Active
+        SW Thermal Slowdown               : Not Active
+        Display Clock Setting             : Not Active
+    Clocks Event Reasons Counters
+        SW Power Capping                  : 4445909356 us
+        Sync Boost                        : 0 us
+        SW Thermal Slowdown               : 4155106755 us
+        HW Thermal Slowdown               : 0 us
+        HW Power Braking                  : 0 us
+    Sparse Operation Mode                 : N/A
+    Utilization
+        GPU                               : 0 %
+        Memory                            : 0 %
+        Encoder                           : 0 %
+        Decoder                           : 0 %
+        JPEG                              : 0 %
+        OFA                               : 0 %
+    GPU Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    Memory Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    ENC Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    DEC Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    JPG Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    OFA Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    ECC Mode
+        Current                           : Enabled
+        Pending                           : Enabled
+    ECC Errors
+        Volatile
+            SRAM Correctable              : 0
+            SRAM Uncorrectable Parity     : 0
+            SRAM Uncorrectable SEC-DED    : 0
+            DRAM Correctable              : 0
+            DRAM Uncorrectable            : 0
+        Aggregate
+            SRAM Correctable              : 0
+            SRAM Uncorrectable Parity     : 0
+            SRAM Uncorrectable SEC-DED    : 0
+            DRAM Correctable              : 0
+            DRAM Uncorrectable            : 0
+            SRAM Threshold Exceeded       : No
+        Aggregate Uncorrectable SRAM Sources
+            SRAM L2                       : 0
+            SRAM SM                       : 0
+            SRAM Microcontroller          : 0
+            SRAM PCIE                     : 0
+            SRAM Other                    : 0
+        Channel Repair Pending            : No
+        TPC Repair Pending                : No
+    Temperature
+        GPU Current Temp                  : 46 C
+        GPU T.Limit Temp                  : 41 C
+        GPU Shutdown T.Limit Temp         : -5 C
+        GPU Slowdown T.Limit Temp         : -2 C
+        GPU Max Operating T.Limit Temp    : 0 C
+        GPU Target Temperature            : N/A
+        Memory Current Temp               : 45 C
+        Memory Max Operating T.Limit Temp : 0 C
+    GPU Power Readings
+        Average Power Draw                : 157.59 W
+        Instantaneous Power Draw          : 157.60 W
+        Current Power Limit               : 1200.00 W
+        Requested Power Limit             : 1200.00 W
+        Default Power Limit               : 1200.00 W
+        Min Power Limit                   : 200.00 W
+        Max Power Limit                   : 1200.00 W
+    Power Samples
+        Duration                          : 2.36 sec
+        Number of Samples                 : 119
+        Max                               : 161.34 W
+        Min                               : 157.50 W
+        Avg                               : 157.62 W
+    GPU Memory Power Readings 
+        Average Power Draw                : 24.60 W
+        Instantaneous Power Draw          : N/A
+    Module Power Readings
+        Average Power Draw                : 464.05 W
+        Instantaneous Power Draw          : 469.71 W
+        Current Power Limit               : 2500.00 W
+        Requested Power Limit             : 2500.00 W
+        Default Power Limit               : 2500.00 W
+        Min Power Limit                   : 500.00 W
+        Max Power Limit                   : 2500.00 W
+    Clocks
+        Graphics                          : 120 MHz
+        SM                                : 120 MHz
+        Memory                            : 3996 MHz
+        Video                             : 600 MHz
+    Applications Clocks
+        Graphics                          : 2062 MHz
+        Memory                            : 3996 MHz
+    Default Applications Clocks
+        Graphics                          : 2062 MHz
+        Memory                            : 3996 MHz
+    Deferred Clocks
+        Memory                            : N/A
+    Max Clocks
+        Graphics                          : 2062 MHz
+        SM                                : 2062 MHz
+        Memory                            : 3996 MHz
+        Video                             : 1890 MHz
+    Max Customer Boost Clocks
+        Graphics                          : 2062 MHz
+    SM Clock Samples
+        Duration                          : N/A
+        Number of Samples                 : N/A
+        Max                               : N/A
+        Min                               : N/A
+        Avg                               : N/A
+    Memory Clock Samples
+        Duration                          : N/A
+        Number of Samples                 : N/A
+        Max                               : N/A
+        Min                               : N/A
+        Avg                               : N/A
+    Clock Policy
+        Auto Boost                        : N/A
+        Auto Boost Default                : N/A
+

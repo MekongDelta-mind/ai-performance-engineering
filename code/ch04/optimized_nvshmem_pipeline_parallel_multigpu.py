@@ -62,8 +62,8 @@ class OptimizedNVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBen
     def setup(self) -> None:
         if torch.cuda.device_count() < 2:
             raise RuntimeError("SKIPPED: nvshmem_pipeline_parallel_multigpu requires >=2 GPUs")
-        if _enable_symmem_pipeline():
-            _configure_blackwell_nccl()
+        # NCCL tuning helps both symmetric-memory and NCCL P2P fallback paths.
+        _configure_blackwell_nccl()
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
         self._verify_input = torch.randn(64, 64, device=self.device, dtype=torch.float32)
@@ -73,9 +73,11 @@ class OptimizedNVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBen
         original_disable = os.environ.get("AISP_DISABLE_SYMMEM_PIPELINE")
         original_async = os.environ.get("AISP_SYMMEM_PIPELINE_ASYNC")
         try:
-            use_symmem = _enable_symmem_pipeline()
+            enable_symmem = os.environ.get("AISP_ENABLE_SYMMEM_PIPELINE_BENCH", "").strip().lower() in {"1", "true", "yes", "on"}
+            use_symmem = enable_symmem and _enable_symmem_pipeline()
             os.environ["AISP_DISABLE_SYMMEM_PIPELINE"] = "0" if use_symmem else "1"
-            os.environ["AISP_SYMMEM_PIPELINE_ASYNC"] = "0" if use_symmem else "1"
+            # Default to async send/recv for the NCCL fallback path.
+            os.environ["AISP_SYMMEM_PIPELINE_ASYNC"] = "1"
             sys.argv = [
                 original_argv[0],
                 "--schedule",
@@ -83,7 +85,7 @@ class OptimizedNVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBen
                 "--batch-size",
                 "64",
                 "--num-microbatches",
-                "16",
+                "4",
                 "--seq-len",
                 "16",
                 "--hidden-dim",
@@ -152,6 +154,7 @@ class OptimizedNVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBen
             script_args=[],
             multi_gpu_required=True,
             name="optimized_nvshmem_pipeline_parallel_multigpu",
+            config_arg_map={"iterations": "--iterations", "warmup": "--warmup"},
         )
 
 

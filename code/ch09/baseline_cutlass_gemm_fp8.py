@@ -23,7 +23,7 @@ class BaselineCutlassGemmFp8Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cutlass_gemm_fp8",
             friendly_name="Baseline Cutlass Gemm Fp8",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={
@@ -35,6 +35,16 @@ class BaselineCutlassGemmFp8Benchmark(CudaBinaryBenchmark):
                 "dtype": "fp8_e4m3",
             },
         )
+
+    def setup(self) -> None:
+        import torch
+
+        if not torch.cuda.is_available():
+            raise RuntimeError("SKIPPED: CUDA required for CUTLASS FP8")
+        major, _minor = torch.cuda.get_device_capability()
+        if major < 9:
+            raise RuntimeError("SKIPPED: CUTLASS FP8 requires SM90+")
+        super().setup()
 
     def get_custom_metrics(self) -> Optional[dict]:
         return None

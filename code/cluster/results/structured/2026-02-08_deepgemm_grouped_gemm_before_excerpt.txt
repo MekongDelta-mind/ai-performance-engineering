@@ -1,0 +1,18 @@
+Source: Cluster Perf suite grouped-GEMM output (before fix; internal path redacted)
+
+40:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+47:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+54:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+61:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+68:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+75:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+82:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+89:DeepGEMM error: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+106:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+110:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+114:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+118:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+122:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+126:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+130:  deepgemm_fp8:  N/A (DeepGEMM not installed)
+134:  deepgemm_fp8:  N/A (DeepGEMM not installed)

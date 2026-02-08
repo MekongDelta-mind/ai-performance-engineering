@@ -1,0 +1,26 @@
+Source raw log: results/raw/2026-02-07_140642_cluster_health_suite_node1node2_nccl_all_reduce_perf.log
+
+97:node2:596971:596971 [2] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.4<0>
+98:node2:596971:596971 [2] NCCL INFO Initialized NET plugin IB
+101:node2:596971:596971 [2] NCCL INFO Using network IB
+102:node2:596978:596978 [0] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.4<0>
+103:node2:596978:596978 [0] NCCL INFO Initialized NET plugin IB
+106:node2:596978:596978 [0] NCCL INFO Using network IB
+107:node2:596988:596988 [1] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.4<0>
+108:node2:596988:596988 [1] NCCL INFO Initialized NET plugin IB
+111:node2:596988:596988 [1] NCCL INFO Using network IB
+116:node1:1115268:1115268 [3] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.3<0>
+117:node1:1115268:1115268 [3] NCCL INFO Initialized NET plugin IB
+120:node1:1115268:1115268 [3] NCCL INFO Using network IB
+121:node1:1115271:1115271 [1] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.3<0>
+122:node1:1115271:1115271 [1] NCCL INFO Initialized NET plugin IB
+125:node1:1115271:1115271 [1] NCCL INFO Using network IB
+126:node1:1115265:1115265 [2] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.3<0>
+127:node1:1115265:1115265 [2] NCCL INFO Initialized NET plugin IB
+130:node1:1115265:1115265 [2] NCCL INFO Using network IB
+131:node1:1115287:1115287 [0] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.3<0>
+132:node1:1115287:1115287 [0] NCCL INFO Initialized NET plugin IB
+135:node1:1115287:1115287 [0] NCCL INFO Using network IB
+137:node2:596998:596998 [3] NCCL INFO NET/IB : Using [0]mlx5_0:1/IB [1]mlx5_1:1/IB [2]mlx5_4:1/IB [3]mlx5_5:1/IB [RO]; OOB enP22p3s0f3:10.11.0.4<0>
+138:node2:596998:596998 [3] NCCL INFO Initialized NET plugin IB
+141:node2:596998:596998 [3] NCCL INFO Using network IB

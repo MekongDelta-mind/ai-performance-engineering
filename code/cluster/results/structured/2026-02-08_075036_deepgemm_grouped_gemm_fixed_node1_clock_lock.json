@@ -1,0 +1,78 @@
+{
+  "cmd": "bash -lc 'set -euo pipefail; OUT=\"results/structured/${RUN_ID}_grouped_gemm_deepgemm_fixed.txt\"; SRC_DIR=\"../clustermax_from_node2/standalone/compute\"; IMG=\"ghcr.io/jordannanos/cmax-compute:latest\"; echo \"RUN_ID=${RUN_ID}\"; echo \"OUT=${OUT}\"; docker run --rm --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v \"${SRC_DIR}:/workspace\" -w /workspace \"$IMG\" python gemm-bench/grouped_gemm_bench.py --preset all --warmup 5 --iters 30 2>&1 | tee \"$OUT\"'",
+  "command_end_ts": "2026-02-08T07:51:46+0000",
+  "command_start_ts": "2026-02-08T07:50:49+0000",
+  "devices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "label": "node1",
+  "locks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 787
+      },
+      "device": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 742
+      },
+      "device": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 3
+    }
+  ],
+  "require_clock_lock": true,
+  "returncode": 0,
+  "run_id": "2026-02-08_075036_deepgemm_grouped_gemm_fixed",
+  "timestamp": "2026-02-08T07:50:48+0000"
+}

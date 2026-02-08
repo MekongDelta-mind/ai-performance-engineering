@@ -1,0 +1,5 @@
+index, retired_pages.single_bit_ecc.count, retired_pages.double_bit.count, retired_pages.pending, remapped_rows.correctable, remapped_rows.uncorrectable, remapped_rows.pending, remapped_rows.failure
+0, [N/A], [N/A], [N/A], 0, 0, No, No
+1, [N/A], [N/A], [N/A], 0, 0, No, No
+2, [N/A], [N/A], [N/A], 0, 0, No, No
+3, [N/A], [N/A], [N/A], 0, 0, No, No

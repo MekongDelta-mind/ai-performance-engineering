@@ -1,0 +1,6 @@
+run_id,node,model,prompt_len,gen_len,concurrency,tok_per_s,p50_ms,p99_ms
+2026-02-06_neocloud_fullstack,node1,TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,256,1,1673.896351,469.936728,512.534775
+2026-02-06_neocloud_fullstack,node1,TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,256,2,2979.481255,533.820766,538.007846
+2026-02-06_neocloud_fullstack,node1,TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,256,4,6043.000421,573.260062,602.502978
+2026-02-06_neocloud_fullstack,node1,TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,256,8,11133.222626,557.169661,600.386147
+2026-02-06_neocloud_fullstack,node1,TinyLlama/TinyLlama-1.1B-Chat-v1.0,512,256,16,29537.381224,643.890067,662.832262

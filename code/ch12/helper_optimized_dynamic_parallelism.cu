@@ -58,7 +58,8 @@ int main() {
     std::vector<float> h_data(kElements);
     for (int i = 0; i < kElements; ++i) {
         NVTX_RANGE("setup");
-        h_data[i] = std::cos(0.0013f * static_cast<float>(i));
+        // Match baseline input initialization so baseline/optimized checksums are comparable.
+        h_data[i] = std::sin(0.001f * static_cast<float>(i));
     }
     const std::vector<Segment> segments = build_segments(kElements);
 

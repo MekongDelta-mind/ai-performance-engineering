@@ -1,0 +1,78 @@
+{
+  "cmd": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/repro/run_vllm_serve_sweep_container.sh --run-id 2026-02-08_smoke_high_impact_local_v4 --label node1 --model Qwen/Qwen2.5-0.5B-Instruct --isl 128 --osl 128 --concurrency-range '1 2' --port 8888 --tp 1",
+  "command_end_ts": "2026-02-08T21:20:46+0000",
+  "command_start_ts": "2026-02-08T21:18:48+0000",
+  "devices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "label": "node1",
+  "locks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 3
+    }
+  ],
+  "require_clock_lock": true,
+  "returncode": 0,
+  "run_id": "2026-02-08_smoke_high_impact_local_v4",
+  "timestamp": "2026-02-08T21:18:47+0000"
+}

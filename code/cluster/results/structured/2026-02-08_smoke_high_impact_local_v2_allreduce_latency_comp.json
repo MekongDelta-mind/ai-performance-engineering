@@ -1,0 +1,128 @@
+{
+  "test": "allreduce_latency_comp",
+  "world_size": 2,
+  "payload_target_gib": 0.125,
+  "payload_target_bytes": 134217728,
+  "chunks": 32,
+  "effective_chunks": 32,
+  "remainder_elements": 0,
+  "hostname": "node1",
+  "app_clocks": [
+    {
+      "rank": 0,
+      "hostname": "node1",
+      "logical_device": 0,
+      "physical_device": 0,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 1,
+      "hostname": "node1",
+      "logical_device": 1,
+      "physical_device": 1,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    }
+  ],
+  "cases": {
+    "one_large": {
+      "payload_bytes_total": 134217728,
+      "iters": 2,
+      "warmup": 1,
+      "duration_ms": {
+        "mean": 0.6463,
+        "median": 0.6463,
+        "min": 0.2833,
+        "max": 1.0094,
+        "std": 0.5135,
+        "cv_pct": 79.4419,
+        "samples": [
+          0.2833,
+          1.0094
+        ]
+      },
+      "busbw_gbps": {
+        "mean": 387.746,
+        "median": 387.746,
+        "min": 306.1305,
+        "max": 469.3615,
+        "std": 115.4217,
+        "cv_pct": 29.7674,
+        "samples": [
+          469.3615,
+          306.1305
+        ]
+      },
+      "algbw_gbps": {
+        "mean": 387.746,
+        "median": 387.746,
+        "min": 306.1305,
+        "max": 469.3615,
+        "samples": [
+          469.3615,
+          306.1305
+        ]
+      }
+    },
+    "many_small": {
+      "payload_bytes_total": 134217728,
+      "iters": 2,
+      "warmup": 1,
+      "duration_ms": {
+        "mean": 17.6845,
+        "median": 17.6845,
+        "min": 1.3384,
+        "max": 34.0306,
+        "std": 23.1169,
+        "cv_pct": 130.7185,
+        "samples": [
+          1.3384,
+          34.0306
+        ]
+      },
+      "busbw_gbps": {
+        "mean": 54.4333,
+        "median": 54.4333,
+        "min": 4.0612,
+        "max": 104.8055,
+        "std": 71.2369,
+        "cv_pct": 130.87,
+        "samples": [
+          104.8055,
+          4.0612
+        ]
+      },
+      "algbw_gbps": {
+        "mean": 54.4333,
+        "median": 54.4333,
+        "min": 4.0612,
+        "max": 104.8055,
+        "samples": [
+          104.8055,
+          4.0612
+        ]
+      }
+    }
+  },
+  "comparison": {
+    "duration_ratio_small_over_large": 27.36268,
+    "bandwidth_ratio_large_over_small": 7.123323,
+    "one_large_busbw_gbps_mean": 387.746,
+    "many_small_busbw_gbps_mean": 54.4333,
+    "one_large_duration_ms_mean": 0.6463,
+    "many_small_duration_ms_mean": 17.6845
+  },
+  "software": {
+    "torch_version": "2.9.1+cu130",
+    "cuda_version": "13.0",
+    "nccl_version": "2.27.7",
+    "clock_lock_required": true
+  }
+}

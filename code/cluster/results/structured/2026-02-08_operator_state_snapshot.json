@@ -1,0 +1,91 @@
+{
+  "sources": {
+    "meta": {
+      "node1": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_032814_neocloud_eval_full_fixed_node1_meta.json",
+      "node2": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_032814_neocloud_eval_full_fixed_node2_meta.json"
+    },
+    "numactl_evidence": {
+      "node1": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_numactl_numa_evidence_node1.txt",
+      "node2": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_numactl_numa_evidence_node2.txt"
+    },
+    "ibstat_evidence": {
+      "node1": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_ibstat_evidence_node1.txt",
+      "node2": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_ibstat_evidence_node2.txt"
+    },
+    "storage": {
+      "node1": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_032814_neocloud_eval_full_fixed_node1_storage.json",
+      "node2": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_032814_neocloud_eval_full_fixed_node2_storage.json"
+    },
+    "sharp": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_082000_ib_sharp_check_v3_ib_sharp_check.json"
+  },
+  "services": {
+    "node1": {
+      "dcgm": "inactive",
+      "imex": "active",
+      "fabricmanager": "failed",
+      "persistenced": "active"
+    },
+    "node2": {
+      "dcgm": "active",
+      "imex": "active",
+      "fabricmanager": "failed",
+      "persistenced": "active"
+    }
+  },
+  "numa": {
+    "node1": {
+      "cpu_nodes": 0,
+      "memory_only_nodes": 0,
+      "memoryless_nodes": 0
+    },
+    "node2": {
+      "cpu_nodes": 0,
+      "memory_only_nodes": 0,
+      "memoryless_nodes": 0
+    }
+  },
+  "ib_links": {
+    "node1": {
+      "active_ib": 0,
+      "down_eth": 0,
+      "other": 1
+    },
+    "node2": {
+      "active_ib": 0,
+      "down_eth": 0,
+      "other": 1
+    }
+  },
+  "storage": {
+    "node1": {
+      "samsung_partitions_total": 9,
+      "samsung_partitions_mounted": 0,
+      "samsung_partitions_unmounted": 9
+    },
+    "node2": {
+      "samsung_partitions_total": 9,
+      "samsung_partitions_mounted": 0,
+      "samsung_partitions_unmounted": 9
+    }
+  },
+  "sharp": {
+    "per_host": {
+      "node1": {
+        "sharp_dir_present": true,
+        "sharp_am_active": "failed",
+        "libhcoll_present": false,
+        "libnccl_net_present": false
+      },
+      "node2": {
+        "sharp_dir_present": true,
+        "sharp_am_active": "inactive",
+        "libhcoll_present": false,
+        "libnccl_net_present": false
+      }
+    },
+    "forced_collnet_rc": {
+      "before_start": 3,
+      "after_start": 3
+    }
+  }
+}

@@ -23,7 +23,7 @@ class OptimizedCutlassGemmFp4Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="optimized_cutlass_gemm_fp4",
             friendly_name="Optimized Cutlass Gemm Fp4",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={

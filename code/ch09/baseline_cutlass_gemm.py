@@ -29,7 +29,7 @@ class BaselineCutlassGemmBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cutlass_gemm",
             friendly_name="Baseline Cutlass Gemm",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=120,
             workload_params={
@@ -38,7 +38,7 @@ class BaselineCutlassGemmBenchmark(CudaBinaryBenchmark):
                 "K": k,
                 "kIterations": iterations,
                 "kRepeats": repeats,
-                "dtype": "float32",
+                "dtype": "tf32",
             },
         )
         self.register_workload_metadata(

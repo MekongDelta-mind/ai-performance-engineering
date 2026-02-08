@@ -671,6 +671,8 @@ def demo_1f1b_pipeline(
             print(f"[1f1b] Average loss: {sum(losses)/len(losses):.4f}")
         print(f"[1f1b] Symmetric memory: {symmetric_memory_available() and not symmem_pipeline_disabled()}")
 
+    engine.close()
+
 
 def demo_interleaved_pipeline(
     *,
@@ -733,6 +735,8 @@ def demo_interleaved_pipeline(
         print(f"[interleaved] Completed {num_microbatches} microbatches in {elapsed:.2f}s")
         print(f"[interleaved] Virtual stages per rank: {virtual_stages_per_rank}")
         print(f"[interleaved] Symmetric memory: {symmetric_memory_available() and not symmem_pipeline_disabled()}")
+
+    pipeline.close()
 
 
 # ============================================================================

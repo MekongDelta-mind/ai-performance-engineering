@@ -165,8 +165,8 @@ int main() {
     void* workspace = nullptr;
     CUDA_CHECK(cudaMalloc(&workspace, workspace_bytes));
 
-    const __half alpha = __float2half(1.0f);
-    const __half beta = __float2half(0.0f);
+    const float alpha = 1.0f;
+    const float beta = 0.0f;
 
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
@@ -205,7 +205,7 @@ int main() {
 
 #ifdef VERIFY
     CUDA_CHECK(cudaMemcpy(h_C, d_C, size_C, cudaMemcpyDeviceToHost));
-    const size_t elements = elements_C * batch_count;
+    const size_t elements = elems_C * batch_count;
     double checksum = 0.0;
     for (size_t i = 0; i < elements; ++i) {
         checksum += std::abs(__half2float(h_C[i]));

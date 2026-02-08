@@ -107,8 +107,36 @@ def get_dataset():
     """Tokenize a tiny MRPC slice for quick training/debug cycles."""
     try:
         from datasets import load_dataset
-    except ImportError as exc:
-        raise RuntimeError("get_dataset() requires the `datasets` package") from exc
+    except ImportError:
+        # Optional dependency: keep distributed training labs runnable in minimal
+        # environments by falling back to a tiny synthetic token dataset.
+        #
+        # The training examples overwrite `labels` with next-token prediction
+        # targets, so we only need `input_ids` (and optionally `attention_mask`)
+        # for the collate function.
+        tokenizer = build_tokenizer()
+        try:
+            vocab_size = int(getattr(tokenizer, "vocab_size", 0) or len(tokenizer))
+        except Exception:
+            vocab_size = 32000
+        if vocab_size <= 0:
+            vocab_size = 32000
+
+        seq_len = 128
+        num_train = 2048
+        rng = random.Random(0)
+
+        eos_id = getattr(tokenizer, "eos_token_id", None)
+        if eos_id is not None:
+            eos_id = int(eos_id)
+
+        def _sample_tokens() -> dict:
+            ids = [rng.randrange(vocab_size) for _ in range(seq_len)]
+            if eos_id is not None:
+                ids[-1] = eos_id
+            return {"input_ids": ids, "attention_mask": [1] * seq_len}
+
+        return {"train": [_sample_tokens() for _ in range(num_train)]}
     dataset = load_dataset("glue", "mrpc")
     tokenizer = build_tokenizer()
 

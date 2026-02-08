@@ -1,0 +1,31 @@
+=== IMEX validation (node1) ===
+
+[OK] nvidia-imex service is active
+[OK] nodes_config.cfg exists and is non-empty
+     Nodes listed: 10.11.0.3 10.11.0.4 
+[OK] nvidia-imex-ctl -q (local daemon) succeeded
+
+=== IMEX domain status (nvidia-imex-ctl -N) ===
+Connectivity Table Legend:
+I - Invalid - Node wasn't reachable, no connection status available
+N - Never Connected
+R - Recovering - Connection was lost, but clean up has not yet been triggered.
+D - Disconnected - Connection was lost, and clean up has been triggreed.
+A - Authenticating - If GSSAPI enabled, client has initiated mutual authentication.
+!V! - Version mismatch, communication disabled.
+!M! - Node map mismatch, communication disabled.
+!A! - Authentication error, communication disabled.
+C - Connected - Ready for operation
+
+2/8/2026 03:26:01.245
+Nodes:
+Node #0   * 10.11.0.3 *        - READY                - Version: 580.105.08     
+Node #1   - 10.11.0.4          - READY                - Version: 580.105.08     
+
+ Nodes From\To  0   1  
+       0        C   C  
+       1        C   C  
+Domain State: UP
+[OK] Domain query succeeded (quorum reached with peers)
+
+Done. For full domain check from this node, run: nvidia-imex-ctl -N

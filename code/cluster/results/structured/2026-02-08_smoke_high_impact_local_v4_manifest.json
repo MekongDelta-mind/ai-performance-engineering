@@ -1,0 +1,51 @@
+{
+  "files": [
+    "results/raw/2026-02-08_smoke_high_impact_local_v4_bootstrap_nodes/node1.log",
+    "results/raw/2026-02-08_smoke_high_impact_local_v4_suite/bootstrap_nodes.log",
+    "results/raw/2026-02-08_smoke_high_impact_local_v4_suite/discovery.log",
+    "results/raw/2026-02-08_smoke_high_impact_local_v4_suite/preflight_services.log",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_dcgmi_discovery_localhost.txt",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_bootstrap_status.json",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_container_runtime.txt",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_meta.json",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_software_versions.json",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_storage.json",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_tcp_sysctl.json",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_tcp_sysctl.txt",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_preflight_services.json",
+    "results/structured/2026-02-08_smoke_high_impact_local_v4_tcp_sysctl_diff.json"
+  ],
+  "manifest_version": 1,
+  "nodes": [
+    {
+      "host": "localhost",
+      "label": "node1"
+    }
+  ],
+  "run_id": "2026-02-08_smoke_high_impact_local_v4",
+  "summary": {
+    "artifact_counts": {
+      "json": 7,
+      "log": 4,
+      "txt": 3
+    },
+    "file_count": 14,
+    "sha256": {
+      "results/raw/2026-02-08_smoke_high_impact_local_v4_bootstrap_nodes/node1.log": "e3427920ad5cea857ae2826fc7115bd3aed5c9e2d83d4c451ab5a1c26edb3b9f",
+      "results/raw/2026-02-08_smoke_high_impact_local_v4_suite/bootstrap_nodes.log": "3f04dea428a51c6bd0af932c6379cf04f5b78103fd422cd81eb24ff3f500816b",
+      "results/raw/2026-02-08_smoke_high_impact_local_v4_suite/discovery.log": "143c63c12a417429fe8708e92a2723f740c3c8af7ee73173cab9c6e335797423",
+      "results/raw/2026-02-08_smoke_high_impact_local_v4_suite/preflight_services.log": "f6658a6c820b643ef7d7585e3b2cd75aa34eacb16c6de3ddacd7f35dbf9da564",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_dcgmi_discovery_localhost.txt": "4d774405bd64269c58e12915bfa0694f6811695f41493f8c67e09db6e569773e",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_bootstrap_status.json": "517773f7f529e929c39c66b8f7ca5c110c17c0234cb02d8cd2ea14445e9717c6",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_container_runtime.txt": "ac4547043618564198bd141d85e56864b6d9c37911c598d71fc068bc701b02c8",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_meta.json": "4155fcff0975c2abf420fdfecf4c91936a012d8227c43a285f827e68ab1c74c7",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_software_versions.json": "9177b71208b81ee736f4ddc5624010d7646903bb125f58c69ca776c9899a1af0",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_storage.json": "a9782b7451095537e0a80be1794da9db6b51f868063ff243808f54577c44eb82",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_tcp_sysctl.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_node1_tcp_sysctl.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_preflight_services.json": "b92da74dd175f59c97aeea277e653ef9f03c4b2722face6ba12d887f486c05f6",
+      "results/structured/2026-02-08_smoke_high_impact_local_v4_tcp_sysctl_diff.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  },
+  "timestamp_utc": "2026-02-08T21:18:29.904787+00:00"
+}

@@ -1,0 +1,344 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+NOTE: The SHMEM allocation limit is set to the default of 64MB.  This may be
+   insufficient for PyTorch.  NVIDIA recommends the use of the following flags:
+   docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 ...
+
+DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types
+Grouped GEMM Benchmark
+  Device: NVIDIA GB200
+  PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+  DeepGEMM: installed
+  Preset: all
+  Shapes: 48
+
+Benchmarking G=4, M=8192, N=6144, K=7168...
+  torch_fp16:    1442.0 TFLOPS, 2.002 ms
+  torch_fp8:     1643.8 TFLOPS, 1.756 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=4, M=8192, N=7168, K=3072...
+  torch_fp16:    1513.7 TFLOPS, 0.953 ms
+  torch_fp8:     1385.7 TFLOPS, 1.041 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=4, M=8192, N=4096, K=4096...
+  torch_fp16:    1612.4 TFLOPS, 0.682 ms
+  torch_fp8:     1289.1 TFLOPS, 0.853 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=4, M=8192, N=4096, K=2048...
+  torch_fp16:    1643.3 TFLOPS, 0.335 ms
+  torch_fp8:     990.4 TFLOPS, 0.555 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=6144, K=7168...
+  torch_fp16:    1440.5 TFLOPS, 2.004 ms
+  torch_fp8:     1132.4 TFLOPS, 2.549 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=7168, K=3072...
+  torch_fp16:    1535.2 TFLOPS, 0.940 ms
+  torch_fp8:     1077.7 TFLOPS, 1.339 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1595.0 TFLOPS, 0.689 ms
+  torch_fp8:     981.6 TFLOPS, 1.120 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=4096, K=2048...
+  torch_fp16:    1710.8 TFLOPS, 0.321 ms
+  torch_fp8:     819.6 TFLOPS, 0.671 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=1024, N=2048, K=7168...
+  torch_fp16:    1477.4 TFLOPS, 0.163 ms
+  torch_fp8:     438.4 TFLOPS, 0.549 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=2048, K=7168...
+  torch_fp16:    1631.3 TFLOPS, 0.295 ms
+  torch_fp8:     691.8 TFLOPS, 0.695 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=2048, K=7168...
+  torch_fp16:    1520.2 TFLOPS, 0.633 ms
+  torch_fp8:     930.2 TFLOPS, 1.034 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=1024, N=7168, K=2048...
+  torch_fp16:    1620.4 TFLOPS, 0.148 ms
+  torch_fp8:     401.3 TFLOPS, 0.599 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=7168, K=2048...
+  torch_fp16:    1703.4 TFLOPS, 0.282 ms
+  torch_fp8:     572.2 TFLOPS, 0.841 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=7168, K=2048...
+  torch_fp16:    1667.1 TFLOPS, 0.577 ms
+  torch_fp8:     859.0 TFLOPS, 1.120 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=1024, N=5632, K=4096...
+  torch_fp16:    1651.5 TFLOPS, 0.229 ms
+  torch_fp8:     392.0 TFLOPS, 0.964 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=5632, K=4096...
+  torch_fp16:    1662.8 TFLOPS, 0.455 ms
+  torch_fp8:     641.5 TFLOPS, 1.178 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=5632, K=4096...
+  torch_fp16:    1555.1 TFLOPS, 0.972 ms
+  torch_fp8:     1063.0 TFLOPS, 1.422 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=1024, N=4096, K=5632...
+  torch_fp16:    1632.7 TFLOPS, 0.231 ms
+  torch_fp8:     387.8 TFLOPS, 0.975 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=4096, K=5632...
+  torch_fp16:    1725.0 TFLOPS, 0.438 ms
+  torch_fp8:     686.9 TFLOPS, 1.100 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=4096, K=5632...
+  torch_fp16:    1633.4 TFLOPS, 0.926 ms
+  torch_fp8:     1068.3 TFLOPS, 1.415 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=1024, N=14336, K=4096...
+  torch_fp16:    1670.9 TFLOPS, 0.144 ms
+  torch_fp8:     432.9 TFLOPS, 0.556 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=2048, N=14336, K=4096...
+  torch_fp16:    1738.7 TFLOPS, 0.277 ms
+  torch_fp8:     644.4 TFLOPS, 0.747 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=4096, N=14336, K=4096...
+  torch_fp16:    1644.5 TFLOPS, 0.585 ms
+  torch_fp8:     980.0 TFLOPS, 0.982 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=1024, N=4096, K=14336...
+  torch_fp16:    1697.9 TFLOPS, 0.142 ms
+  torch_fp8:     443.3 TFLOPS, 0.543 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=2048, N=4096, K=14336...
+  torch_fp16:    1713.4 TFLOPS, 0.281 ms
+  torch_fp8:     761.0 TFLOPS, 0.632 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=4096, N=4096, K=4096...
+  torch_fp16:    1699.2 TFLOPS, 0.162 ms
+  torch_fp8:     1022.4 TFLOPS, 0.269 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=4, M=4096, N=4096, K=4096...
+  torch_fp16:    1725.0 TFLOPS, 0.319 ms
+  torch_fp8:     823.5 TFLOPS, 0.668 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1645.0 TFLOPS, 0.668 ms
+  torch_fp8:     958.9 TFLOPS, 1.147 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=16, M=4096, N=4096, K=4096...
+  torch_fp16:    1491.9 TFLOPS, 1.474 ms
+  torch_fp8:     1132.4 TFLOPS, 1.942 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=32, M=4096, N=4096, K=4096...
+  torch_fp16:    1466.6 TFLOPS, 2.999 ms
+  torch_fp8:     1165.3 TFLOPS, 3.774 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=256, N=4096, K=4096...
+  torch_fp16:    1274.5 TFLOPS, 0.054 ms
+  torch_fp8:     120.3 TFLOPS, 0.571 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=512, N=4096, K=4096...
+  torch_fp16:    1356.0 TFLOPS, 0.101 ms
+  torch_fp8:     240.3 TFLOPS, 0.572 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=1024, N=4096, K=4096...
+  torch_fp16:    1632.0 TFLOPS, 0.168 ms
+  torch_fp8:     357.7 TFLOPS, 0.768 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=4096, K=4096...
+  torch_fp16:    1716.0 TFLOPS, 0.320 ms
+  torch_fp8:     644.7 TFLOPS, 0.853 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1570.6 TFLOPS, 0.700 ms
+  torch_fp8:     977.2 TFLOPS, 1.125 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=8192, N=4096, K=4096...
+  torch_fp16:    1483.2 TFLOPS, 1.483 ms
+  torch_fp8:     1432.0 TFLOPS, 1.536 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=1024, N=4096, K=4096...
+  torch_fp16:    1639.9 TFLOPS, 0.168 ms
+  torch_fp8:     413.7 TFLOPS, 0.664 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=4096, K=4096...
+  torch_fp16:    1728.3 TFLOPS, 0.318 ms
+  torch_fp8:     683.9 TFLOPS, 0.804 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=16, M=1024, N=4096, K=4096...
+  torch_fp16:    1672.3 TFLOPS, 0.329 ms
+  torch_fp8:     392.7 TFLOPS, 1.400 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=16, M=2048, N=4096, K=4096...
+  torch_fp16:    1636.0 TFLOPS, 0.672 ms
+  torch_fp8:     674.4 TFLOPS, 1.630 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=2048, K=7168...
+  torch_fp16:    1636.5 TFLOPS, 0.294 ms
+  torch_fp8:     697.0 TFLOPS, 0.690 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=8, M=2048, N=7168, K=2048...
+  torch_fp16:    1710.3 TFLOPS, 0.281 ms
+  torch_fp8:     613.9 TFLOPS, 0.784 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=1, M=4096, N=4096, K=4096...
+  torch_fp16:    1649.5 TFLOPS, 0.083 ms
+  torch_fp8:     1187.6 TFLOPS, 0.116 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=1, M=8192, N=4096, K=4096...
+  torch_fp16:    1709.8 TFLOPS, 0.161 ms
+  torch_fp8:     1286.1 TFLOPS, 0.214 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=1, M=4096, N=14336, K=4096...
+  torch_fp16:    1664.7 TFLOPS, 0.289 ms
+  torch_fp8:     1039.8 TFLOPS, 0.463 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=4096, N=4096, K=4096...
+  torch_fp16:    1712.6 TFLOPS, 0.161 ms
+  torch_fp8:     1086.6 TFLOPS, 0.253 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=8192, N=4096, K=4096...
+  torch_fp16:    1760.3 TFLOPS, 0.312 ms
+  torch_fp8:     1288.6 TFLOPS, 0.427 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+Benchmarking G=2, M=4096, N=14336, K=4096...
+  torch_fp16:    1643.4 TFLOPS, 0.585 ms
+  torch_fp8:     856.1 TFLOPS, 1.124 ms (loop baseline)
+  deepgemm_fp8:  N/A (DeepGEMM unsupported: Assertion error (csrc/apis/gemm.hpp:204): Unsupported architecture or scaling factor types)
+
+====================================================================================================
+Grouped GEMM Benchmark Results - NVIDIA GB200
+====================================================================================================
+
+Shape                     | Backend         | Time (ms)    | TFLOPS     | BW (GB/s)   
+--------------------------------------------------------------------------------------
+G16_M1024_N4096_K4096     | torch_fp16      | 0.3287       | 1672.3     | 2449.7      
+                          | torch_fp8       | 1.4000       | 392.7      | 287.6       
+G16_M2048_N4096_K4096     | torch_fp16      | 0.6721       | 1636.0     | 1597.6      
+                          | torch_fp8       | 1.6302       | 674.4      | 329.3       
+G16_M4096_N4096_K4096     | torch_fp16      | 1.4739       | 1491.9     | 1092.7      
+                          | torch_fp8       | 1.9418       | 1132.4     | 414.7       
+G1_M4096_N14336_K4096     | torch_fp16      | 0.2890       | 1664.7     | 929.0       
+                          | torch_fp8       | 0.4626       | 1039.8     | 290.1       
+G1_M4096_N4096_K4096      | torch_fp16      | 0.0833       | 1649.5     | 1208.1      
+                          | torch_fp8       | 0.1157       | 1187.6     | 434.9       
+G1_M8192_N4096_K4096      | torch_fp16      | 0.1608       | 1709.8     | 1043.6      
+                          | torch_fp8       | 0.2137       | 1286.1     | 392.5       
+G2_M1024_N14336_K4096     | torch_fp16      | 0.1439       | 1670.9     | 2156.2      
+                          | torch_fp8       | 0.5556       | 432.9      | 279.3       
+G2_M1024_N4096_K14336     | torch_fp16      | 0.1417       | 1697.9     | 2191.0      
+                          | torch_fp8       | 0.5425       | 443.3      | 286.1       
+G2_M2048_N14336_K4096     | torch_fp16      | 0.2767       | 1738.7     | 1394.7      
+                          | torch_fp8       | 0.7465       | 644.4      | 258.5       
+G2_M2048_N4096_K14336     | torch_fp16      | 0.2808       | 1713.4     | 1374.4      
+                          | torch_fp8       | 0.6321       | 761.0      | 305.2       
+G2_M4096_N14336_K4096     | torch_fp16      | 0.5850       | 1644.5     | 917.7       
+                          | torch_fp16      | 0.5854       | 1643.4     | 917.1       
+                          | torch_fp8       | 0.9817       | 980.0      | 273.4       
+                          | torch_fp8       | 1.1238       | 856.1      | 238.9       
+G2_M4096_N4096_K4096      | torch_fp16      | 0.1618       | 1699.2     | 1244.5      
+                          | torch_fp16      | 0.1605       | 1712.6     | 1254.3      
+                          | torch_fp8       | 0.2689       | 1022.4     | 374.4       
+                          | torch_fp8       | 0.2530       | 1086.6     | 397.9       
+G2_M8192_N4096_K4096      | torch_fp16      | 0.3123       | 1760.3     | 1074.4      
+                          | torch_fp8       | 0.4266       | 1288.6     | 393.3       
+G32_M4096_N4096_K4096     | torch_fp16      | 2.9989       | 1466.6     | 1074.1      
+                          | torch_fp8       | 3.7743       | 1165.3     | 426.7       
+G4_M4096_N4096_K4096      | torch_fp16      | 0.3187       | 1725.0     | 1263.4      
+                          | torch_fp8       | 0.6676       | 823.5      | 301.6       
+G4_M8192_N4096_K2048      | torch_fp16      | 0.3345       | 1643.3     | 1404.2      
+                          | torch_fp8       | 0.5551       | 990.4      | 423.2       
+G4_M8192_N4096_K4096      | torch_fp16      | 0.6819       | 1612.4     | 984.1       
+                          | torch_fp8       | 0.8529       | 1289.1     | 393.4       
+G4_M8192_N6144_K7168      | torch_fp16      | 2.0015       | 1442.0     | 611.9       
+                          | torch_fp8       | 1.7558       | 1643.8     | 348.8       
+G4_M8192_N7168_K3072      | torch_fp16      | 0.9534       | 1513.7     | 888.7       
+                          | torch_fp8       | 1.0414       | 1385.7     | 406.8       
+G8_M1024_N2048_K7168      | torch_fp16      | 0.1628       | 1477.4     | 2370.3      
+                          | torch_fp8       | 0.5487       | 438.4      | 351.6       
+G8_M1024_N4096_K4096      | torch_fp16      | 0.1684       | 1632.0     | 2390.7      
+                          | torch_fp16      | 0.1676       | 1639.9     | 2402.2      
+                          | torch_fp8       | 0.7684       | 357.7      | 262.0       
+                          | torch_fp8       | 0.6645       | 413.7      | 303.0       
+G8_M1024_N4096_K5632      | torch_fp16      | 0.2315       | 1632.7     | 2283.0      
+                          | torch_fp8       | 0.9747       | 387.8      | 271.1       
+G8_M1024_N5632_K4096      | torch_fp16      | 0.2289       | 1651.5     | 2309.3      
+                          | torch_fp8       | 0.9642       | 392.0      | 274.1       
+G8_M1024_N7168_K2048      | torch_fp16      | 0.1484       | 1620.4     | 2599.6      
+                          | torch_fp8       | 0.5994       | 401.3      | 321.9       
+G8_M2048_N2048_K7168      | torch_fp16      | 0.2949       | 1631.3     | 1820.7      
+                          | torch_fp16      | 0.2939       | 1636.5     | 1826.5      
+                          | torch_fp8       | 0.6953       | 691.8      | 386.1       
+                          | torch_fp8       | 0.6902       | 697.0      | 388.9       
+G8_M2048_N4096_K4096      | torch_fp16      | 0.3204       | 1716.0     | 1675.8      
+                          | torch_fp16      | 0.3181       | 1728.3     | 1687.8      
+                          | torch_fp8       | 0.8528       | 644.7      | 314.8       
+                          | torch_fp8       | 0.8038       | 683.9      | 333.9       
+G8_M2048_N4096_K5632      | torch_fp16      | 0.4382       | 1725.0     | 1569.7      
+                          | torch_fp8       | 1.1005       | 686.9      | 312.5       
+G8_M2048_N5632_K4096      | torch_fp16      | 0.4546       | 1662.8     | 1513.1      
+                          | torch_fp8       | 1.1783       | 641.5      | 291.9       
+G8_M2048_N7168_K2048      | torch_fp16      | 0.2824       | 1703.4     | 1901.2      
+                          | torch_fp16      | 0.2813       | 1710.3     | 1908.9      
+                          | torch_fp8       | 0.8407       | 572.2      | 319.3       
+                          | torch_fp8       | 0.7836       | 613.9      | 342.6       
+G8_M256_N4096_K4096       | torch_fp16      | 0.0539       | 1274.5     | 5600.7      
+                          | torch_fp8       | 0.5714       | 120.3      | 264.2       
+G8_M4096_N2048_K7168      | torch_fp16      | 0.6329       | 1520.2     | 1325.5      
+                          | torch_fp8       | 1.0342       | 930.2      | 405.6       
+G8_M4096_N4096_K2048      | torch_fp16      | 0.3213       | 1710.8     | 1670.7      
+                          | torch_fp8       | 0.6708       | 819.6      | 400.2       
+G8_M4096_N4096_K4096      | torch_fp16      | 0.6893       | 1595.0     | 1168.2      
+                          | torch_fp16      | 0.6684       | 1645.0     | 1204.8      
+                          | torch_fp16      | 0.7001       | 1570.6     | 1150.3      
+                          | torch_fp8       | 1.1201       | 981.6      | 359.5       
+                          | torch_fp8       | 1.1466       | 958.9      | 351.2       
+                          | torch_fp8       | 1.1252       | 977.2      | 357.9       
+G8_M4096_N4096_K5632      | torch_fp16      | 0.9256       | 1633.4     | 1087.6      
+                          | torch_fp8       | 1.4152       | 1068.3     | 355.6       
+G8_M4096_N5632_K4096      | torch_fp16      | 0.9722       | 1555.1     | 1035.5      
+                          | torch_fp8       | 1.4222       | 1063.0     | 353.9       
+G8_M4096_N6144_K7168      | torch_fp16      | 2.0036       | 1440.5     | 787.1       
+                          | torch_fp8       | 2.5487       | 1132.4     | 309.4       
+G8_M4096_N7168_K2048      | torch_fp16      | 0.5771       | 1667.1     | 1453.6      
+                          | torch_fp8       | 1.1200       | 859.0      | 374.5       
+G8_M4096_N7168_K3072      | torch_fp16      | 0.9400       | 1535.2     | 1088.7      
+                          | torch_fp8       | 1.3390       | 1077.7     | 382.1       
+G8_M512_N4096_K4096       | torch_fp16      | 0.1014       | 1356.0     | 3310.6      
+                          | torch_fp8       | 0.5719       | 240.3      | 293.3       
+G8_M8192_N4096_K4096      | torch_fp16      | 1.4826       | 1483.2     | 905.3       
+                          | torch_fp8       | 1.5356       | 1432.0     | 437.0       
+
+Plot saved to: /tmp/gemm_bench_all.png

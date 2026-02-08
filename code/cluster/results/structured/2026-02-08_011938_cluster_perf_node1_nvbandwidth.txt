@@ -1,0 +1,656 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+NOTE: The SHMEM allocation limit is set to the default of 64MB.  This may be
+   insufficient for PyTorch.  NVIDIA recommends the use of the following flags:
+   docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 ...
+
+========================================
+NVIDIA nvbandwidth GPU Bandwidth Test
+========================================
+Date: Sun Feb  8 01:20:28 UTC 2026
+Hostname: 54ead79b05b8
+Quick mode: 1
+
+=== GPU Information ===
+name, memory.total [MiB], pcie.link.gen.current, pcie.link.width.current
+NVIDIA GB200, 189471 MiB, 4, 1
+NVIDIA GB200, 189471 MiB, 4, 1
+NVIDIA GB200, 189471 MiB, 4, 1
+NVIDIA GB200, 189471 MiB, 4, 1
+
+=== GPU Topology ===
+	[4mGPU0	GPU1	GPU2	GPU3	NIC0	NIC1	NIC2	NIC3	NIC4	NIC5	NIC6	NIC7	CPU Affinity	NUMA Affinity	GPU NUMA ID[0m
+GPU0	 X 	NV18	NV18	NV18	NODE	NODE	NODE	NODE	SYS	SYS	SYS	SYS	0-71	0		2
+GPU1	NV18	 X 	NV18	NV18	NODE	NODE	NODE	NODE	SYS	SYS	SYS	SYS	0-71	0		10
+GPU2	NV18	NV18	 X 	NV18	SYS	SYS	SYS	SYS	NODE	NODE	NODE	NODE	72-143	1		18
+GPU3	NV18	NV18	NV18	 X 	SYS	SYS	SYS	SYS	NODE	NODE	NODE	NODE	72-143	1		26
+NIC0	NODE	NODE	SYS	SYS	 X 	NODE	NODE	NODE	SYS	SYS	SYS	SYS				
+NIC1	NODE	NODE	SYS	SYS	NODE	 X 	NODE	NODE	SYS	SYS	SYS	SYS				
+NIC2	NODE	NODE	SYS	SYS	NODE	NODE	 X 	PIX	SYS	SYS	SYS	SYS				
+NIC3	NODE	NODE	SYS	SYS	NODE	NODE	PIX	 X 	SYS	SYS	SYS	SYS				
+NIC4	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	 X 	NODE	NODE	NODE				
+NIC5	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	NODE	 X 	NODE	NODE				
+NIC6	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	NODE	NODE	 X 	PIX				
+NIC7	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	NODE	NODE	PIX	 X 				
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+NIC Legend:
+
+  NIC0: mlx5_0
+  NIC1: mlx5_1
+  NIC2: mlx5_2
+  NIC3: mlx5_3
+  NIC4: mlx5_4
+  NIC5: mlx5_5
+  NIC6: mlx5_6
+  NIC7: mlx5_7
+
+
+=== Building nvbandwidth from source ===
+Installing build deps (best-effort): libboost-program-options-dev
+Detected GPU architecture: 100
+Cloning into 'nvbandwidth'...
+Built nvbandwidth at: /tmp/nvbandwidth-build-1/nvbandwidth/nvbandwidth
+
+Using nvbandwidth: /tmp/nvbandwidth-build-1/nvbandwidth/nvbandwidth
+
+=== Available Tests ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+Index, Name:
+	Description
+=======================
+0, host_to_device_memcpy_ce:
+	Host to device CE memcpy using cuMemcpyAsync
+
+1, device_to_host_memcpy_ce:
+	Device to host CE memcpy using cuMemcpyAsync
+
+2, host_to_device_bidirectional_memcpy_ce:
+	A host to device copy is measured while a device to host copy is run simultaneously.
+	Only the host to device copy bandwidth is reported.
+
+3, device_to_host_bidirectional_memcpy_ce:
+	A device to host copy is measured while a host to device copy is run simultaneously.
+	Only the device to host copy bandwidth is reported.
+
+4, device_to_device_memcpy_read_ce:
+	Measures bandwidth of cuMemcpyAsync between each pair of accessible peers.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+5, device_to_device_memcpy_write_ce:
+	Measures bandwidth of cuMemcpyAsync between each pair of accessible peers.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+6, device_to_device_bidirectional_memcpy_read_ce:
+	Measures bandwidth of cuMemcpyAsync between each pair of accessible peers.
+	A copy in the opposite direction of the measured copy is run simultaneously but not measured.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+7, device_to_device_bidirectional_memcpy_write_ce:
+	Measures bandwidth of cuMemcpyAsync between each pair of accessible peers.
+	A copy in the opposite direction of the measured copy is run simultaneously but not measured.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+8, all_to_host_memcpy_ce:
+	Measures bandwidth of cuMemcpyAsync between a single device and the host while simultaneously
+	running copies from all other devices to the host.
+
+9, all_to_host_bidirectional_memcpy_ce:
+	A device to host copy is measured while a host to device copy is run simultaneously.
+	Only the device to host copy bandwidth is reported.
+	All other devices generate simultaneous host to device and device to host interferring traffic.
+
+10, host_to_all_memcpy_ce:
+	Measures bandwidth of cuMemcpyAsync between the host to a single device while simultaneously
+	running copies from the host to all other devices.
+
+11, host_to_all_bidirectional_memcpy_ce:
+	A host to device copy is measured while a device to host copy is run simultaneously.
+	Only the host to device copy bandwidth is reported.
+	All other devices generate simultaneous host to device and device to host interferring traffic.
+
+12, all_to_one_write_ce:
+	Measures the total bandwidth of copies from all accessible peers to a single device, for each
+	device. Bandwidth is reported as the total inbound bandwidth for each device.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+13, all_to_one_read_ce:
+	Measures the total bandwidth of copies from all accessible peers to a single device, for each
+	device. Bandwidth is reported as the total outbound bandwidth for each device.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+14, one_to_all_write_ce:
+	Measures the total bandwidth of copies from a single device to all accessible peers, for each
+	device. Bandwidth is reported as the total outbound bandwidth for each device.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+15, one_to_all_read_ce:
+	Measures the total bandwidth of copies from a single device to all accessible peers, for each
+	device. Bandwidth is reported as the total inbound bandwidth for each device.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+16, host_to_device_memcpy_sm:
+	Host to device SM memcpy using a copy kernel
+
+17, device_to_host_memcpy_sm:
+	Device to host SM memcpy using a copy kernel
+
+18, host_to_device_bidirectional_memcpy_sm:
+	A host to device copy is measured while a device to host copy is run simultaneously.
+	Only the host to device copy bandwidth is reported.
+
+19, device_to_host_bidirectional_memcpy_sm:
+	A device to host copy is measured while a host to device copy is run simultaneously.
+	Only the device to host copy bandwidth is reported.
+
+20, device_to_device_memcpy_read_sm:
+	Measures bandwidth of a copy kernel between each pair of accessible peers.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+21, device_to_device_memcpy_write_sm:
+	Measures bandwidth of a copy kernel between each pair of accessible peers.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+22, device_to_device_bidirectional_memcpy_read_sm:
+	Measures bandwidth of a copy kernel between each pair of accessible peers. Copies are run
+	in both directions between each pair, and the sum is reported.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+23, device_to_device_bidirectional_memcpy_write_sm:
+	Measures bandwidth of a copy kernel between each pair of accessible peers. Copies are run
+	in both directions between each pair, and the sum is reported.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+24, all_to_host_memcpy_sm:
+	Measures bandwidth of a copy kernel between a single device and the host while simultaneously
+	running copies from all other devices to the host.
+
+25, all_to_host_bidirectional_memcpy_sm:
+	A device to host bandwidth of a copy kernel is measured while a host to device copy is run simultaneously.
+	Only the device to host copy bandwidth is reported.
+	All other devices generate simultaneous host to device and device to host interferring traffic using copy kernels.
+
+26, host_to_all_memcpy_sm:
+	Measures bandwidth of a copy kernel between the host to a single device while simultaneously
+	running copies from the host to all other devices.
+
+27, host_to_all_bidirectional_memcpy_sm:
+	A host to device bandwidth of a copy kernel is measured while a device to host copy is run simultaneously.
+	Only the host to device copy bandwidth is reported.
+	All other devices generate simultaneous host to device and device to host interferring traffic using copy kernels.
+
+28, all_to_one_write_sm:
+	Measures the total bandwidth of copies from all accessible peers to a single device, for each
+	device. Bandwidth is reported as the total inbound bandwidth for each device.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+29, all_to_one_read_sm:
+	Measures the total bandwidth of copies from all accessible peers to a single device, for each
+	device. Bandwidth is reported as the total outbound bandwidth for each device.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+30, one_to_all_write_sm:
+	Measures the total bandwidth of copies from a single device to all accessible peers, for each
+	device. Bandwidth is reported as the total outbound bandwidth for each device.
+	Write tests launch a copy from the target device to the peer using the target's context.
+
+31, one_to_all_read_sm:
+	Measures the total bandwidth of copies from a single device to all accessible peers, for each
+	device. Bandwidth is reported as the total inbound bandwidth for each device.
+	Read tests launch a copy from the peer device to the target using the target's context.
+
+32, host_device_latency_sm:
+	Host - device access latency using a pointer chase kernel
+	A 2MB buffer is allocated on the host and is accessed by the GPU
+
+33, device_to_device_latency_sm:
+	Measures latency of a pointer derefernce operation between each pair of accessible peers.
+	A 2MB buffer is allocated on a GPU and is accessed by the peer GPU to determine latency.
+	--bufferSize flag is ignored
+
+34, device_local_copy:
+	Measures bandwidth of cuMemcpyAsync between device buffers local to the GPU.
+
+
+
+========================================
+Running Bandwidth Tests
+========================================
+
+=== Host to Device (H2D) Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running host_to_device_memcpy_ce.
+memcpy CE CPU(row) -> GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0    211.41    211.52    211.45    211.56
+
+SUM host_to_device_memcpy_ce 845.95
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== Device to Host (D2H) Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_host_memcpy_ce.
+memcpy CE CPU(row) <- GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0    193.47    193.49    193.50    193.50
+
+SUM device_to_host_memcpy_ce 773.96
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== Device to Device (D2D) Read Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_device_memcpy_read_ce.
+memcpy CE GPU(row) -> GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    766.89    769.02    769.02
+ 1    766.27       N/A    769.78    769.09
+ 2    766.41    766.41       N/A    769.78
+ 3    767.85    767.85    770.61       N/A
+
+SUM device_to_device_memcpy_read_ce 9218.97
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== Device to Device (D2D) Write Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_device_memcpy_write_ce.
+memcpy CE GPU(row) <- GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    775.12    775.40    775.26
+ 1    775.12       N/A    775.26    775.26
+ 2    775.47    775.26       N/A    775.19
+ 3    775.19    775.19    775.06       N/A
+
+SUM device_to_device_memcpy_write_ce 9302.83
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== Bidirectional D2D Read Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_device_bidirectional_memcpy_read_ce.
+memcpy CE GPU(row) <-> GPU(column) Read1 bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    761.86    764.77    763.96
+ 1    761.72       N/A    765.25    765.32
+ 2    762.26    762.26       N/A    764.71
+ 3    762.19    762.26    765.18       N/A
+
+SUM device_to_device_bidirectional_memcpy_read_ce_read1 9161.75
+
+memcpy CE GPU(row) <-> GPU(column) Read2 bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    761.32    761.79    761.86
+ 1    761.72       N/A    762.33    761.38
+ 2    765.05    764.71       N/A    764.84
+ 3    764.98    764.91    764.98       N/A
+
+SUM device_to_device_bidirectional_memcpy_read_ce_read2 9159.86
+
+memcpy CE GPU(row) <-> GPU(column) Total bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A   1523.17   1526.56   1525.81
+ 1   1523.44       N/A   1527.58   1526.70
+ 2   1527.31   1526.97       N/A   1529.55
+ 3   1527.17   1527.17   1530.16       N/A
+
+SUM device_to_device_bidirectional_memcpy_read_ce_total 18321.60
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== Bidirectional D2D Write Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_device_bidirectional_memcpy_write_ce.
+memcpy CE GPU(row) <-> GPU(column) Write1 bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    771.02    771.23    771.23
+ 1    771.16       N/A    771.16    771.23
+ 2    771.16    770.95       N/A    771.23
+ 3    771.30    770.88    771.09       N/A
+
+SUM device_to_device_bidirectional_memcpy_write_ce_write1 9253.63
+
+memcpy CE GPU(row) <-> GPU(column) Write2 bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    770.61    770.61    770.54
+ 1    770.81       N/A    770.67    770.67
+ 2    770.47    770.54       N/A    770.54
+ 3    770.61    770.67    770.61       N/A
+
+SUM device_to_device_bidirectional_memcpy_write_ce_write2 9247.33
+
+memcpy CE GPU(row) <-> GPU(column) Total bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A   1541.63   1541.83   1541.76
+ 1   1541.97       N/A   1541.83   1541.90
+ 2   1541.63   1541.49       N/A   1541.76
+ 3   1541.90   1541.56   1541.69       N/A
+
+SUM device_to_device_bidirectional_memcpy_write_ce_total 18500.96
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== All-to-Host Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running all_to_host_memcpy_ce.
+memcpy CE CPU(row) <- GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0    184.75    184.51    184.62    184.46
+
+SUM all_to_host_memcpy_ce 738.34
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== Host-to-All Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running host_to_all_memcpy_ce.
+memcpy CE CPU(row) -> GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0    181.83    181.93    179.18    179.05
+
+SUM host_to_all_memcpy_ce 721.99
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== All-to-All Read Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+ERROR: Testcase all_to_all_memcpy_read_ce not found!
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== All-to-All Write Bandwidth ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+ERROR: Testcase all_to_all_memcpy_write_ce not found!
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+========================================
+Key Metrics (Larger Buffer: 256MB)
+========================================
+
+=== H2D with 256MB buffer ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+NOTE: You have chosen a buffer size that is smaller than the default buffer size. It is suggested to use the default buffer size (64MB) to achieve maximal peak bandwidth.
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running host_to_device_memcpy_ce.
+memcpy CE CPU(row) -> GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0    211.19    211.27    211.17    211.34
+
+SUM host_to_device_memcpy_ce 844.96
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== D2H with 256MB buffer ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+NOTE: You have chosen a buffer size that is smaller than the default buffer size. It is suggested to use the default buffer size (64MB) to achieve maximal peak bandwidth.
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_host_memcpy_ce.
+memcpy CE CPU(row) <- GPU(column) bandwidth (GB/s)
+           0         1         2         3
+ 0    193.31    193.32    193.33    193.34
+
+SUM device_to_host_memcpy_ce 773.30
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+=== D2D Bidirectional with 256MB buffer ===
+nvbandwidth Version: v0.8
+Built from Git version: v0.8
+
+NOTE: You have chosen a buffer size that is smaller than the default buffer size. It is suggested to use the default buffer size (64MB) to achieve maximal peak bandwidth.
+CUDA Runtime Version: 13010
+CUDA Driver Version: 13010
+Driver Version: 580.105.08
+
+54ead79b05b8
+Device 0: NVIDIA GB200 (00000008:01:00)
+Device 1: NVIDIA GB200 (00000009:01:00)
+Device 2: NVIDIA GB200 (00000018:01:00)
+Device 3: NVIDIA GB200 (00000019:01:00)
+
+Running device_to_device_bidirectional_memcpy_read_ce.
+memcpy CE GPU(row) <-> GPU(column) Read1 bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    744.81    748.51    748.45
+ 1    745.78       N/A    750.87    750.47
+ 2    744.75    744.23       N/A    749.75
+ 3    743.59    744.88    750.34       N/A
+
+SUM device_to_device_bidirectional_memcpy_read_ce_read1 8966.45
+
+memcpy CE GPU(row) <-> GPU(column) Read2 bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A    745.59    745.14    743.85
+ 1    745.85       N/A    745.27    743.85
+ 2    751.00    750.67       N/A    749.23
+ 3    751.13    751.13    750.87       N/A
+
+SUM device_to_device_bidirectional_memcpy_read_ce_read2 8973.57
+
+memcpy CE GPU(row) <-> GPU(column) Total bandwidth (GB/s)
+           0         1         2         3
+ 0       N/A   1490.40   1493.65   1492.29
+ 1   1491.63       N/A   1496.13   1494.32
+ 2   1495.75   1494.90       N/A   1498.99
+ 3   1494.72   1496.01   1501.21       N/A
+
+SUM device_to_device_bidirectional_memcpy_read_ce_total 17940.01
+
+NOTE: The reported results may not reflect the full capabilities of the platform.
+Performance can vary with software drivers, hardware clocks, and system topology.
+
+
+========================================
+Benchmark Complete
+========================================
+End time: Sun Feb  8 01:21:57 UTC 2026

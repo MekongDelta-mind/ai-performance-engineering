@@ -1,0 +1,13 @@
+Source: ompi_info (OpenMPI mpirun (Open MPI) 4.1.6)
+
+# oob tcp port parameters
+15:             MCA oob tcp: parameter "oob_tcp_static_ipv4_ports" (current value: "", data source: default, level: 2 user/detail, type: string)
+17:             MCA oob tcp: parameter "oob_tcp_static_ipv6_ports" (current value: "", data source: default, level: 2 user/detail, type: string)
+19:             MCA oob tcp: parameter "oob_tcp_dynamic_ipv4_ports" (current value: "", data source: default, level: 4 tuner/basic, type: string)
+21:             MCA oob tcp: parameter "oob_tcp_dynamic_ipv6_ports" (current value: "", data source: default, level: 4 tuner/basic, type: string)
+
+# btl tcp port parameters
+19:             MCA btl tcp: parameter "btl_tcp_port_min_v4" (current value: "1024", data source: default, level: 2 user/detail, type: int)
+21:             MCA btl tcp: parameter "btl_tcp_port_range_v4" (current value: "64511", data source: default, level: 2 user/detail, type: int)
+23:             MCA btl tcp: parameter "btl_tcp_port_min_v6" (current value: "1024", data source: default, level: 2 user/detail, type: int)
+25:             MCA btl tcp: parameter "btl_tcp_port_range_v6" (current value: "64511", data source: default, level: 2 user/detail, type: int)

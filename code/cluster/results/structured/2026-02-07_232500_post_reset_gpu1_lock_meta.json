@@ -1,0 +1,26 @@
+{
+  "devices": [
+    0
+  ],
+  "label": "",
+  "locks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "device": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "physical_gpu": 1
+    }
+  ],
+  "require_clock_lock": true,
+  "run_id": "",
+  "timestamp": "2026-02-07T23:25:06+0000"
+}

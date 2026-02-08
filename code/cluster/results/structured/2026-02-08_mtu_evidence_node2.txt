@@ -1,0 +1,41 @@
+Source meta: results/structured/2026-02-07_neocloud_case_study_node2_meta.json
+
+# ip -o link (IB netdev MTU)
+9: ibp3s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP mode DEFAULT group default qlen 1000\    link/infiniband 00:00:09:6a:fe:80:00:00:00:00:00:00:e0:9d:73:03:00:e8:c4:b8 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
+10: ibP2p3s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP mode DEFAULT group default qlen 1000\    link/infiniband 00:00:09:56:fe:80:00:00:00:00:00:00:e0:9d:73:03:00:e8:c4:bc brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
+11: ibP16p3s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP mode DEFAULT group default qlen 1000\    link/infiniband 00:00:08:a7:fe:80:00:00:00:00:00:00:e0:9d:73:03:00:e8:ec:d0 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
+12: ibP18p3s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP mode DEFAULT group default qlen 1000\    link/infiniband 00:00:09:6f:fe:80:00:00:00:00:00:00:e0:9d:73:03:00:e8:ec:d4 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
+
+# ibv_devinfo (verbs port MTU)
+			state:			PORT_ACTIVE (4)
+			max_mtu:		4096 (5)
+			active_mtu:		4096 (5)
+			link_layer:		InfiniBand
+			state:			PORT_ACTIVE (4)
+			max_mtu:		4096 (5)
+			active_mtu:		4096 (5)
+			link_layer:		InfiniBand
+			state:			PORT_DOWN (1)
+			max_mtu:		4096 (5)
+			active_mtu:		1024 (3)
+			link_layer:		Ethernet
+			state:			PORT_DOWN (1)
+			max_mtu:		4096 (5)
+			active_mtu:		1024 (3)
+			link_layer:		Ethernet
+			state:			PORT_ACTIVE (4)
+			max_mtu:		4096 (5)
+			active_mtu:		4096 (5)
+			link_layer:		InfiniBand
+			state:			PORT_ACTIVE (4)
+			max_mtu:		4096 (5)
+			active_mtu:		4096 (5)
+			link_layer:		InfiniBand
+			state:			PORT_DOWN (1)
+			max_mtu:		4096 (5)
+			active_mtu:		1024 (3)
+			link_layer:		Ethernet
+			state:			PORT_DOWN (1)
+			max_mtu:		4096 (5)
+			active_mtu:		1024 (3)
+			link_layer:		Ethernet

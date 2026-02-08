@@ -1,0 +1,123 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+NOTE: The SHMEM allocation limit is set to the default of 64MB.  This may be
+   insufficient for PyTorch.  NVIDIA recommends the use of the following flags:
+   docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 ...
+
+======================================================================
+GPU GEMM Benchmark
+======================================================================
+GPU: NVIDIA GB200
+Memory: 197.6 GB
+Compute Capability: 10.0
+PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+CUDA: 13.1
+
+Testing dtypes: ['float32', 'float16', 'bfloat16', 'tf32', 'float8']
+
+
+======================================================================
+Testing float32
+======================================================================
+
+       M        N        K       TFLOPS      ms/iter
+------------------------------------------------------------
+    4096     4096     4096         62.9        2.186
+    8192     8192     8192         65.8       16.714
+   16384    16384    16384         68.4      128.582
+
+Best float32: 68.4 TFLOPS at M=16384, N=16384, K=16384
+
+======================================================================
+Testing float16
+======================================================================
+
+       M        N        K       TFLOPS      ms/iter
+------------------------------------------------------------
+    4096     4096     4096       1591.1        0.086
+    8192     8192     8192       1688.1        0.651
+   16384    16384    16384       1471.4        5.978
+
+Best float16: 1688.1 TFLOPS at M=8192, N=8192, K=8192
+
+======================================================================
+Testing bfloat16
+======================================================================
+
+       M        N        K       TFLOPS      ms/iter
+------------------------------------------------------------
+    4096     4096     4096       1738.7        0.079
+    8192     8192     8192       1809.6        0.608
+   16384    16384    16384       1581.4        5.562
+
+Best bfloat16: 1809.6 TFLOPS at M=8192, N=8192, K=8192
+
+======================================================================
+Testing tf32
+======================================================================
+
+       M        N        K       TFLOPS      ms/iter
+------------------------------------------------------------
+    4096     4096     4096        555.5        0.247
+    8192     8192     8192        815.6        1.348
+   16384    16384    16384        739.6       11.893
+
+Best tf32: 815.6 TFLOPS at M=8192, N=8192, K=8192
+
+======================================================================
+Testing float8
+======================================================================
+
+       M        N        K       TFLOPS      ms/iter
+------------------------------------------------------------
+    4096     4096     4096       3259.6        0.042
+    8192     8192     8192       3537.8        0.311
+   16384    16384    16384       2994.9        2.937
+
+Best float8: 3537.8 TFLOPS at M=8192, N=8192, K=8192
+
+======================================================================
+Summary
+======================================================================
+     float32:     68.4 TFLOPS (best)
+     float16:   1688.1 TFLOPS (best)
+    bfloat16:   1809.6 TFLOPS (best)
+        tf32:    815.6 TFLOPS (best)
+      float8:   3537.8 TFLOPS (best)
+
+======================================================================
+Benchmark complete.
+======================================================================

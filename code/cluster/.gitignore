@@ -1,0 +1,22 @@
+field-report-notes.md
+
+# Local virtual environment (keep env/requirements.txt tracked)
+env/venv/
+
+# Torch caches
+.torch_extensions/
+.torch_inductor/
+
+# Cluster suite outputs:
+# - Keep `results/structured/` and `docs/figures/` trackable (they're part of the case study).
+# - Ignore the very noisy/raw logs by default.
+results/raw/
+
+# Harness benchmark outputs (ephemeral; we re-generate these often)
+results/benchmark_events*.jsonl
+results/bench_*.json
+results/bench_*.md
+
+# Python bytecode
+__pycache__/
+*.py[cod]

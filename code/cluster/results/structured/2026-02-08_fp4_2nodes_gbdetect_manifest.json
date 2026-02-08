@@ -1,0 +1,60 @@
+{
+  "files": [
+    "docs/figures/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm_tflops.png",
+    "docs/figures/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm_tflops.png",
+    "results/raw/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_smoke.log",
+    "results/raw/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_smoke.log",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_platform.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_smoke.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_smoke_clock_lock.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm.txt",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm_clock_lock.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm_summary.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_platform.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_smoke.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_smoke_clock_lock.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm.txt",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm_clock_lock.json",
+    "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm_summary.json"
+  ],
+  "manifest_version": 1,
+  "nodes": [
+    {
+      "host": "node1",
+      "label": "node1"
+    },
+    {
+      "host": "node2",
+      "label": "node2"
+    }
+  ],
+  "run_id": "2026-02-08_fp4_2nodes_gbdetect",
+  "summary": {
+    "artifact_counts": {
+      "json": 10,
+      "log": 2,
+      "png": 2,
+      "txt": 2
+    },
+    "file_count": 16,
+    "sha256": {
+      "docs/figures/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm_tflops.png": "2c5b39ab2c27ca2bed4a945f42b43ad1047bb12535b6bab4b54ad44c241b18ce",
+      "docs/figures/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm_tflops.png": "abb7b98c11ce1d5c483dfb5ee783fb92e5c5f57aaec091501724324d8dbbbdbe",
+      "results/raw/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_smoke.log": "b263866c54d084a5183dfec0728ab6cafba8605494635b41c174c9a6a3ba93a6",
+      "results/raw/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_smoke.log": "3ee6ae71667b2662327d5c73f8b106f0eef2444de39889c1e6e1cb2c874d96ef",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_platform.json": "80e9ef0b1fe0fdb395c92fea9c647096772b75f9c29804b5e28eb994a168c1b6",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_smoke.json": "e53a8142785f046d24ea91f1042b603cfacb3ad98eb0fb95255e8a1a2fd08924",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_fp4_smoke_clock_lock.json": "8fde4d9140ffa3dbe92f747360b2e4ffddfa90e490e60d265347468e05646ce3",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm.txt": "be1795c564b4d0b3c10de24d976cd32c012c7b87b022bece9a2d1e9a46086824",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm_clock_lock.json": "5a4c6cfb15c1d3c79345f505d8d966d887666da32e96feee844dfd2ac10183a0",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node1_cluster_perf_grouped_gemm_summary.json": "3c063e0ebba255e00f4e9e44efabd50a23c1e97c3aedd56f18ca13340598a44a",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_platform.json": "65a9e7d217c8f97e5e45d8954782610ace84c9ddf8d84a76f3454adc2d85815e",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_smoke.json": "822de9a6a7c61840ffaedff14b81bdba6fa350fde4dd7f8ab11d8fdbc9cb4aef",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_fp4_smoke_clock_lock.json": "1711d9239d26f3d706b8613162be70f8eb43077d9e977da2b13cd3bae55c24bb",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm.txt": "ad09ce93ff4f714f997b2e3e84f95404282f2922f26a6cc02bd68b3027e5e314",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm_clock_lock.json": "faacc7c1a512144b74ae8395ecd1c959499026677e3b40004e2ce441f615cadd",
+      "results/structured/2026-02-08_fp4_2nodes_gbdetect_node2_cluster_perf_grouped_gemm_summary.json": "cd5aa09dfe89da56c6468f4b06221d73bebd531aee78eef4756db81b79665d39"
+    }
+  },
+  "timestamp_utc": "2026-02-08T21:03:06.371889+00:00"
+}

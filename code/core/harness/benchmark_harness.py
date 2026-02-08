@@ -198,6 +198,32 @@ def _resolve_physical_device_index(device_index: int) -> int:
     raise RuntimeError(f"Unsupported CUDA_VISIBLE_DEVICES entry {token!r}")
 
 
+_SUDO_NONINTERACTIVE_OK: Optional[bool] = None
+
+
+def _sudo_noninteractive_ok() -> bool:
+    """Return True if `sudo -n` is available for this process.
+
+    We use this to optionally run `nvidia-smi` as root for clock locking on
+    managed systems where unprivileged users can't change clocks.
+    """
+    global _SUDO_NONINTERACTIVE_OK
+    if _SUDO_NONINTERACTIVE_OK is not None:
+        return _SUDO_NONINTERACTIVE_OK
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        _SUDO_NONINTERACTIVE_OK = False
+        return False
+    if shutil.which("sudo") is None:
+        _SUDO_NONINTERACTIVE_OK = False
+        return False
+    try:
+        subprocess.check_output(["sudo", "-n", "true"], stderr=subprocess.STDOUT)
+        _SUDO_NONINTERACTIVE_OK = True
+    except Exception:
+        _SUDO_NONINTERACTIVE_OK = False
+    return _SUDO_NONINTERACTIVE_OK
+
+
 def ramp_gpu_clocks(device: int = 0, duration_ms: float = 50.0, max_iters: int = 200) -> None:
     """Run a short GPU workload to ramp clocks before measurement."""
     if not torch.cuda.is_available():
@@ -253,14 +279,28 @@ def lock_gpu_clocks(device: int = 0, sm_clock_mhz: Optional[int] = None, mem_clo
         raise RuntimeError("lock_gpu_clocks requires CUDA")
     props = torch.cuda.get_device_properties(device)
     physical_index = _resolve_physical_device_index(device)
+    nvidia_smi = shutil.which("nvidia-smi") or "nvidia-smi"
+    use_sudo = _sudo_noninteractive_ok()
+
+    def _smi(args: Sequence[str]) -> bytes:
+        cmd: List[str] = [nvidia_smi, *args]
+        if use_sudo:
+            cmd = ["sudo", "-n", *cmd]
+        return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
     try:
         # Enable persistence mode
-        subprocess.check_output(["nvidia-smi", "-i", str(physical_index), "-pm", "1"], stderr=subprocess.STDOUT)
+        _smi(["-i", str(physical_index), "-pm", "1"])
         
         # Get max clocks if not specified
         if sm_clock_mhz is None or mem_clock_mhz is None:
-            cmd = ["nvidia-smi", "-i", str(physical_index), "--query-gpu=clocks.max.sm,clocks.max.memory", "--format=csv,noheader,nounits"]
-            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            out = _smi(
+                [
+                    "-i",
+                    str(physical_index),
+                    "--query-gpu=clocks.max.sm,clocks.max.memory",
+                    "--format=csv,noheader,nounits",
+                ]
+            )
             max_sm, max_mem = [int(x.strip()) for x in out.decode().split(',')]
             sm_clock_mhz = sm_clock_mhz or max_sm
             mem_clock_mhz = mem_clock_mhz or max_mem
@@ -271,29 +311,37 @@ def lock_gpu_clocks(device: int = 0, sm_clock_mhz: Optional[int] = None, mem_clo
         lock_error: Optional[Exception] = None
         try:
             # Lock GPU clocks
-            subprocess.check_output(
-                [
-                    "nvidia-smi",
-                    "-i",
-                    str(physical_index),
-                    f"--lock-gpu-clocks={sm_clock_mhz},{sm_clock_mhz}",
-                ],
-                stderr=subprocess.STDOUT,
-            )
+            _smi(["-i", str(physical_index), f"--lock-gpu-clocks={sm_clock_mhz},{sm_clock_mhz}"])
 
             # Lock memory clocks
-            subprocess.check_output(
-                [
-                    "nvidia-smi",
-                    "-i",
-                    str(physical_index),
-                    f"--lock-memory-clocks={mem_clock_mhz},{mem_clock_mhz}",
-                ],
-                stderr=subprocess.STDOUT,
-            )
+            _smi(["-i", str(physical_index), f"--lock-memory-clocks={mem_clock_mhz},{mem_clock_mhz}"])
         except subprocess.CalledProcessError as exc:
             lock_error = exc
-        
+
+        if lock_error is not None:
+            # Common on managed clusters: users often lack permission to lock clocks.
+            # Treat clock locking as best-effort so benchmarks can still run.
+            if LOGGER_AVAILABLE:
+                detail = str(lock_error)
+                if isinstance(lock_error, subprocess.CalledProcessError) and getattr(lock_error, 'output', None):
+                    try:
+                        output = lock_error.output
+                        if isinstance(output, (bytes, bytearray)):
+                            output = output.decode('utf-8', errors='ignore')
+                        lines = [line.strip() for line in str(output).splitlines() if line.strip()]
+                        if lines:
+                            detail = lines[0]
+                    except Exception:
+                        pass
+                # Normalize any remaining multi-line details so warnings stay
+                # single-line and don't look like hard errors.
+                lines = [line.strip() for line in str(detail).splitlines() if line.strip()]
+                if lines:
+                    detail = lines[0]
+                logger.warning('GPU clock lock unavailable; proceeding without locked clocks. %s', detail)
+            yield 0.0, 0.0
+            return
+
         # Verify application clocks via NVML (current clocks may be lower when idle)
         try:
             import pynvml
@@ -366,9 +414,9 @@ def lock_gpu_clocks(device: int = 0, sm_clock_mhz: Optional[int] = None, mem_clo
     finally:
         # Reset clocks
         try:
-            subprocess.check_output(["nvidia-smi", "-i", str(physical_index), "-rgc"], stderr=subprocess.STDOUT)
-            subprocess.check_output(["nvidia-smi", "-i", str(physical_index), "-rmc"], stderr=subprocess.STDOUT)
-            subprocess.check_output(["nvidia-smi", "-i", str(physical_index), "-pm", "0"], stderr=subprocess.STDOUT)
+            _smi(["-i", str(physical_index), "-rgc"])
+            _smi(["-i", str(physical_index), "-rmc"])
+            _smi(["-i", str(physical_index), "-pm", "0"])
             logger.info("GPU clocks reset to default")
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass  # Best effort cleanup
@@ -1822,11 +1870,22 @@ class BenchmarkHarness:
             print("[harness] sockets unavailable; launching torchrun wrapper directly (single process)", flush=True)
             torchrun_cmd = [sys.executable]
         else:
-            torchrun_cmd = [
-                "torchrun",
-                "--nproc_per_node",
-                str(nproc_per_node),
-            ]
+            torchrun_path = shutil.which("torchrun")
+            if torchrun_path:
+                torchrun_cmd = [
+                    torchrun_path,
+                    "--nproc_per_node",
+                    str(nproc_per_node),
+                ]
+            else:
+                # Avoid relying on PATH/entrypoints; works even when the venv isn't activated.
+                torchrun_cmd = [
+                    sys.executable,
+                    "-m",
+                    "torch.distributed.run",
+                    "--nproc_per_node",
+                    str(nproc_per_node),
+                ]
         if getattr(config, "nnodes", None):
             torchrun_cmd.extend(["--nnodes", str(config.nnodes)])
         if getattr(config, "rdzv_backend", None) or getattr(config, "nnodes", None):

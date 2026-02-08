@@ -1,0 +1,125 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "node": "node1",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "node": "node1",
+      "physical_gpu": 3
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-05_node1_hosts.txt --map-by ppr:4:node --bind-to none --mca routed direct --mca plm_rsh_args -i\\ /home/ubuntu/.ssh/ssh_key.pem\\ -o\\ IdentitiesOnly=yes\\ -o\\ StrictHostKeyChecking=accept-new -np 4 -x PYTHONPATH=/home/ubuntu/ai-performance-engineering/code -x NCCL_DEBUG=INFO -x NCCL_DEBUG_SUBSYS=INIT -x PATH=/home/ubuntu/.codex/tmp/arg0/codex-arg0GbH8Hi:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/mellanox/doca/tools/:/opt/mellanox/doca/tools/:/home/ubuntu/.cursor-server/extensions/openai.chatgpt-0.4.71-universal/bin/linux-aarch64:/opt/mellanox/doca/tools/ -x LD_LIBRARY_PATH= /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 1M -e 64M -f 2 -g 1 -w 5 -n 20 ",
+  "gpus_per_node": 4,
+  "hosts": [
+    "138.252.188.89"
+  ],
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-05_node1_nccl_all_reduce.log",
+  "results": [
+    {
+      "algbw_gbps": 21.16,
+      "busbw_gbps": 49.55,
+      "count": 262144,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 1048576,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 26.22,
+      "busbw_gbps": 80.0,
+      "count": 524288,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 2097152,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 41.9,
+      "busbw_gbps": 100.1,
+      "count": 1048576,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 4194304,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 49.62,
+      "busbw_gbps": 169.05,
+      "count": 2097152,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 8388608,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 76.87,
+      "busbw_gbps": 218.25,
+      "count": 4194304,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 16777216,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 123.21,
+      "busbw_gbps": 272.32,
+      "count": 8388608,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 33554432,
+      "time_us": -1.0
+    },
+    {
+      "algbw_gbps": 181.63,
+      "busbw_gbps": 369.49,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "size_bytes": 67108864,
+      "time_us": -1.0
+    }
+  ],
+  "run_id": "2026-02-05",
+  "total_ranks": 4
+}

@@ -1,0 +1,180 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 0
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_smoke_high_impact_local_v2_nccl_algo_comparison_hosts.txt --map-by ppr:2:node --bind-to none --mca routed direct -np 2 -x NCCL_DEBUG=WARN -x PATH=/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0/codex-arg0Tmdz1v:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/mellanox/doca/tools/:/opt/mellanox/doca/tools/:/home/ubuntu/.cursor-server/extensions/openai.chatgpt-0.4.71-universal/bin/linux-aarch64:/opt/mellanox/doca/tools/ -x LD_LIBRARY_PATH= -x REQUIRE_CLOCK_LOCK=1 -x NCCL_ALGO=NVLS /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 1M -e 1G -f 2 -g 1 -w 2 -n 5 ",
+  "gpus_per_node": 2,
+  "hosts": [
+    "localhost"
+  ],
+  "log_summary": {
+    "collnet": {
+      "lines": [],
+      "seen": false
+    },
+    "errors": {
+      "lines": [],
+      "nvls_init_failure": false
+    },
+    "mnnvl": {
+      "mnnvl": null,
+      "nNodes": null
+    },
+    "nvls": {
+      "channels": null,
+      "comm_lines": 0
+    },
+    "sharp": {
+      "lines": [],
+      "seen": false
+    }
+  },
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_smoke_high_impact_local_v2_nccl_algo_nvls.log",
+  "results": [
+    {
+      "algbw_gbps": 0.22,
+      "busbw_gbps": 0.22,
+      "count": 262144,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1048576,
+      "time_us": 4718.22
+    },
+    {
+      "algbw_gbps": 4.0,
+      "busbw_gbps": 4.0,
+      "count": 524288,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2097152,
+      "time_us": 524.93
+    },
+    {
+      "algbw_gbps": 29.38,
+      "busbw_gbps": 29.38,
+      "count": 1048576,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4194304,
+      "time_us": 142.78
+    },
+    {
+      "algbw_gbps": 14.68,
+      "busbw_gbps": 14.68,
+      "count": 2097152,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8388608,
+      "time_us": 571.32
+    },
+    {
+      "algbw_gbps": 25.99,
+      "busbw_gbps": 25.99,
+      "count": 4194304,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 16777216,
+      "time_us": 645.64
+    },
+    {
+      "algbw_gbps": 50.06,
+      "busbw_gbps": 50.06,
+      "count": 8388608,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 33554432,
+      "time_us": 670.29
+    },
+    {
+      "algbw_gbps": 79.22,
+      "busbw_gbps": 79.22,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 67108864,
+      "time_us": 847.08
+    },
+    {
+      "algbw_gbps": 78.24,
+      "busbw_gbps": 78.24,
+      "count": 33554432,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 134217728,
+      "time_us": 1715.42
+    },
+    {
+      "algbw_gbps": 92.74,
+      "busbw_gbps": 92.74,
+      "count": 67108864,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 268435456,
+      "time_us": 2894.6
+    },
+    {
+      "algbw_gbps": 138.82,
+      "busbw_gbps": 138.82,
+      "count": 134217728,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 536870912,
+      "time_us": 3867.38
+    },
+    {
+      "algbw_gbps": 151.02,
+      "busbw_gbps": 151.02,
+      "count": 268435456,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1073741824,
+      "time_us": 7109.8
+    }
+  ],
+  "run_id": "2026-02-08_smoke_high_impact_local_v2",
+  "total_ranks": 2
+}

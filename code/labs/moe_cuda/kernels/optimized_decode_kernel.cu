@@ -6,52 +6,10 @@
 #include <cuda_runtime.h>
 #include <cudaTypedefs.h>
 
-// TMA helpers (must come before CUTLASS to define TMA types)
+// TMA helpers (cuTensorMap encoding + capability checks).
 #include "tma_helpers.cuh"
 
-// =============================================================================
-// CUTLASS/PyTorch Header Compatibility Workaround
-// =============================================================================
-// When CUTLASS cute headers are included after PyTorch/ATen headers, there are
-// C++ template parsing conflicts. Specifically:
-//
-// 1. CUTE_DISABLE_PREFETCH_OVERLOADS: The cute::prefetch() template functions
-//    conflict with 'prefetch' symbols in ATen headers (e.g., data loader
-//    prefetch methods). The parser misinterprets template declarations as
-//    function calls, causing "type name is not allowed" errors.
-//
-// 2. CUTE_DISABLE_PRINT_LATEX: The print_latex() overloads for TiledCopy
-//    reference Copy_Atom types that become ambiguous after ATen includes.
-//    This is purely a debugging/visualization feature (outputs LaTeX TikZ).
-//
-// 3. CUTE_DISABLE_COOPERATIVE_GEMM: The cooperative_gemm.hpp header has
-//    template functions using Copy_Atom that fail to parse correctly.
-//
-// PERFORMANCE IMPACT: ZERO
-// - prefetch: This kernel uses TMA for data movement, not L2 prefetch hints
-// - print_latex: Debug-only feature, never used in production
-// - cooperative_gemm: This is a decode kernel, not a GEMM kernel
-//
-// WHY NOT INCLUDE CUTLASS FIRST?
-// Including CUTLASS headers before PyTorch causes different errors:
-//   CUTLASS → CUDA headers → cusolverDn.h → expects cuBLAS types (cublasSideMode_t,
-//   cublasFillMode_t, etc.) that PyTorch normally defines first → 100+ errors.
-// You could theoretically fix this by including <cublas_v2.h> before CUTLASS,
-// but this creates fragile ordering dependencies and potential ODR violations.
-//
-// The CUTE_DISABLE_* macros are the INTENDED solution - NVIDIA added them
-// specifically because mixing CUTLASS with other frameworks (PyTorch, TensorFlow,
-// etc.) is a common use case with known header conflicts.
-// =============================================================================
-#define CUTE_DISABLE_PREFETCH_OVERLOADS 1
-#define CUTE_DISABLE_PRINT_LATEX 1
-#define CUTE_DISABLE_COOPERATIVE_GEMM 1
-
-// CUTLASS/CUTE headers
-#include <cute/algorithm/copy.hpp>
-#include <cute/tensor.hpp>
-
-// PyTorch headers after CUTLASS
+// PyTorch headers (pybind bindings).
 #include <ATen/cuda/CUDAContext.h>
 #include <torch/extension.h>
 
@@ -60,7 +18,6 @@ namespace {
 namespace cde = cuda::device::experimental;
 using cuda_tma::device_supports_tma;
 using cuda_tma::load_cuTensorMapEncodeTiled;
-using cute::Int;
 
 constexpr int TILE_M = 128;
 constexpr int TILE_N = 32;  // Must be <= 32 for 128B swizzle with float32 (128B / 4B = 32 elements)

@@ -1,0 +1,217 @@
+=== node2 lscpu ===
+Architecture:                            aarch64
+CPU op-mode(s):                          64-bit
+Byte Order:                              Little Endian
+CPU(s):                                  144
+On-line CPU(s) list:                     0-143
+Vendor ID:                               ARM
+Model name:                              Neoverse-V2
+Model:                                   0
+Thread(s) per core:                      1
+Core(s) per socket:                      72
+Socket(s):                               2
+Stepping:                                r0p0
+Frequency boost:                         disabled
+CPU(s) scaling MHz:                      100%
+CPU max MHz:                             3420.0000
+CPU min MHz:                             81.0000
+BogoMIPS:                                2000.00
+Flags:                                   fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 sm3 sm4 asimddp sha512 sve asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp sve2 sveaes svepmull svebitperm svesha3 svesm4 flagm2 frint svei8mm svebf16 i8mm bf16 dgh bti
+L1d cache:                               9 MiB (144 instances)
+L1i cache:                               9 MiB (144 instances)
+L2 cache:                                144 MiB (144 instances)
+L3 cache:                                228 MiB (2 instances)
+NUMA node(s):                            34
+NUMA node0 CPU(s):                       0-71
+NUMA node1 CPU(s):                       72-143
+NUMA node2 CPU(s):                       
+NUMA node3 CPU(s):                       
+NUMA node4 CPU(s):                       
+NUMA node5 CPU(s):                       
+NUMA node6 CPU(s):                       
+NUMA node7 CPU(s):                       
+NUMA node8 CPU(s):                       
+NUMA node9 CPU(s):                       
+NUMA node10 CPU(s):                      
+NUMA node11 CPU(s):                      
+NUMA node12 CPU(s):                      
+NUMA node13 CPU(s):                      
+NUMA node14 CPU(s):                      
+NUMA node15 CPU(s):                      
+NUMA node16 CPU(s):                      
+NUMA node17 CPU(s):                      
+NUMA node18 CPU(s):                      
+NUMA node19 CPU(s):                      
+NUMA node20 CPU(s):                      
+NUMA node21 CPU(s):                      
+NUMA node22 CPU(s):                      
+NUMA node23 CPU(s):                      
+NUMA node24 CPU(s):                      
+NUMA node25 CPU(s):                      
+NUMA node26 CPU(s):                      
+NUMA node27 CPU(s):                      
+NUMA node28 CPU(s):                      
+NUMA node29 CPU(s):                      
+NUMA node30 CPU(s):                      
+NUMA node31 CPU(s):                      
+NUMA node32 CPU(s):                      
+NUMA node33 CPU(s):                      
+Vulnerability Gather data sampling:      Not affected
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Not affected
+Vulnerability Itlb multihit:             Not affected
+Vulnerability L1tf:                      Not affected
+Vulnerability Mds:                       Not affected
+Vulnerability Meltdown:                  Not affected
+Vulnerability Mmio stale data:           Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Not affected
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; CSV2, BHB
+Vulnerability Srbds:                     Not affected
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Not affected
+Vulnerability Vmscape:                   Not affected
+
+=== node2 numactl -H ===
+available: 34 nodes (0-33)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71
+node 0 size: 490324 MB
+node 0 free: 399261 MB
+node 1 cpus: 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143
+node 1 size: 490763 MB
+node 1 free: 265712 MB
+node 2 cpus:
+node 2 size: 188416 MB
+node 2 free: 188404 MB
+node 3 cpus:
+node 3 size: 0 MB
+node 3 free: 0 MB
+node 4 cpus:
+node 4 size: 0 MB
+node 4 free: 0 MB
+node 5 cpus:
+node 5 size: 0 MB
+node 5 free: 0 MB
+node 6 cpus:
+node 6 size: 0 MB
+node 6 free: 0 MB
+node 7 cpus:
+node 7 size: 0 MB
+node 7 free: 0 MB
+node 8 cpus:
+node 8 size: 0 MB
+node 8 free: 0 MB
+node 9 cpus:
+node 9 size: 0 MB
+node 9 free: 0 MB
+node 10 cpus:
+node 10 size: 188416 MB
+node 10 free: 188404 MB
+node 11 cpus:
+node 11 size: 0 MB
+node 11 free: 0 MB
+node 12 cpus:
+node 12 size: 0 MB
+node 12 free: 0 MB
+node 13 cpus:
+node 13 size: 0 MB
+node 13 free: 0 MB
+node 14 cpus:
+node 14 size: 0 MB
+node 14 free: 0 MB
+node 15 cpus:
+node 15 size: 0 MB
+node 15 free: 0 MB
+node 16 cpus:
+node 16 size: 0 MB
+node 16 free: 0 MB
+node 17 cpus:
+node 17 size: 0 MB
+node 17 free: 0 MB
+node 18 cpus:
+node 18 size: 188416 MB
+node 18 free: 188400 MB
+node 19 cpus:
+node 19 size: 0 MB
+node 19 free: 0 MB
+node 20 cpus:
+node 20 size: 0 MB
+node 20 free: 0 MB
+node 21 cpus:
+node 21 size: 0 MB
+node 21 free: 0 MB
+node 22 cpus:
+node 22 size: 0 MB
+node 22 free: 0 MB
+node 23 cpus:
+node 23 size: 0 MB
+node 23 free: 0 MB
+node 24 cpus:
+node 24 size: 0 MB
+node 24 free: 0 MB
+node 25 cpus:
+node 25 size: 0 MB
+node 25 free: 0 MB
+node 26 cpus:
+node 26 size: 188416 MB
+node 26 free: 188404 MB
+node 27 cpus:
+node 27 size: 0 MB
+node 27 free: 0 MB
+node 28 cpus:
+node 28 size: 0 MB
+node 28 free: 0 MB
+node 29 cpus:
+node 29 size: 0 MB
+node 29 free: 0 MB
+node 30 cpus:
+node 30 size: 0 MB
+node 30 free: 0 MB
+node 31 cpus:
+node 31 size: 0 MB
+node 31 free: 0 MB
+node 32 cpus:
+node 32 size: 0 MB
+node 32 free: 0 MB
+node 33 cpus:
+node 33 size: 0 MB
+node 33 free: 0 MB
+node distances:
+node   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33 
+  0:  10  40  80  80  80  80  80  80  80  80  80  80  80  80  80  80  80  80  120  120  120  120  120  120  120  120  120  120  120  120  120  120  120  120 
+  1:  40  10  120  120  120  120  120  120  120  120  120  120  120  120  120  120  120  120  80  80  80  80  80  80  80  80  80  80  80  80  80  80  80  80 
+  2:  80  120  10  11  11  11  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  3:  80  120  11  10  11  11  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  4:  80  120  11  11  10  11  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  5:  80  120  11  11  11  10  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  6:  80  120  11  11  11  11  10  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  7:  80  120  11  11  11  11  11  10  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  8:  80  120  11  11  11  11  11  11  10  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+  9:  80  120  11  11  11  11  11  11  11  10  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 10:  80  120  40  40  40  40  40  40  40  40  10  11  11  11  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 11:  80  120  40  40  40  40  40  40  40  40  11  10  11  11  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 12:  80  120  40  40  40  40  40  40  40  40  11  11  10  11  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 13:  80  120  40  40  40  40  40  40  40  40  11  11  11  10  11  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 14:  80  120  40  40  40  40  40  40  40  40  11  11  11  11  10  11  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 15:  80  120  40  40  40  40  40  40  40  40  11  11  11  11  11  10  11  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 16:  80  120  40  40  40  40  40  40  40  40  11  11  11  11  11  11  10  11  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 17:  80  120  40  40  40  40  40  40  40  40  11  11  11  11  11  11  11  10  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40 
+ 18:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  10  11  11  11  11  11  11  11  40  40  40  40  40  40  40  40 
+ 19:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  10  11  11  11  11  11  11  40  40  40  40  40  40  40  40 
+ 20:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  10  11  11  11  11  11  40  40  40  40  40  40  40  40 
+ 21:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  10  11  11  11  11  40  40  40  40  40  40  40  40 
+ 22:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  10  11  11  11  40  40  40  40  40  40  40  40 
+ 23:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  11  10  11  11  40  40  40  40  40  40  40  40 
+ 24:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  11  11  10  11  40  40  40  40  40  40  40  40 
+ 25:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  11  11  11  10  40  40  40  40  40  40  40  40 
+ 26:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  10  11  11  11  11  11  11  11 
+ 27:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  10  11  11  11  11  11  11 
+ 28:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  10  11  11  11  11  11 
+ 29:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  10  11  11  11  11 
+ 30:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  10  11  11  11 
+ 31:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  11  10  11  11 
+ 32:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  11  11  10  11 
+ 33:  120  80  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  40  11  11  11  11  11  11  11  10 

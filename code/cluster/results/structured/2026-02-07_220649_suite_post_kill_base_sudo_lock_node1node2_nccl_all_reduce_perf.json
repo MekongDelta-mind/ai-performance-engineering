@@ -1,0 +1,241 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 5,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1132
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 6,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 7,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 4,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 0
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_220649_suite_post_kill_base_sudo_lock_node1node2_hosts.txt --map-by ppr:4:node --bind-to none --mca routed direct --mca plm_rsh_args -i\\ /home/ubuntu/.ssh/ssh_key.pem\\ -o\\ IdentitiesOnly=yes\\ -o\\ StrictHostKeyChecking=accept-new --mca oob_tcp_if_include enP22p3s0f3 --mca btl_tcp_if_include enP22p3s0f3 -np 8 -x PYTHONPATH=/home/ubuntu/ai-performance-engineering/code -x NCCL_DEBUG=INFO -x NCCL_DEBUG_SUBSYS=INIT -x NCCL_SOCKET_IFNAME=enP22p3s0f3 -x PATH=/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0/codex-arg02iJhaa:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/mellanox/doca/tools/:/opt/mellanox/doca/tools/:/home/ubuntu/.cursor-server/extensions/openai.chatgpt-0.4.71-universal/bin/linux-aarch64:/opt/mellanox/doca/tools/ -x LD_LIBRARY_PATH= -x NCCL_IB_HCA=mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5 -x REQUIRE_CLOCK_LOCK=1 /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python3 /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 64M -e 16G -f 2 -g 1 -w 5 -n 20 ",
+  "gpus_per_node": 4,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_220649_suite_post_kill_base_sudo_lock_node1node2_nccl_all_reduce_perf.log",
+  "results": [
+    {
+      "algbw_gbps": 192.19,
+      "busbw_gbps": 336.34,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 67108864,
+      "time_us": 349.18
+    },
+    {
+      "algbw_gbps": 245.16,
+      "busbw_gbps": 429.03,
+      "count": 33554432,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 134217728,
+      "time_us": 547.47
+    },
+    {
+      "algbw_gbps": 255.68,
+      "busbw_gbps": 447.44,
+      "count": 67108864,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 268435456,
+      "time_us": 1049.89
+    },
+    {
+      "algbw_gbps": 261.86,
+      "busbw_gbps": 458.25,
+      "count": 134217728,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 536870912,
+      "time_us": 2050.25
+    },
+    {
+      "algbw_gbps": 264.25,
+      "busbw_gbps": 462.44,
+      "count": 268435456,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1073741824,
+      "time_us": 4063.3
+    },
+    {
+      "algbw_gbps": 297.78,
+      "busbw_gbps": 521.12,
+      "count": 536870912,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2147483648,
+      "time_us": 7211.62
+    },
+    {
+      "algbw_gbps": 300.65,
+      "busbw_gbps": 526.15,
+      "count": 1073741824,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4294967296,
+      "time_us": 14285.4
+    },
+    {
+      "algbw_gbps": 301.8,
+      "busbw_gbps": 528.15,
+      "count": 2147483648,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8589934592,
+      "time_us": 28462.6
+    },
+    {
+      "algbw_gbps": 302.42,
+      "busbw_gbps": 529.23,
+      "count": 4294967296,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 17179869184,
+      "time_us": 56808.8
+    }
+  ],
+  "run_id": "2026-02-07_220649_suite_post_kill_base_sudo_lock",
+  "total_ranks": 8
+}

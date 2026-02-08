@@ -1,0 +1,59 @@
+{
+  "files": [
+    "results/structured/2026-02-08_011938_cluster_perf_node1_compute_clock_lock.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_fio_rand_read.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_fio_rand_write.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_fio_seq_read.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_fio_seq_write.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_fio_summary.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_gemm_bench.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_mamf_finder.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_manifest.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_nccl_stability_bench.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_networking_clock_lock.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_nvbandwidth.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_p2p_bandwidth.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_torch_allreduce_bench.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_clock_lock.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_quick.json",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_quick.txt",
+    "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_quick_server.log"
+  ],
+  "manifest_version": 1,
+  "nodes": [
+    {
+      "host": "node1",
+      "label": "node1"
+    }
+  ],
+  "run_id": "2026-02-08_011938_cluster_perf_node1",
+  "summary": {
+    "artifact_counts": {
+      "json": 9,
+      "log": 1,
+      "txt": 8
+    },
+    "file_count": 18,
+    "sha256": {
+      "results/structured/2026-02-08_011938_cluster_perf_node1_compute_clock_lock.json": "c5bc68c6e0537cb304184927dcd24e3af24d47ef7f81971fd03cd4714567c927",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_fio_rand_read.json": "27ad2740639bc5e8b83d935731266e2fae7dc09b6ff3e0cd6f0429a299b3bad6",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_fio_rand_write.json": "4aed594236acc3056c29845123038be7660a789fba900459a310d20d497b509d",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_fio_seq_read.json": "aa05953d1fd1c75127790495e7f10c745cadb4a77efff2ec8a52a2cc8a8b23e5",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_fio_seq_write.json": "196bb0ba6995c8664b70c76aab7224f816286285a8c1d068495fc4cc5eb4320b",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_fio_summary.txt": "f51cb1a8f9d068376b72a2d07f4f06a0420c601bb856955dbca5e4f26f656bdc",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_gemm_bench.txt": "40be39fd4018d139f2b8f9f368c2b00524b485ced73199f4646d308bccf9154d",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_mamf_finder.txt": "02448a8b0a8afa6f0cf383d88c19dc739bea7d8770eb0969b2fa0a9cc32f2211",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_manifest.json": "f082cc3ef1e0f6ac101cbb8d35cc53803002cfa863612a1f8f9c3e6a2bcc4b19",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_nccl_stability_bench.txt": "0b726862c341b0e565e53ea96f2c82090e2ac6edb0b81ff08f59f9d3662d03d6",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_networking_clock_lock.json": "ba1e3b6399b63e61076ce4580e5911759ba0327dcbd72a2099118f3ffae6adaf",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_nvbandwidth.txt": "08f4cb1d8bf4d8adbf2538f79d81c371dbc87a6b418d15f321b1a4ef33b4aa17",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_p2p_bandwidth.txt": "fa6f8932031b2f90bb25b75d86f6111a17a369510e5e61861a751b45e5b6b20e",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_torch_allreduce_bench.txt": "537d445040a5508f0845364b09c3fd9b5206af13d7d32df05d70cd399de1a1a9",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_clock_lock.json": "8ef1b7515207d14f4346ec8149d16519cc3c3cb84da61cf00befab6fcd2a932e",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_quick.json": "46f57088b1b47113c72987e47ab4f5ac352bc515052eb7c97ad605695ee9e380",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_quick.txt": "6998340950fe483c79e56ebb8090cb0bdc21f58a29304815cd7f9d353e9eb879",
+      "results/structured/2026-02-08_011938_cluster_perf_node1_vllm_quick_server.log": "35cb4ad875fb553d1bdbdee457ebfa0386e393d80b3ddea7ba94b361e373b2eb"
+    }
+  },
+  "timestamp_utc": "2026-02-08T07:23:09.483088+00:00"
+}

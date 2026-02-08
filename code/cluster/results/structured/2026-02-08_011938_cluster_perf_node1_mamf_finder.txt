@@ -1,0 +1,128 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+NOTE: The SHMEM allocation limit is set to the default of 64MB.  This may be
+   insufficient for PyTorch.  NVIDIA recommends the use of the following flags:
+   docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 ...
+
+============================================================
+Maximum Achievable Matmul FLOPS (MAMF) Finder
+============================================================
+PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+CUDA: 13.1
+cuDNN: 91701
+Dtype: bfloat16
+Available GPUs: 4
+
+
+============================================================
+GPU 0: NVIDIA GB200
+============================================================
+Memory: 197.6 GB
+Dtype: torch.bfloat16
+
+Testing 3 matrix configurations...
+
+     M      N      K     TFLOPS    ms/iter
+--------------------------------------------------
+  4096   4096   4096     1652.5       0.08
+  8192   8192   8192     1832.6       0.60
+ 16384  16384  16384     1573.3       5.59
+
+============================================================
+GPU 1: NVIDIA GB200
+============================================================
+Memory: 197.6 GB
+Dtype: torch.bfloat16
+
+Testing 3 matrix configurations...
+
+     M      N      K     TFLOPS    ms/iter
+--------------------------------------------------
+  4096   4096   4096     1636.9       0.08
+  8192   8192   8192     1757.5       0.63
+ 16384  16384  16384     1518.5       5.79
+
+============================================================
+GPU 2: NVIDIA GB200
+============================================================
+Memory: 197.6 GB
+Dtype: torch.bfloat16
+
+Testing 3 matrix configurations...
+
+     M      N      K     TFLOPS    ms/iter
+--------------------------------------------------
+  4096   4096   4096     1712.1       0.08
+  8192   8192   8192     1797.4       0.61
+ 16384  16384  16384     1570.3       5.60
+
+============================================================
+GPU 3: NVIDIA GB200
+============================================================
+Memory: 197.6 GB
+Dtype: torch.bfloat16
+
+Testing 3 matrix configurations...
+
+     M      N      K     TFLOPS    ms/iter
+--------------------------------------------------
+  4096   4096   4096     1713.5       0.08
+  8192   8192   8192     1745.1       0.63
+ 16384  16384  16384     1599.0       5.50
+
+============================================================
+RESULTS SUMMARY
+============================================================
+
+GPU 0: NVIDIA GB200
+  Best TFLOPS: 1832.6
+  Best Config: M=8192, N=8192, K=8192
+
+GPU 1: NVIDIA GB200
+  Best TFLOPS: 1757.5
+  Best Config: M=8192, N=8192, K=8192
+
+GPU 2: NVIDIA GB200
+  Best TFLOPS: 1797.4
+  Best Config: M=8192, N=8192, K=8192
+
+GPU 3: NVIDIA GB200
+  Best TFLOPS: 1745.1
+  Best Config: M=8192, N=8192, K=8192
+
+============================================================
+Benchmark complete.
+============================================================

@@ -1,0 +1,207 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 5,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 3,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 4,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 2
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_213800_suite_gpu123_base_sudo_lock_node1node2_hosts.txt --map-by ppr:3:node --bind-to none --mca routed direct --mca plm_rsh_args -i\\ /home/ubuntu/.ssh/ssh_key.pem\\ -o\\ IdentitiesOnly=yes\\ -o\\ StrictHostKeyChecking=accept-new --mca oob_tcp_if_include enP22p3s0f3 --mca btl_tcp_if_include enP22p3s0f3 -np 6 -x PYTHONPATH=/home/ubuntu/ai-performance-engineering/code -x NCCL_DEBUG=INFO -x NCCL_DEBUG_SUBSYS=INIT -x NCCL_SOCKET_IFNAME=enP22p3s0f3 -x PATH=/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0/codex-arg02iJhaa:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/mellanox/doca/tools/:/opt/mellanox/doca/tools/:/home/ubuntu/.cursor-server/extensions/openai.chatgpt-0.4.71-universal/bin/linux-aarch64:/opt/mellanox/doca/tools/ -x LD_LIBRARY_PATH= -x CUDA_VISIBLE_DEVICES=1\\,2\\,3 -x NCCL_IB_HCA=mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5 -x REQUIRE_CLOCK_LOCK=1 /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python3 /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 64M -e 16G -f 2 -g 1 -w 5 -n 20 ",
+  "gpus_per_node": 3,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_213800_suite_gpu123_base_sudo_lock_node1node2_nccl_all_reduce_perf.log",
+  "results": [
+    {
+      "algbw_gbps": 298.7,
+      "busbw_gbps": 497.83,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 67108864,
+      "time_us": 224.67
+    },
+    {
+      "algbw_gbps": 357.79,
+      "busbw_gbps": 596.31,
+      "count": 33554432,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 134217728,
+      "time_us": 375.13
+    },
+    {
+      "algbw_gbps": 375.4,
+      "busbw_gbps": 625.67,
+      "count": 67108864,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 268435456,
+      "time_us": 715.06
+    },
+    {
+      "algbw_gbps": 386.9,
+      "busbw_gbps": 644.83,
+      "count": 134217728,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 536870912,
+      "time_us": 1387.64
+    },
+    {
+      "algbw_gbps": 394.72,
+      "busbw_gbps": 657.86,
+      "count": 268435456,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1073741824,
+      "time_us": 2720.29
+    },
+    {
+      "algbw_gbps": 400.62,
+      "busbw_gbps": 667.69,
+      "count": 536870912,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2147483648,
+      "time_us": 5360.44
+    },
+    {
+      "algbw_gbps": 407.02,
+      "busbw_gbps": 678.36,
+      "count": 1073741824,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4294967296,
+      "time_us": 10552.3
+    },
+    {
+      "algbw_gbps": 411.01,
+      "busbw_gbps": 685.01,
+      "count": 2147483648,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8589934592,
+      "time_us": 20899.7
+    },
+    {
+      "algbw_gbps": 413.54,
+      "busbw_gbps": 689.23,
+      "count": 4294967296,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 17179869184,
+      "time_us": 41543.5
+    }
+  ],
+  "run_id": "2026-02-07_213800_suite_gpu123_base_sudo_lock",
+  "total_ranks": 6
+}

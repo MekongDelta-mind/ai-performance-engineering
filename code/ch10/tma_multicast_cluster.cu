@@ -253,39 +253,42 @@ int main(int argc, char** argv) {
 
     std::vector<float> h_A(static_cast<size_t>(M) * K);
     std::vector<float> h_B(static_cast<size_t>(K) * N);
-    for (size_t i = 0; i < h_A.size() {
+    {
         NVTX_RANGE("setup");
-        ; ++i) h_A[i] = (float)(rand() % 100) / 100.0f;
-    }
-    for (size_t i = 0; i < h_B.size() {
-        NVTX_RANGE("setup");
-        ; ++i) h_B[i] = (float)(rand() % 100) / 100.0f;
+        for (size_t i = 0; i < h_A.size(); ++i) {
+            h_A[i] = static_cast<float>(rand() % 100) / 100.0f;
+        }
+        for (size_t i = 0; i < h_B.size(); ++i) {
+            h_B[i] = static_cast<float>(rand() % 100) / 100.0f;
+        }
     }
 
     CUDA_CHECK(cudaMemcpy(d_A, h_A.data(), bytes_A, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_B, h_B.data(), bytes_B, cudaMemcpyHostToDevice));
 
     CUtensorMap b_desc{};
-        NVTX_RANGE("iteration");
-    cuda_tma::check_cu(cuInit(0), "cuInit");
-    auto encode = cuda_tma::load_cuTensorMapEncodeTiled();
-    if (!encode) {
-        std::fprintf(stderr, "cuTensorMapEncodeTiled unavailable on this runtime.\n");
-        return 1;
+    {
+        NVTX_RANGE("tile");
+        cuda_tma::check_cu(cuInit(0), "cuInit");
+        auto encode = cuda_tma::load_cuTensorMapEncodeTiled();
+        if (!encode) {
+            std::fprintf(stderr, "cuTensorMapEncodeTiled unavailable on this runtime.\n");
+            return 1;
+        }
+        const bool ok = cuda_tma::make_2d_tensor_map(
+            b_desc,
+            encode,
+            d_B,
+            /*width=*/N,
+            /*height=*/K,
+            /*ld=*/N,
+            /*box_width=*/TILE_N,
+            /*box_height=*/TILE_K,
+            CU_TENSOR_MAP_SWIZZLE_NONE);
+        if (!ok) {
+            return 1;
+        }
     }
-	    const bool ok = cuda_tma::make_2d_tensor_map(
-	        b_desc,
-	        encode,
-	        d_B,
-	        /*width=*/N,
-	        /*height=*/K,
-	        /*ld=*/N,
-	        /*box_width=*/TILE_N,
-	        /*box_height=*/TILE_K,
-	        CU_TENSOR_MAP_SWIZZLE_NONE);
-	    if (!ok) {
-	        return 1;
-	    }
 
     dim3 block(BLOCK_SIZE);
     dim3 grid((M + TILE_M - 1) / TILE_M,

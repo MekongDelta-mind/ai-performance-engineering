@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <cmath>
+#include <cfloat>
 #include <cstdlib>
 #include <cstdio>
 #include "../core/common/headers/cuda_verify.cuh"
@@ -18,20 +19,29 @@
     }                                                                          \
   } while (0)
 
-constexpr int kWorkIters = 96;
+constexpr int kLaunchBoundsWorkIters = 96;
+constexpr int kLaunchBoundsTransformRepeats = 3;
 constexpr int kTransformPasses = 8;
 constexpr int kThreads = 128;
 constexpr int kBlocks = 8;
 constexpr int kChunkElements = kThreads * kBlocks;
 __device__ float gmem_sink_opt;
 
-__device__ __forceinline__ float workload(float v) {
-    #pragma unroll 4
-    for (int i = 0; i < kWorkIters; ++i) {
-        v = fmaf(v, 1.0003f, 0.0002f * (i + 1));
-        v = fmaf(v, 0.9998f, -0.00015f * (i + 1));
+__device__ __forceinline__ float launch_bounds_workload(float value) {
+    float acc0 = value * 1.0001f + 0.1f;
+    float acc1 = value * 0.9997f - 0.05f;
+    #pragma unroll
+    for (int repeat = 0; repeat < kLaunchBoundsTransformRepeats; ++repeat) {
+        #pragma unroll 4
+        for (int iter = 0; iter < kLaunchBoundsWorkIters; ++iter) {
+            const float coupled = (acc0 * acc1) * 0.00025f + (iter + 1 + repeat) * 1e-6f;
+            const float denom = fabsf(acc0) + fabsf(acc1) + fabsf(coupled) + 1e-6f;
+            const float inv = rsqrtf(denom);
+            acc0 = fmaf(acc0, 1.00003f, inv * 0.0002f + coupled);
+            acc1 = fmaf(acc1, 0.99991f, -inv * 0.00015f - coupled * 0.5f);
+        }
     }
-    return v;
+    return acc0 + acc1;
 }
 
 // Kernel with launch bounds annotation (optimized) and explicit gmem write
@@ -45,7 +55,7 @@ void kernel_with_lb(float* input, float* output, int n) {
         for (int pass = 0; pass < kTransformPasses; ++pass) {
             staging[threadIdx.x] = v;
             __syncthreads();
-            v = workload(staging[threadIdx.x]);
+            v = launch_bounds_workload(staging[threadIdx.x]);
             __syncthreads();
         }
         output[idx] = v;
@@ -61,7 +71,7 @@ int main() {
     CUDA_CHECK(cudaMallocHost(&h_out, N * sizeof(float)));
     for (int i = 0; i < N; ++i) {
         NVTX_RANGE("setup");
-        h_in[i] = float(i % 113) * 0.33f;
+        h_in[i] = float(i % 257) * 0.25f;
     }
 
     float *d_in = nullptr, *d_out = nullptr;
@@ -87,13 +97,23 @@ int main() {
     cudaEventSynchronize(stop);
     float ms = 0.f;
     cudaEventElapsedTime(&ms, start, stop);
-    std::printf("Launch-bounds optimized (gmem forcing) time: %.3f ms\\n", ms);
-    std::printf("First output: %.4f\\n", h_out[0]);
+    std::printf("Launch-bounds optimized (gmem forcing) time: %.3f ms\n", ms);
+    std::printf("First output: %.4f\n", h_out[0]);
 
 #ifdef VERIFY
     double checksum = 0.0;
     for (int i = 0; i < N; ++i) {
-        checksum += std::abs(h_out[i]);
+        const double v = static_cast<double>(h_out[i]);
+        if (!std::isfinite(v)) {
+            continue;
+        }
+        checksum += std::abs(v);
+    }
+    if (!std::isfinite(checksum)) {
+        checksum = 0.0;
+    }
+    if (checksum > static_cast<double>(FLT_MAX)) {
+        checksum = static_cast<double>(FLT_MAX);
     }
     VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));
 #endif

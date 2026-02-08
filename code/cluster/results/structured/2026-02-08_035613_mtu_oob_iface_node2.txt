@@ -1,0 +1,30 @@
+=== node2 ===
+ts=2026-02-08_035613
+iface=enP22p3s0f3
+
+2: enP22p3s0f3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether ea:68:29:ad:e6:c5 brd ff:ff:ff:ff:ff:ff promiscuity 0  allmulti 0 minmtu 68 maxmtu 1500 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 parentbus virtio parentdev virtio0 
+
+2: enP22p3s0f3    inet 10.11.0.4/24 metric 1024 brd 10.11.0.255 scope global dynamic enP22p3s0f3\       valid_lft 94530057sec preferred_lft 94530057sec
+
+10.11.0.3 dev enP22p3s0f3 src 10.11.0.4 uid 1000 
+    cache 
+
+netlink error: Operation not permitted
+Settings for enP22p3s0f3:
+	Supported ports: [  ]
+	Supported link modes:   Not reported
+	Supported pause frame use: No
+	Supports auto-negotiation: No
+	Supported FEC modes: Not reported
+	Advertised link modes:  Not reported
+	Advertised pause frame use: No
+	Advertised auto-negotiation: No
+	Advertised FEC modes: Not reported
+	Speed: Unknown!
+	Duplex: Unknown! (255)
+	Auto-negotiation: off
+	Port: Other
+	PHYAD: 0
+	Transceiver: internal
+	Link detected: yes

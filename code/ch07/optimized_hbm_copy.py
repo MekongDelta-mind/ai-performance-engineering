@@ -29,7 +29,6 @@ class OptimizedHbmCopyBenchmark(CudaBinaryBenchmark):
             timeout_seconds=180,
             workload_params={
                 "bytes": size_bytes,
-                "VECTORS_PER_LOOP": 4,
                 "dtype": "float32",
             },
         )

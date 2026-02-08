@@ -1,0 +1,28 @@
+{
+  "runs": [
+    {
+      "metrics": {
+        "torchdist.max_busbw_gbps": 460.11588529011067
+      },
+      "path": "results/structured/2026-02-07_152206_cluster_health_torchdist_only_variance_ubuntu_r1_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_152206_cluster_health_torchdist_only_variance_ubuntu_r1_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "torchdist.max_busbw_gbps": 333.7472808764745
+      },
+      "path": "results/structured/2026-02-07_152206_cluster_health_torchdist_only_variance_ubuntu_r2_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_152206_cluster_health_torchdist_only_variance_ubuntu_r2_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "torchdist.max_busbw_gbps": 721.3926369543199
+      },
+      "path": "results/structured/2026-02-07_152206_cluster_health_torchdist_only_variance_ubuntu_r3_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_152206_cluster_health_torchdist_only_variance_ubuntu_r3_base",
+      "variant": "base"
+    }
+  ]
+}

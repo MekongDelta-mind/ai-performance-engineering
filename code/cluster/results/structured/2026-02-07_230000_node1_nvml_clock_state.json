@@ -1,0 +1,93 @@
+{
+  "device_count": 4,
+  "gpus": [
+    {
+      "applications": {
+        "graphics_mhz": 2062,
+        "mem_mhz": 3996,
+        "sm_mhz": 2062
+      },
+      "current": {
+        "graphics_mhz": 1132,
+        "mem_mhz": 3996,
+        "sm_mhz": 1132
+      },
+      "index": 0,
+      "locked": {
+        "gpu_clocks": {
+          "supported": false
+        },
+        "mem_clocks": {
+          "supported": false
+        }
+      },
+      "uuid": "GPU-053fb1c8-9ea5-ebd7-c333-5c68bb6d13f9"
+    },
+    {
+      "applications": {
+        "graphics_mhz": 2062,
+        "mem_mhz": 3996,
+        "sm_mhz": 2062
+      },
+      "current": {
+        "graphics_mhz": 120,
+        "mem_mhz": 3996,
+        "sm_mhz": 120
+      },
+      "index": 1,
+      "locked": {
+        "gpu_clocks": {
+          "supported": false
+        },
+        "mem_clocks": {
+          "supported": false
+        }
+      },
+      "uuid": "GPU-afd87f09-37af-9a01-4c85-7aec1bbbc124"
+    },
+    {
+      "applications": {
+        "graphics_mhz": 2062,
+        "mem_mhz": 3996,
+        "sm_mhz": 2062
+      },
+      "current": {
+        "graphics_mhz": 120,
+        "mem_mhz": 3996,
+        "sm_mhz": 120
+      },
+      "index": 2,
+      "locked": {
+        "gpu_clocks": {
+          "supported": false
+        },
+        "mem_clocks": {
+          "supported": false
+        }
+      },
+      "uuid": "GPU-93a24b8a-8bd3-9455-7d22-712267f21a57"
+    },
+    {
+      "applications": {
+        "graphics_mhz": 2062,
+        "mem_mhz": 3996,
+        "sm_mhz": 2062
+      },
+      "current": {
+        "graphics_mhz": 120,
+        "mem_mhz": 3996,
+        "sm_mhz": 120
+      },
+      "index": 3,
+      "locked": {
+        "gpu_clocks": {
+          "supported": false
+        },
+        "mem_clocks": {
+          "supported": false
+        }
+      },
+      "uuid": "GPU-6fc1681a-2e70-6695-2e40-43eb01a087df"
+    }
+  ]
+}

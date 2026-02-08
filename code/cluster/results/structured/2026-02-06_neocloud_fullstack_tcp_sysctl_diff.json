@@ -1,0 +1,6 @@
+{
+  "net.ipv4.tcp_fastopen_key": {
+    "node1": "e5d3662f-4c1ba6c4-5f38b713-8316b340",
+    "node2": "6c0b14cf-951ab6c8-796e6f6a-cfb13da7"
+  }
+}

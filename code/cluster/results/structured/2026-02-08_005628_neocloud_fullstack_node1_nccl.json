@@ -1,0 +1,152 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 0.0,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 3
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_005628_neocloud_fullstack_node1_node1_hosts.txt --map-by ppr:4:node --bind-to none --mca routed direct -np 4 -x NCCL_DEBUG=INFO -x NCCL_DEBUG_SUBSYS=INIT -x PATH=/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0/codex-arg02iJhaa:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/mellanox/doca/tools/:/opt/mellanox/doca/tools/:/home/ubuntu/.cursor-server/extensions/openai.chatgpt-0.4.71-universal/bin/linux-aarch64:/opt/mellanox/doca/tools/ -x LD_LIBRARY_PATH= -x REQUIRE_CLOCK_LOCK=1 /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 1M -e 64M -f 2 -g 1 -w 5 -n 20 ",
+  "gpus_per_node": 4,
+  "hosts": [
+    "localhost"
+  ],
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_005628_neocloud_fullstack_node1_node1_nccl_all_reduce.log",
+  "results": [
+    {
+      "algbw_gbps": 49.49,
+      "busbw_gbps": 74.24,
+      "count": 262144,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1048576,
+      "time_us": 21.19
+    },
+    {
+      "algbw_gbps": 78.99,
+      "busbw_gbps": 118.48,
+      "count": 524288,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2097152,
+      "time_us": 26.55
+    },
+    {
+      "algbw_gbps": 98.77,
+      "busbw_gbps": 148.15,
+      "count": 1048576,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4194304,
+      "time_us": 42.47
+    },
+    {
+      "algbw_gbps": 165.61,
+      "busbw_gbps": 248.42,
+      "count": 2097152,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8388608,
+      "time_us": 50.65
+    },
+    {
+      "algbw_gbps": 212.16,
+      "busbw_gbps": 318.24,
+      "count": 4194304,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 16777216,
+      "time_us": 79.08
+    },
+    {
+      "algbw_gbps": 270.85,
+      "busbw_gbps": 406.27,
+      "count": 8388608,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 33554432,
+      "time_us": 123.89
+    },
+    {
+      "algbw_gbps": 366.19,
+      "busbw_gbps": 549.28,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 67108864,
+      "time_us": 183.26
+    }
+  ],
+  "run_id": "2026-02-08_005628_neocloud_fullstack_node1",
+  "total_ranks": 4
+}

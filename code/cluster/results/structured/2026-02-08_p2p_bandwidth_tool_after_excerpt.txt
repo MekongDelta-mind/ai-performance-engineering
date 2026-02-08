@@ -1,0 +1,19 @@
+Source: Cluster Perf suite p2p-bandwidth output (after fix; internal path redacted)
+
+=== P2P Bandwidth Matrix (256MB transfers) ===
+
+Bandwidth in GB/s (row=src, col=dst)
+
+       GPU      0GPU      1GPU      2GPU      3
+GPU 0       -    741.0   744.1   741.3 
+GPU 1    740.5      -    745.5   743.9 
+GPU 2    736.5   733.2      -    746.7 
+GPU 3    733.3   736.3   747.3      -  
+
+
+Bandwidth Summary:
+  Min: 733.2 GB/s
+  Max: 747.3 GB/s
+  Avg: 740.8 GB/s
+
+============================================================

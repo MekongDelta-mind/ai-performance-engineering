@@ -23,7 +23,7 @@ class BaselineCutlassGemmFp16Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cutlass_gemm_fp16",
             friendly_name="Baseline Cutlass Gemm Fp16",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={

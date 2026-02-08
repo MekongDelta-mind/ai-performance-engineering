@@ -1,0 +1,115 @@
+{
+  "estimates": {
+    "node1": {
+      "raid0": {
+        "drives": 8,
+        "efficiency": 0.7,
+        "randread4k_iops_conservative": 4842114.5428488,
+        "randread4k_iops_linear": 6917306.489784,
+        "seqread_gib_s_conservative": 37.15232357010245,
+        "seqread_gib_s_linear": 53.07474795728922
+      },
+      "representative_device": "nvme0n1"
+    },
+    "node2": {
+      "raid0": {
+        "drives": 8,
+        "efficiency": 0.7,
+        "randread4k_iops_conservative": 4844512.756244,
+        "randread4k_iops_linear": 6920732.50892,
+        "seqread_gib_s_conservative": 37.16234794110059,
+        "seqread_gib_s_linear": 53.08906848728657
+      },
+      "representative_device": "nvme0n1"
+    }
+  },
+  "measurements": {
+    "node1": {
+      "nvme0n1": {
+        "randread4k": {
+          "bw_bytes_s": 3541660922.0,
+          "bw_gib_s": 3.2984287682920694,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node1_nvme0n1_randread4k.json",
+          "iops": 864663.311223,
+          "p99_clat_ms": 0.602112
+        },
+        "seqread": {
+          "bw_bytes_s": 7123572085.0,
+          "bw_gib_s": 6.634343494661152,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node1_nvme0n1_seqread.json",
+          "iops": 6793.567739,
+          "p99_clat_ms": 4.75136
+        }
+      },
+      "nvme2n1": {
+        "randread4k": {
+          "bw_bytes_s": 3382267255.0,
+          "bw_gib_s": 3.149981847964227,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node1_nvme2n1_randread4k.json",
+          "iops": 825748.841705,
+          "p99_clat_ms": 0.782336
+        },
+        "seqread": {
+          "bw_bytes_s": 5509584393.0,
+          "bw_gib_s": 5.131200321950018,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node1_nvme2n1_seqread.json",
+          "iops": 5254.34913,
+          "p99_clat_ms": 6.979584
+        }
+      }
+    },
+    "node2": {
+      "nvme0n1": {
+        "randread4k": {
+          "bw_bytes_s": 3543415044.0,
+          "bw_gib_s": 3.300062421709299,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node2_nvme0n1_randread4k.json",
+          "iops": 865091.563615,
+          "p99_clat_ms": 0.888832
+        },
+        "seqread": {
+          "bw_bytes_s": 7125494154.0,
+          "bw_gib_s": 6.636133560910821,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node2_nvme0n1_seqread.json",
+          "iops": 6795.400767,
+          "p99_clat_ms": 4.816896
+        }
+      },
+      "nvme1n1": {
+        "randread4k": {
+          "bw_bytes_s": 3352630543.0,
+          "bw_gib_s": 3.1223805090412498,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node2_nvme1n1_randread4k.json",
+          "iops": 818513.316223,
+          "p99_clat_ms": 0.864256
+        },
+        "seqread": {
+          "bw_bytes_s": 5509654284.0,
+          "bw_gib_s": 5.131265413016081,
+          "file": "results/structured/2026-02-08_042500_scratch_nvme_readonly_node2_nvme1n1_seqread.json",
+          "iops": 5254.415784,
+          "p99_clat_ms": 6.979584
+        }
+      }
+    }
+  },
+  "method": {
+    "fio": "direct=1, read-only, raw block device",
+    "randread4k": {
+      "bs": "4k",
+      "iodepth": 128,
+      "numjobs": 4,
+      "runtime_s": 30,
+      "rw": "randread"
+    },
+    "seqread": {
+      "bs": "1M",
+      "iodepth": 32,
+      "numjobs": 1,
+      "runtime_s": 30,
+      "rw": "read"
+    }
+  },
+  "run_id": "2026-02-08_042500_scratch_nvme_readonly",
+  "timestamp": "2026-02-08T04:36:23+0000"
+}

@@ -1,0 +1,4 @@
+model,prompt_len,gen_len,concurrency,tok_per_s,p50_ms,p99_ms
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,256,128,1,2311.042523,166.084166,166.545714
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,256,128,2,4638.309183,168.942979,169.885916
+TinyLlama/TinyLlama-1.1B-Chat-v1.0,256,128,4,8966.900132,171.402462,171.546331

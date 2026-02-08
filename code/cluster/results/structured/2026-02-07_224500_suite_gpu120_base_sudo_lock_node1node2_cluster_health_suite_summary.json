@@ -1,0 +1,64 @@
+{
+  "cuda_visible_devices": "1,2,0",
+  "gpus_per_node": 3,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "ib_write_bw": {},
+  "iperf3": {},
+  "label": "node1node2",
+  "mpi": {
+    "bind_to": "none",
+    "map_by": "ppr:3:node",
+    "rank_by": "",
+    "report_bindings": false
+  },
+  "nccl": {
+    "all_gather_perf": {
+      "max_busbw": {
+        "busbw_gbps": 400.25,
+        "size_bytes": 2147483616
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_224500_suite_gpu120_base_sudo_lock_node1node2_nccl_all_gather_perf.json"
+    },
+    "all_reduce_perf": {
+      "max_busbw": {
+        "busbw_gbps": 507.27,
+        "size_bytes": 17179869184
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_224500_suite_gpu120_base_sudo_lock_node1node2_nccl_all_reduce_perf.json"
+    },
+    "reduce_scatter_perf": {
+      "max_busbw": {
+        "busbw_gbps": 529.39,
+        "size_bytes": 4294967232
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_224500_suite_gpu120_base_sudo_lock_node1node2_nccl_reduce_scatter_perf.json"
+    }
+  },
+  "nccl_debug": "INFO",
+  "nccl_debug_subsys": "INIT",
+  "nccl_ib_hca": "mlx5_0,mlx5_1,mlx5_4,mlx5_5",
+  "oob_if": "enP22p3s0f3",
+  "run_id": "2026-02-07_224500_suite_gpu120_base_sudo_lock",
+  "steps": {
+    "order": [
+      "preflight",
+      "nccl_all_reduce",
+      "nccl_all_gather",
+      "nccl_reduce_scatter",
+      "torchdist",
+      "summary"
+    ]
+  },
+  "sudo_clock_lock": true,
+  "suite_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_224500_suite_gpu120_base_sudo_lock_node1node2_cluster_health_suite.log",
+  "torchdist": {
+    "max_busbw": {
+      "busbw_gbps": 431.62635679547685,
+      "size_bytes": 1073741824
+    },
+    "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_224500_suite_gpu120_base_sudo_lock_torchrun_allreduce.json"
+  }
+}

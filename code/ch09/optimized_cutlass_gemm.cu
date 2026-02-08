@@ -46,14 +46,34 @@ int main() {
     using Layout = cutlass::layout::RowMajor;
     using ElementAccumulator = float;
 
+    // CUTLASS does not provide DefaultGemmConfiguration specializations for Sm100.
+    // Use an explicit TF32 tensor-op configuration (Sm80 tag) so this compiles for sm_100.
+    using ThreadblockShape = cutlass::gemm::GemmShape<128, 128, 16>;
+    using WarpShape = cutlass::gemm::GemmShape<64, 64, 16>;
+    using InstructionShape = cutlass::gemm::GemmShape<16, 8, 8>;  // TF32 MMA
+
+    using EpilogueOutputOp = cutlass::epilogue::thread::LinearCombination<
+        Element,
+        128 / cutlass::sizeof_bits<Element>::value,
+        ElementAccumulator,
+        ElementAccumulator>;
+
+    using SwizzleThreadblock = cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>;
+    static int constexpr NumStages = 4;
+
     using Gemm = cutlass::gemm::device::Gemm<
         Element, Layout,
         Element, Layout,
         Element, Layout,
         ElementAccumulator,
         cutlass::arch::OpClassTensorOp,
-        cutlass::arch::Sm100
-    >;
+        cutlass::arch::Sm80,
+        ThreadblockShape,
+        WarpShape,
+        InstructionShape,
+        EpilogueOutputOp,
+        SwizzleThreadblock,
+        NumStages>;
 
     const size_t elements_A = static_cast<size_t>(M) * K;
     const size_t elements_B = static_cast<size_t>(K) * N;

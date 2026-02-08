@@ -1,26 +1,40 @@
-// optimized_cutlass_gemm_fp8.cu -- CUTLASS FP8 GEMM optimized (larger tile).
+// optimized_cutlass_gemm_fp8.cu -- CUTLASS FP8 GEMM optimized.
+//
+// Uses CUTLASS 3.x collective builders (GemmUniversalAdapter) with a larger tile
+// shape than the baseline.
 
 #include <cuda_runtime.h>
 
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
-#include <random>
 
 #include "cutlass/cutlass.h"
 #include "cutlass/float8.h"
-#include "cutlass/gemm/device/gemm.h"
-#include "cutlass/layout/matrix.h"
-#include "cutlass/epilogue/thread/linear_combination.h"
+#include "cutlass/epilogue/collective/collective_builder.hpp"
+#include "cutlass/gemm/collective/collective_builder.hpp"
+#include "cutlass/gemm/device/gemm_universal_adapter.h"
+#include "cutlass/gemm/kernel/gemm_universal.hpp"
+#include "cutlass/gemm/kernel/tile_scheduler_params.h"
+#include "cutlass/util/device_memory.h"
+#include "cutlass/util/host_tensor.h"
+#include "cutlass/util/packed_stride.hpp"
+#include "cutlass/util/reference/host/tensor_fill.h"
+
+#include "cute/tensor.hpp"
 
 #include "../core/common/headers/cuda_verify.cuh"
 #include "../core/common/nvtx_utils.cuh"
+
+using namespace cute;
 
 #define CUDA_CHECK(call)                                                         \
   do {                                                                           \
     cudaError_t status = (call);                                                 \
     if (status != cudaSuccess) {                                                 \
-      std::cerr << "CUDA error " << __FILE__ << ":" << __LINE__ << " "           \
-                << cudaGetErrorString(status) << std::endl;                      \
+      std::cerr << "CUDA error " << __FILE__ << ":" << __LINE__ << " "         \
+                << cudaGetErrorString(status) << std::endl;                     \
       std::exit(EXIT_FAILURE);                                                   \
     }                                                                            \
   } while (0)
@@ -29,167 +43,248 @@
   do {                                                                           \
     cutlass::Status error = (status);                                            \
     if (error != cutlass::Status::kSuccess) {                                    \
-      std::cerr << "CUTLASS error " << __FILE__ << ":" << __LINE__ << " "         \
-                << cutlassGetStatusString(error) << std::endl;                   \
+      std::cerr << "CUTLASS error " << __FILE__ << ":" << __LINE__ << " "      \
+                << cutlassGetStatusString(error) << std::endl;                  \
       std::exit(EXIT_FAILURE);                                                   \
     }                                                                            \
   } while (0)
 
-int main() {
-    NVTX_RANGE("main");
-    constexpr int M = 4096;
-    constexpr int N = 4096;
-    constexpr int K = 4096;
-    constexpr int kIterations = 10;
-    constexpr int kRepeats = 16;
+struct Options {
+  int m;
+  int n;
+  int k;
+  int iterations;
+  int repeats;
+  float alpha;
+  float beta;
+};
 
-    using ElementA = cutlass::float_e4m3_t;
-    using ElementB = cutlass::float_e4m3_t;
-    using ElementC = cutlass::half_t;
-    using Layout = cutlass::layout::RowMajor;
-    using ElementAccumulator = float;
+struct GpuTimer {
+  cudaEvent_t start_event{};
+  cudaEvent_t stop_event{};
+  cudaStream_t stream = 0;
 
-    using ThreadblockShape = cutlass::gemm::GemmShape<128, 256, 64>;
-    using WarpShape = cutlass::gemm::GemmShape<64, 64, 64>;
-    using InstructionShape = cutlass::gemm::GemmShape<16, 8, 32>;
-    using EpilogueOp = cutlass::epilogue::thread::LinearCombination<
-        ElementC,
-        128 / cutlass::sizeof_bits<ElementC>::value,
-        ElementAccumulator,
-        ElementAccumulator>;
+  GpuTimer() {
+    CUDA_CHECK(cudaEventCreate(&start_event));
+    CUDA_CHECK(cudaEventCreate(&stop_event));
+  }
 
-    using Gemm = cutlass::gemm::device::Gemm<
-        ElementA, Layout,
-        ElementB, Layout,
-        ElementC, Layout,
-        ElementAccumulator,
-        cutlass::arch::OpClassTensorOp,
-        cutlass::arch::Sm100,
-        ThreadblockShape,
-        WarpShape,
-        InstructionShape,
-        EpilogueOp
-    >;
+  ~GpuTimer() {
+    CUDA_CHECK(cudaEventDestroy(start_event));
+    CUDA_CHECK(cudaEventDestroy(stop_event));
+  }
 
-    const size_t elements_A = static_cast<size_t>(M) * K;
-    const size_t elements_B = static_cast<size_t>(K) * N;
-    const size_t elements_C = static_cast<size_t>(M) * N;
-    const size_t size_A = elements_A * sizeof(ElementA);
-    const size_t size_B = elements_B * sizeof(ElementB);
-    const size_t size_C = elements_C * sizeof(ElementC);
+  void start(cudaStream_t stream_id = 0) {
+    stream = stream_id;
+    CUDA_CHECK(cudaEventRecord(start_event, stream));
+  }
 
-    ElementA* h_A = nullptr;
-    ElementB* h_B = nullptr;
-    ElementC* h_C = nullptr;
-    CUDA_CHECK(cudaMallocHost(&h_A, size_A));
-    CUDA_CHECK(cudaMallocHost(&h_B, size_B));
-    CUDA_CHECK(cudaMallocHost(&h_C, size_C));
+  void stop() { CUDA_CHECK(cudaEventRecord(stop_event, stream)); }
 
-    std::mt19937 gen(42);
-    std::uniform_real_distribution<float> dis(-0.5f, 0.5f);
-    for (size_t i = 0; i < elements_A; ++i) {
-        NVTX_RANGE("setup");
-        h_A[i] = ElementA(dis(gen));
+  float elapsed_millis() {
+    float elapsed = 0.0f;
+    CUDA_CHECK(cudaEventSynchronize(stop_event));
+    CUDA_CHECK(cudaEventElapsedTime(&elapsed, start_event, stop_event));
+    return elapsed;
+  }
+};
+
+template <typename Element, typename Layout>
+static void initialize_tensor(cutlass::TensorView<Element, Layout> view, uint64_t seed) {
+  double scope_max = 2.0;
+  double scope_min = -2.0;
+  const int bits = cutlass::sizeof_bits<Element>::value;
+  if (bits > 8) {
+    scope_max = 5.0;
+    scope_min = -5.0;
+  }
+  cutlass::reference::host::TensorFillRandomUniform(view, seed, scope_max, scope_min, 0);
+}
+
+#if defined(CUTLASS_ARCH_MMA_SM90_SUPPORTED)
+
+using ElementA = cutlass::float_e4m3_t;
+using LayoutA = cutlass::layout::RowMajor;
+constexpr int AlignmentA = 128 / cutlass::sizeof_bits<ElementA>::value;  // 16
+
+using ElementB = cutlass::float_e4m3_t;
+using LayoutB = cutlass::layout::ColumnMajor;
+constexpr int AlignmentB = 128 / cutlass::sizeof_bits<ElementB>::value;  // 16
+
+using ElementC = cutlass::half_t;
+using ElementD = cutlass::half_t;
+using LayoutC = cutlass::layout::RowMajor;
+using LayoutD = cutlass::layout::RowMajor;
+constexpr int AlignmentC = 128 / cutlass::sizeof_bits<ElementC>::value;  // 8
+constexpr int AlignmentD = 128 / cutlass::sizeof_bits<ElementD>::value;  // 8
+
+using ElementAccumulator = float;
+using ArchTag = cutlass::arch::Sm90;
+using OperatorClass = cutlass::arch::OpClassTensorOp;
+
+// Optimized uses a larger tile.
+using TileShape = Shape<_128, _128, _128>;  // (M, N, K)
+using ClusterShape = Shape<_1, _1, _1>;
+
+using EpilogueSchedule = cutlass::epilogue::collective::EpilogueScheduleAuto;
+using CollectiveEpilogue = typename cutlass::epilogue::collective::CollectiveBuilder<
+    ArchTag,
+    OperatorClass,
+    TileShape,
+    ClusterShape,
+    cutlass::epilogue::collective::EpilogueTileAuto,
+    ElementAccumulator,
+    ElementAccumulator,
+    ElementC,
+    LayoutC,
+    AlignmentC,
+    ElementD,
+    LayoutD,
+    AlignmentD,
+    EpilogueSchedule>::CollectiveOp;
+
+using KernelSchedule = cutlass::gemm::collective::KernelScheduleAuto;
+using CollectiveMainloop = typename cutlass::gemm::collective::CollectiveBuilder<
+    ArchTag,
+    OperatorClass,
+    ElementA,
+    LayoutA,
+    AlignmentA,
+    ElementB,
+    LayoutB,
+    AlignmentB,
+    ElementAccumulator,
+    TileShape,
+    ClusterShape,
+    cutlass::gemm::collective::StageCountAutoCarveout<
+        static_cast<int>(sizeof(typename CollectiveEpilogue::SharedStorage))>,
+    KernelSchedule>::CollectiveOp;
+
+using GemmKernel = cutlass::gemm::kernel::GemmUniversal<
+    Shape<int, int, int, int>,
+    CollectiveMainloop,
+    CollectiveEpilogue,
+    void>;
+
+using Gemm = cutlass::gemm::device::GemmUniversalAdapter<GemmKernel>;
+
+using StrideA = typename Gemm::GemmKernel::StrideA;
+using StrideB = typename Gemm::GemmKernel::StrideB;
+using StrideC = typename Gemm::GemmKernel::StrideC;
+using StrideD = typename Gemm::GemmKernel::StrideD;
+
+static StrideA stride_A;
+static StrideB stride_B;
+static StrideC stride_C;
+static StrideD stride_D;
+
+static cutlass::HostTensor<ElementA, LayoutA> tensor_A;
+static cutlass::HostTensor<ElementB, LayoutB> tensor_B;
+static cutlass::HostTensor<ElementC, LayoutC> tensor_C;
+static cutlass::HostTensor<ElementD, LayoutD> tensor_D;
+
+static void initialize(const Options& options) {
+  stride_A = cutlass::make_cute_packed_stride(StrideA{}, cute::make_shape(options.m, options.k, 1));
+  stride_B = cutlass::make_cute_packed_stride(StrideB{}, cute::make_shape(options.n, options.k, 1));
+  stride_C = cutlass::make_cute_packed_stride(StrideC{}, cute::make_shape(options.m, options.n, 1));
+  stride_D = cutlass::make_cute_packed_stride(StrideD{}, cute::make_shape(options.m, options.n, 1));
+
+  auto a_coord = cutlass::make_Coord(options.m, options.k);
+  auto b_coord = cutlass::make_Coord(options.k, options.n);
+  auto c_coord = cutlass::make_Coord(options.m, options.n);
+
+  tensor_A.resize(a_coord);
+  tensor_B.resize(b_coord);
+  tensor_C.resize(c_coord);
+  tensor_D.resize(c_coord);
+
+  initialize_tensor(tensor_A.host_view(), 42);
+  initialize_tensor(tensor_B.host_view(), 43);
+  cutlass::reference::host::TensorFill(tensor_C.host_view(), ElementC(0));
+
+  tensor_A.sync_device();
+  tensor_B.sync_device();
+  tensor_C.sync_device();
+  tensor_D.sync_device();
+}
+
+static typename Gemm::Arguments args_from_options(const Options& options) {
+  typename Gemm::Arguments arguments{
+      cutlass::gemm::GemmUniversalMode::kGemm,
+      {options.m, options.n, options.k, 1},
+      {tensor_A.device_data(), stride_A, tensor_B.device_data(), stride_B},
+      {{options.alpha, options.beta}, tensor_C.device_data(), stride_C, tensor_D.device_data(), stride_D}};
+  arguments.scheduler.max_swizzle_size = 1;
+  return arguments;
+}
+
+static int run_cutlass(const Options& options) {
+  initialize(options);
+
+  Gemm gemm;
+  auto arguments = args_from_options(options);
+
+  const size_t workspace_size = Gemm::get_workspace_size(arguments);
+  cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
+
+  CUTLASS_CHECK(gemm.can_implement(arguments));
+  CUTLASS_CHECK(gemm.initialize(arguments, workspace.get()));
+
+  // Warmup
+  CUTLASS_CHECK(gemm.run());
+  CUDA_CHECK(cudaDeviceSynchronize());
+
+  GpuTimer timer;
+  timer.start();
+  for (int iter = 0; iter < options.iterations; ++iter) {
+    NVTX_RANGE("compute_math:cutlass_fp8_tensorop");
+    for (int rep = 0; rep < options.repeats; ++rep) {
+      CUTLASS_CHECK(gemm.run());
     }
-    for (size_t i = 0; i < elements_B; ++i) {
-        NVTX_RANGE("setup");
-        h_B[i] = ElementB(dis(gen));
-    }
-    std::fill(h_C, h_C + elements_C, ElementC(0));
+  }
+  timer.stop();
 
-    ElementA *d_A = nullptr;
-    ElementB *d_B = nullptr;
-    ElementC *d_C = nullptr;
-    CUDA_CHECK(cudaMalloc(&d_A, size_A));
-    CUDA_CHECK(cudaMalloc(&d_B, size_B));
-    CUDA_CHECK(cudaMalloc(&d_C, size_C));
+  const float total_ms = timer.elapsed_millis();
+  const float avg_ms = total_ms / static_cast<float>(options.iterations * options.repeats);
 
-    CUDA_CHECK(cudaMemcpy(d_A, h_A, size_A, cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_B, h_B, size_B, cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_C, h_C, size_C, cudaMemcpyHostToDevice));
+  const double flops = 2.0 * static_cast<double>(options.m) * options.n * options.k * options.repeats * options.iterations;
+  const double tflops = flops / (total_ms * 1e9);
 
-    cudaStream_t stream;
-    CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-
-    const int lda = K;
-    const int ldb = N;
-    const int ldc = N;
-
-    cutlass::gemm::GemmCoord problem_size(M, N, K);
-    cutlass::TensorRef<ElementA const, Layout> ref_A(d_A, Layout(lda));
-    cutlass::TensorRef<ElementB const, Layout> ref_B(d_B, Layout(ldb));
-    cutlass::TensorRef<ElementC const, Layout> ref_C(d_C, Layout(ldc));
-    cutlass::TensorRef<ElementC, Layout> ref_D(d_C, Layout(ldc));
-
-    typename Gemm::Arguments args(
-        problem_size,
-        ref_A,
-        ref_B,
-        ref_C,
-        ref_D,
-        {ElementAccumulator(1.0f), ElementAccumulator(0.0f)}
-    );
-
-    Gemm gemm_op;
-    size_t workspace_size = Gemm::get_workspace_size(args);
-    void* workspace = nullptr;
-    if (workspace_size > 0) {
-        CUDA_CHECK(cudaMalloc(&workspace, workspace_size));
-    }
-    CUTLASS_CHECK(gemm_op.initialize(args, workspace, stream));
-
-    // Warmup
-    CUTLASS_CHECK(gemm_op.run(stream));
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-
-    cudaEvent_t start, stop;
-    CUDA_CHECK(cudaEventCreate(&start));
-    CUDA_CHECK(cudaEventCreate(&stop));
-
-    CUDA_CHECK(cudaEventRecord(start, stream));
-    for (int iter = 0; iter < kIterations; ++iter) {
-        NVTX_RANGE("compute_math:cutlass_fp8_tensorop");
-        for (int rep = 0; rep < kRepeats; ++rep) {
-            CUTLASS_CHECK(gemm_op.run(stream));
-        }
-    }
-    CUDA_CHECK(cudaEventRecord(stop, stream));
-    CUDA_CHECK(cudaEventSynchronize(stop));
-
-    float total_ms = 0.0f;
-    CUDA_CHECK(cudaEventElapsedTime(&total_ms, start, stop));
-    const float avg_ms = total_ms / static_cast<float>(kIterations * kRepeats);
-
-    const double flops = 2.0 * M * N * K * kRepeats * kIterations;
-    const double tflops = flops / (total_ms * 1e9);
-
-    std::cout << "CUTLASS FP8 GEMM (optimized): " << avg_ms << " ms" << std::endl;
-    std::cout << "Throughput: " << tflops << " TFLOPS" << std::endl;
-
-    CUDA_CHECK(cudaMemcpy(h_C, d_C, size_C, cudaMemcpyDeviceToHost));
-    std::cout << "Checksum sample: " << static_cast<float>(h_C[0]) << std::endl;
+  std::cout << "CUTLASS FP8 GEMM (optimized): " << avg_ms << " ms" << std::endl;
+  std::cout << "Throughput: " << tflops << " TFLOPS" << std::endl;
 
 #ifdef VERIFY
-    double checksum = 0.0;
-    for (size_t i = 0; i < elements_C; ++i) {
-        NVTX_RANGE("verify");
-        checksum += std::abs(static_cast<double>(h_C[i]));
-    }
-    VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));
+  tensor_D.sync_host();
+  const size_t elements = static_cast<size_t>(options.m) * options.n;
+  double checksum = 0.0;
+  const ElementD* h_out = tensor_D.host_data();
+  for (size_t i = 0; i < elements; ++i) {
+    checksum += std::abs(static_cast<double>(static_cast<float>(h_out[i])));
+  }
+  VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));
 #endif
 
-    CUDA_CHECK(cudaEventDestroy(start));
-    CUDA_CHECK(cudaEventDestroy(stop));
-    CUDA_CHECK(cudaStreamDestroy(stream));
-    if (workspace) {
-        CUDA_CHECK(cudaFree(workspace));
-    }
-    CUDA_CHECK(cudaFree(d_A));
-    CUDA_CHECK(cudaFree(d_B));
-    CUDA_CHECK(cudaFree(d_C));
-    CUDA_CHECK(cudaFreeHost(h_A));
-    CUDA_CHECK(cudaFreeHost(h_B));
-    CUDA_CHECK(cudaFreeHost(h_C));
+  return 0;
+}
 
-    return 0;
+#endif  // CUTLASS_ARCH_MMA_SM90_SUPPORTED
+
+int main() {
+  NVTX_RANGE("main");
+
+  Options options{};
+  options.m = 4096;
+  options.n = 4096;
+  options.k = 4096;
+  options.iterations = 10;
+  options.repeats = 16;
+  options.alpha = 1.0f;
+  options.beta = 0.0f;
+
+#if defined(CUTLASS_ARCH_MMA_SM90_SUPPORTED)
+  return run_cutlass(options);
+#else
+  std::cerr << "SKIPPED: CUTLASS FP8 kernel requires CUDA 12.0+ and SM90+." << std::endl;
+  return 1;
+#endif
 }

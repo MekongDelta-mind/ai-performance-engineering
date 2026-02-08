@@ -1,0 +1,52 @@
+========================================
+FIO Storage Benchmark (Containerized)
+========================================
+Date: Sun Feb  8 01:25:29 UTC 2026
+Hostname: node1
+Container: ghcr.io/jordannanos/cmax-storage:22.04
+Test Directory: /tmp/cluster_perf_fio_2026-02-08_011938_cluster_perf_node1
+File Size: 1G
+Runtime: 30s
+Jobs: 4
+Quick mode: 1
+
+=== Storage Information ===
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme7n1p1  4.0T  331G  3.5T   9% /
+
+WARNING: Failed to pull ghcr.io/jordannanos/cmax-storage:22.04 (possibly private). Falling back to native fio.
+NOTE: Using native fio on host (no container).
+========================================
+Sequential Write Test
+========================================
+Sequential Write: 728.4119310379028 MB/s
+
+========================================
+Sequential Read Test
+========================================
+Sequential Read: 1357.0523929595947 MB/s
+
+========================================
+Random Read Test (IOPS)
+========================================
+Random Read IOPS: 52125
+
+========================================
+Random Write Test (IOPS)
+========================================
+Random Write IOPS: 16732
+
+========================================
+Summary
+========================================
+Sequential Write: 728.4119310379028 MB/s
+Sequential Read:  1357.0523929595947 MB/s
+Random Read IOPS: 52125
+Random Write IOPS: 16732
+
+=== Performance Assessment ===
+Sequential Write: ACCEPTABLE (>500 MB/s)
+Sequential Read: GOOD (>1 GB/s)
+Random Read IOPS: GOOD (>10K)
+
+JSON results saved in: $CLUSTER_PERF_SUITE_DIR/standalone/storage/fio/../results

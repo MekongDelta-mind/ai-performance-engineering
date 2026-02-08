@@ -1,0 +1,27 @@
+sharp_am install/start attempt
+2026-02-08T08:06:35+00:00
+host: node1
+
+== Install systemd unit (sharp_daemons_setup.sh -s) ==
+Copying /opt/mellanox/sharp/systemd/system/sharp_am.service to /etc/systemd/system/sharp_am.service
+Service sharp_am is installed
+
+== systemctl daemon-reload ==
+
+== systemctl start sharp_am ==
+
+== systemctl is-active sharp_am ==
+active
+
+== systemctl status sharp_am (last 50 lines) ==
+● sharp_am.service - SHARP Aggregation Manager (sharp_am). Version: 3.13.12
+     Loaded: loaded (/etc/systemd/system/sharp_am.service; enabled; preset: enabled)
+    Drop-In: /etc/systemd/system/sharp_am.service.d
+             └─Service.conf
+     Active: active (running) since Sun 2026-02-08 08:06:36 UTC; 6ms ago
+   Main PID: 2184934 (sharp_am)
+      Tasks: 1 (limit: 294003)
+     Memory: 4.0M (peak: 8.0M)
+        CPU: 5ms
+     CGroup: /system.slice/sharp_am.service
+             └─2184934 /opt/mellanox/sharp/bin/sharp_am -O -/opt/mellanox/sharp/conf/sharp_am.cfg

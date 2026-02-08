@@ -1,0 +1,34 @@
+{
+  "run_id": "2026-02-08_smoke_high_impact_local_v2",
+  "hosts": [
+    "localhost"
+  ],
+  "gpus_per_node": 2,
+  "total_ranks": 2,
+  "algorithms_tested": [
+    {
+      "algo": "Ring",
+      "status": "ok",
+      "peak_busbw_gbps": 355.68,
+      "output": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_smoke_high_impact_local_v2_nccl_algo_ring.json"
+    },
+    {
+      "algo": "Tree",
+      "status": "ok",
+      "peak_busbw_gbps": 344.1,
+      "output": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_smoke_high_impact_local_v2_nccl_algo_tree.json"
+    },
+    {
+      "algo": "NVLS",
+      "status": "ok",
+      "peak_busbw_gbps": 151.02,
+      "output": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_smoke_high_impact_local_v2_nccl_algo_nvls.json"
+    },
+    {
+      "algo": "auto",
+      "status": "ok",
+      "peak_busbw_gbps": 277.65,
+      "output": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_smoke_high_impact_local_v2_nccl_algo_auto.json"
+    }
+  ]
+}

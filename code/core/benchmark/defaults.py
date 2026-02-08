@@ -154,7 +154,10 @@ class BenchmarkDefaults:
     subprocess_stderr_dir: Optional[str] = None
     # Default to speed-of-light (minimal) for routine compares.
     ncu_metric_set: str = "minimal"  # 'auto', 'deep_dive', 'roofline', 'minimal'
-    ncu_replay_mode: str = "application"  # 'kernel' or 'application'
+    # Nsight Compute kernel replay is substantially faster and avoids relaunching
+    # the full application for each metric pass (application replay). Prefer it
+    # for routine "minimal" profiling runs.
+    ncu_replay_mode: str = "kernel"  # 'kernel' or 'application'
     ncu_replay_mode_override: bool = False  # Honor ncu_replay_mode when profiling preset is minimal
     
     @classmethod

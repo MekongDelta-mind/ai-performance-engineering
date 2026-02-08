@@ -1,0 +1,145 @@
+{
+  "runs": [
+    {
+      "metrics": {
+        "ib_write_bw.mean_avg_gbps": 387.1375,
+        "ib_write_bw.mlx5_0.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_1.avg_gbps": 387.13,
+        "ib_write_bw.mlx5_4.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_5.avg_gbps": 387.14,
+        "iperf3.fwd.gbps": 7.87722577751812,
+        "iperf3.rev.gbps": 7.994365260670359,
+        "nccl.all_gather_perf.max_busbw_gbps": 664.18,
+        "nccl.all_reduce_perf.max_busbw_gbps": 842.0,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 680.16,
+        "torchdist.max_busbw_gbps": 553.3583340972341
+      },
+      "path": "results/structured/2026-02-07_144800_cluster_health_suite_variance_ubuntu_r1_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_144800_cluster_health_suite_variance_ubuntu_r1_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "ib_write_bw.mean_avg_gbps": 387.14,
+        "ib_write_bw.mlx5_0.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_1.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_4.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_5.avg_gbps": 387.14,
+        "iperf3.fwd.gbps": 7.818822109978847,
+        "iperf3.rev.gbps": 7.619216250804542,
+        "nccl.all_gather_perf.max_busbw_gbps": 460.8,
+        "nccl.all_reduce_perf.max_busbw_gbps": 526.81,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 575.84,
+        "torchdist.max_busbw_gbps": 712.1144298223111
+      },
+      "path": "results/structured/2026-02-07_144800_cluster_health_suite_variance_ubuntu_r2_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_144800_cluster_health_suite_variance_ubuntu_r2_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "ib_write_bw.mean_avg_gbps": 387.1375,
+        "ib_write_bw.mlx5_0.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_1.avg_gbps": 387.13,
+        "ib_write_bw.mlx5_4.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_5.avg_gbps": 387.14,
+        "iperf3.fwd.gbps": 7.66075101149008,
+        "iperf3.rev.gbps": 7.688630207466756,
+        "nccl.all_gather_perf.max_busbw_gbps": 441.43,
+        "nccl.all_reduce_perf.max_busbw_gbps": 535.91,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 577.84,
+        "torchdist.max_busbw_gbps": 421.1604623665028
+      },
+      "path": "results/structured/2026-02-07_144800_cluster_health_suite_variance_ubuntu_r3_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_144800_cluster_health_suite_variance_ubuntu_r3_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "ib_read_bw.mean_avg_gbps": 388.59000000000003,
+        "ib_read_bw.mlx5_0.avg_gbps": 388.61,
+        "ib_read_bw.mlx5_1.avg_gbps": 388.53,
+        "ib_read_bw.mlx5_4.avg_gbps": 388.6,
+        "ib_read_bw.mlx5_5.avg_gbps": 388.62,
+        "ib_send_bw.mean_avg_gbps": 388.575,
+        "ib_send_bw.mlx5_0.avg_gbps": 388.59,
+        "ib_send_bw.mlx5_1.avg_gbps": 388.52,
+        "ib_send_bw.mlx5_4.avg_gbps": 388.59,
+        "ib_send_bw.mlx5_5.avg_gbps": 388.6,
+        "ib_write_bw.mean_avg_gbps": 387.14,
+        "ib_write_bw.mlx5_0.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_1.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_4.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_5.avg_gbps": 387.14,
+        "iperf3.fwd.gbps": 7.897994530241828,
+        "iperf3.rev.gbps": 7.988812369781994,
+        "nccl.all_gather_perf.max_busbw_gbps": 442.32,
+        "nccl.all_reduce_perf.max_busbw_gbps": 593.5,
+        "nccl.alltoall_perf.max_busbw_gbps": 372.63,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 575.49,
+        "torchdist.max_busbw_gbps": 397.1572873879874
+      },
+      "path": "results/structured/2026-02-07_144800_cluster_health_suite_variance_ubuntu_r1_extended_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_144800_cluster_health_suite_variance_ubuntu_r1_extended",
+      "variant": "extended"
+    },
+    {
+      "metrics": {
+        "ib_read_bw.mean_avg_gbps": 388.6075,
+        "ib_read_bw.mlx5_0.avg_gbps": 388.61,
+        "ib_read_bw.mlx5_1.avg_gbps": 388.6,
+        "ib_read_bw.mlx5_4.avg_gbps": 388.61,
+        "ib_read_bw.mlx5_5.avg_gbps": 388.61,
+        "ib_send_bw.mean_avg_gbps": 388.56,
+        "ib_send_bw.mlx5_0.avg_gbps": 388.52,
+        "ib_send_bw.mlx5_1.avg_gbps": 388.6,
+        "ib_send_bw.mlx5_4.avg_gbps": 388.53,
+        "ib_send_bw.mlx5_5.avg_gbps": 388.59,
+        "ib_write_bw.mean_avg_gbps": 387.14,
+        "ib_write_bw.mlx5_0.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_1.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_4.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_5.avg_gbps": 387.14,
+        "iperf3.fwd.gbps": 7.580407460650758,
+        "iperf3.rev.gbps": 7.659067221050176,
+        "nccl.all_gather_perf.max_busbw_gbps": 459.87,
+        "nccl.all_reduce_perf.max_busbw_gbps": 528.7,
+        "nccl.alltoall_perf.max_busbw_gbps": 372.69,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 680.63,
+        "torchdist.max_busbw_gbps": 721.7512885897311
+      },
+      "path": "results/structured/2026-02-07_144800_cluster_health_suite_variance_ubuntu_r2_extended_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_144800_cluster_health_suite_variance_ubuntu_r2_extended",
+      "variant": "extended"
+    },
+    {
+      "metrics": {
+        "ib_read_bw.mean_avg_gbps": 388.59000000000003,
+        "ib_read_bw.mlx5_0.avg_gbps": 388.61,
+        "ib_read_bw.mlx5_1.avg_gbps": 388.53,
+        "ib_read_bw.mlx5_4.avg_gbps": 388.61,
+        "ib_read_bw.mlx5_5.avg_gbps": 388.61,
+        "ib_send_bw.mean_avg_gbps": 388.5575,
+        "ib_send_bw.mlx5_0.avg_gbps": 388.6,
+        "ib_send_bw.mlx5_1.avg_gbps": 388.52,
+        "ib_send_bw.mlx5_4.avg_gbps": 388.51,
+        "ib_send_bw.mlx5_5.avg_gbps": 388.6,
+        "ib_write_bw.mean_avg_gbps": 387.1375,
+        "ib_write_bw.mlx5_0.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_1.avg_gbps": 387.13,
+        "ib_write_bw.mlx5_4.avg_gbps": 387.14,
+        "ib_write_bw.mlx5_5.avg_gbps": 387.14,
+        "iperf3.fwd.gbps": 7.616945133020099,
+        "iperf3.rev.gbps": 7.561241268094148,
+        "nccl.all_gather_perf.max_busbw_gbps": 436.04,
+        "nccl.all_reduce_perf.max_busbw_gbps": 652.91,
+        "nccl.alltoall_perf.max_busbw_gbps": 347.87,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 598.07,
+        "torchdist.max_busbw_gbps": 460.829665738139
+      },
+      "path": "results/structured/2026-02-07_144800_cluster_health_suite_variance_ubuntu_r3_extended_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_144800_cluster_health_suite_variance_ubuntu_r3_extended",
+      "variant": "extended"
+    }
+  ]
+}

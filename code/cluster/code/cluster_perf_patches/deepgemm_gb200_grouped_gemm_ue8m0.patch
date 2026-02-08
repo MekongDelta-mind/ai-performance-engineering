@@ -1,0 +1,97 @@
+--- code/clustermax_scp_node2_2026-02-08_031318/standalone/compute/gemm-bench/grouped_gemm_bench.py	2026-02-05 20:57:48.000000000 +0000
++++ code/clustermax_from_node2/standalone/compute/gemm-bench/grouped_gemm_bench.py	2026-02-08 07:49:02.337599938 +0000
+@@ -37,6 +37,7 @@
+ # Check for optional dependencies
+ HAS_MATPLOTLIB = False
+ HAS_DEEPGEMM = False
++DEEPGEMM_UNSUPPORTED_REASON: Optional[str] = None
+ 
+ try:
+     import matplotlib
+@@ -397,12 +398,25 @@
+ 
+     Reference: https://github.com/deepseek-ai/DeepGEMM/blob/main/tests/test_fp8_fp4.py
+     """
++    global DEEPGEMM_UNSUPPORTED_REASON
+     if not HAS_DEEPGEMM:
+         return None
++    if DEEPGEMM_UNSUPPORTED_REASON is not None:
++        # Don't spam repeated failures once we know DeepGEMM can't run here.
++        return None
+ 
+     device = "cuda"
+ 
+     try:
++        arch_major, _arch_minor = torch.cuda.get_device_capability()
++        # DeepGEMM's grouped kernels on Blackwell (SM100 / GB200) require UE8M0
++        # scaling factors; the legacy "float SF + disable_ue8m0_cast=True" path
++        # fails with: "Unsupported architecture or scaling factor types".
++        #
++        # Keep the legacy behavior on older arch to avoid regressions.
++        use_ue8m0 = arch_major >= 10
++        disable_ue8m0_cast = not use_ue8m0
++
+         # Import DeepGEMM utilities (exact approach from their test suite)
+         from deep_gemm.utils import (
+             per_token_cast_to_fp8,
+@@ -427,14 +441,14 @@
+ 
+         # Cast A using per_token_cast_to_fp8
+         # Returns tuple (fp8_data, scale) where scale has shape [M, ceil(K/128)]
+-        a_fp8 = per_token_cast_to_fp8(a_bf16, use_ue8m0=False)
++        a_fp8 = per_token_cast_to_fp8(a_bf16, use_ue8m0=use_ue8m0)
+ 
+         # Cast B using per_block_cast_to_fp8 for each group
+         # This matches the grouped_cast_fp8_fp4_with_major pattern
+         b_fp8_data = torch.empty((groups, n, k), device=device, dtype=torch.float8_e4m3fn)
+         b_fp8_scale_list = []
+         for i in range(groups):
+-            b_i_fp8, b_i_scale = per_block_cast_to_fp8(b_bf16[i], use_ue8m0=False)
++            b_i_fp8, b_i_scale = per_block_cast_to_fp8(b_bf16[i], use_ue8m0=use_ue8m0)
+             b_fp8_data[i] = b_i_fp8
+             b_fp8_scale_list.append(b_i_scale)
+ 
+@@ -458,10 +472,14 @@
+         d = torch.empty((total_m, n), device=device, dtype=torch.bfloat16)
+ 
+         # Define benchmark function using m_grouped_fp8_fp4_gemm_nt_contiguous
++        kernel = getattr(deep_gemm, "m_grouped_fp8_gemm_nt_contiguous", None)
++        if kernel is None:
++            kernel = deep_gemm.m_grouped_fp8_fp4_gemm_nt_contiguous
++
+         def run_deepgemm():
+-            deep_gemm.m_grouped_fp8_fp4_gemm_nt_contiguous(
++            kernel(
+                 a_fp8, b_fp8, d, grouped_layout,
+-                disable_ue8m0_cast=True,
++                disable_ue8m0_cast=disable_ue8m0_cast,
+                 use_psum_layout=False,
+             )
+             return d
+@@ -514,9 +532,10 @@
+         )
+ 
+     except Exception as e:
+-        import traceback
+-        print(f"DeepGEMM error: {e}", file=sys.stderr)
+-        traceback.print_exc()
++        # DeepGEMM imported, but the kernel path is unsupported on this platform (common on new arch).
++        # Record the reason and skip subsequent DeepGEMM attempts to keep output readable.
++        DEEPGEMM_UNSUPPORTED_REASON = str(e)
++        print(f"DeepGEMM unsupported: {e}", file=sys.stderr)
+         return None
+ 
+ 
+@@ -556,7 +575,11 @@
+             suite.results.append(result)
+             print(f"  deepgemm_fp8:  {result.tflops:.1f} TFLOPS, {result.elapsed_ms:.3f} ms")
+         else:
+-            print(f"  deepgemm_fp8:  N/A (DeepGEMM not installed)")
++            if not HAS_DEEPGEMM:
++                print("  deepgemm_fp8:  N/A (DeepGEMM not installed)")
++            else:
++                reason = DEEPGEMM_UNSUPPORTED_REASON or "unsupported on this platform"
++                print(f"  deepgemm_fp8:  N/A (DeepGEMM unsupported: {reason})")
+ 
+     return suite
+ 

@@ -1,0 +1,34 @@
+{
+  "runs": [
+    {
+      "metrics": {
+        "nccl.all_gather_perf.max_busbw_gbps": 566.63,
+        "nccl.all_reduce_perf.max_busbw_gbps": 523.75,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 575.87
+      },
+      "path": "results/structured/2026-02-07_151437_cluster_health_nccl_only_variance_ubuntu_r1_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_151437_cluster_health_nccl_only_variance_ubuntu_r1_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "nccl.all_gather_perf.max_busbw_gbps": 427.52,
+        "nccl.all_reduce_perf.max_busbw_gbps": 548.32,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 681.47
+      },
+      "path": "results/structured/2026-02-07_151437_cluster_health_nccl_only_variance_ubuntu_r2_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_151437_cluster_health_nccl_only_variance_ubuntu_r2_base",
+      "variant": "base"
+    },
+    {
+      "metrics": {
+        "nccl.all_gather_perf.max_busbw_gbps": 427.72,
+        "nccl.all_reduce_perf.max_busbw_gbps": 554.39,
+        "nccl.reduce_scatter_perf.max_busbw_gbps": 576.46
+      },
+      "path": "results/structured/2026-02-07_151437_cluster_health_nccl_only_variance_ubuntu_r3_base_node1node2_cluster_health_suite_summary.json",
+      "run_id": "2026-02-07_151437_cluster_health_nccl_only_variance_ubuntu_r3_base",
+      "variant": "base"
+    }
+  ]
+}

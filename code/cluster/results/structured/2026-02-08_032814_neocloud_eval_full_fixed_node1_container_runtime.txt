@@ -1,0 +1,17 @@
+== container runtime evidence ==
+2026-02-08T03:29:41+00:00
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),987(docker)
+ubuntu docker
+srw-rw---- 1 root docker 0 Feb  5 02:26 /var/run/docker.sock
+Docker version 29.2.0, build 0b9d198
+containerd: active
+15:disabled_plugins = ["cri"]
+ii  containerd.io                                         2.2.1-1~ubuntu.24.04~noble                                             arm64        An open and reliable container runtime
+ii  docker-buildx-plugin                                  0.31.1-1~ubuntu.24.04~noble                                            arm64        Docker Buildx plugin extends build capabilities with BuildKit.
+ii  docker-ce                                             5:29.2.0-1~ubuntu.24.04~noble                                          arm64        Docker: the open-source application container engine
+ii  docker-ce-cli                                         5:29.2.0-1~ubuntu.24.04~noble                                          arm64        Docker CLI: the open-source application container engine
+ii  docker-compose-plugin                                 5.0.2-1~ubuntu.24.04~noble                                             arm64        Docker Compose (V2) plugin for the Docker CLI.
+ii  libnvidia-container-tools                             1.18.2-1                                                               arm64        NVIDIA container runtime library (command-line tools)
+ii  libnvidia-container1:arm64                            1.18.2-1                                                               arm64        NVIDIA container runtime library
+ii  nvidia-container-toolkit                              1.18.2-1                                                               arm64        NVIDIA Container toolkit
+ii  nvidia-container-toolkit-base                         1.18.2-1                                                               arm64        NVIDIA Container Toolkit Base

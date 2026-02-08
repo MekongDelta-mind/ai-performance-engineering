@@ -51,7 +51,7 @@ int main() {
         Element, Layout,
         ElementAccumulator,
         cutlass::arch::OpClassTensorOp,
-        cutlass::arch::Sm100
+        cutlass::arch::Sm80
     >;
 
     const size_t elements_A = static_cast<size_t>(M) * K;

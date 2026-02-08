@@ -23,17 +23,16 @@ class OptimizedCublasltGemmFp16Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="optimized_cublaslt_gemm_fp16",
             friendly_name="Optimized Cublaslt Gemm Fp16",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={
                 "M": 2048,
                 "N": 2048,
                 "K": 2048,
-                "batch_count": 64,
-                "iterations": 10,
-                "workspace_bytes": 128,
-                "dtype": 'float16',
+                "kIterations": 10,
+                "kBatchCount": 64,
+                "dtype": "float16",
             },
         )
 

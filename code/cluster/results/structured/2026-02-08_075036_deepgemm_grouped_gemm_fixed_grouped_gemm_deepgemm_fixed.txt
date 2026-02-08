@@ -1,0 +1,387 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+Grouped GEMM Benchmark
+  Device: NVIDIA GB200
+  PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+  DeepGEMM: installed
+  Preset: all
+  Shapes: 48
+
+Benchmarking G=4, M=8192, N=6144, K=7168...
+  torch_fp16:    1697.1 TFLOPS, 1.701 ms
+  torch_fp8:     1701.4 TFLOPS, 1.696 ms (loop baseline)
+  deepgemm_fp8:  2854.8 TFLOPS, 1.011 ms
+Benchmarking G=4, M=8192, N=7168, K=3072...
+  torch_fp16:    1738.1 TFLOPS, 0.830 ms
+  torch_fp8:     1310.7 TFLOPS, 1.101 ms (loop baseline)
+  deepgemm_fp8:  2803.4 TFLOPS, 0.515 ms
+Benchmarking G=4, M=8192, N=4096, K=4096...
+  torch_fp16:    1718.0 TFLOPS, 0.640 ms
+  torch_fp8:     1459.0 TFLOPS, 0.754 ms (loop baseline)
+  deepgemm_fp8:  2810.1 TFLOPS, 0.391 ms
+Benchmarking G=4, M=8192, N=4096, K=2048...
+  torch_fp16:    1676.2 TFLOPS, 0.328 ms
+  torch_fp8:     1368.0 TFLOPS, 0.402 ms (loop baseline)
+  deepgemm_fp8:  2532.2 TFLOPS, 0.217 ms
+Benchmarking G=8, M=4096, N=6144, K=7168...
+  torch_fp16:    1656.3 TFLOPS, 1.743 ms
+  torch_fp8:     1019.3 TFLOPS, 2.831 ms (loop baseline)
+  deepgemm_fp8:  2889.4 TFLOPS, 0.999 ms
+Benchmarking G=8, M=4096, N=7168, K=3072...
+  torch_fp16:    1734.5 TFLOPS, 0.832 ms
+  torch_fp8:     894.6 TFLOPS, 1.613 ms (loop baseline)
+  deepgemm_fp8:  2814.3 TFLOPS, 0.513 ms
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1728.0 TFLOPS, 0.636 ms
+  torch_fp8:     1074.3 TFLOPS, 1.023 ms (loop baseline)
+  deepgemm_fp8:  2772.7 TFLOPS, 0.397 ms
+Benchmarking G=8, M=4096, N=4096, K=2048...
+  torch_fp16:    1663.6 TFLOPS, 0.330 ms
+  torch_fp8:     838.5 TFLOPS, 0.656 ms (loop baseline)
+  deepgemm_fp8:  2508.4 TFLOPS, 0.219 ms
+Benchmarking G=8, M=1024, N=2048, K=7168...
+  torch_fp16:    1484.5 TFLOPS, 0.162 ms
+  torch_fp8:     368.4 TFLOPS, 0.653 ms (loop baseline)
+  deepgemm_fp8:  2007.4 TFLOPS, 0.120 ms
+Benchmarking G=8, M=2048, N=2048, K=7168...
+  torch_fp16:    1591.4 TFLOPS, 0.302 ms
+  torch_fp8:     708.9 TFLOPS, 0.679 ms (loop baseline)
+  deepgemm_fp8:  2338.4 TFLOPS, 0.206 ms
+Benchmarking G=8, M=4096, N=2048, K=7168...
+  torch_fp16:    1649.8 TFLOPS, 0.583 ms
+  torch_fp8:     1040.8 TFLOPS, 0.924 ms (loop baseline)
+  deepgemm_fp8:  2603.6 TFLOPS, 0.370 ms
+Benchmarking G=8, M=1024, N=7168, K=2048...
+  torch_fp16:    1598.9 TFLOPS, 0.150 ms
+  torch_fp8:     360.2 TFLOPS, 0.668 ms (loop baseline)
+  deepgemm_fp8:  2191.2 TFLOPS, 0.110 ms
+Benchmarking G=8, M=2048, N=7168, K=2048...
+  torch_fp16:    1659.5 TFLOPS, 0.290 ms
+  torch_fp8:     662.7 TFLOPS, 0.726 ms (loop baseline)
+  deepgemm_fp8:  2474.2 TFLOPS, 0.194 ms
+Benchmarking G=8, M=4096, N=7168, K=2048...
+  torch_fp16:    1704.1 TFLOPS, 0.565 ms
+  torch_fp8:     939.1 TFLOPS, 1.024 ms (loop baseline)
+  deepgemm_fp8:  2712.0 TFLOPS, 0.355 ms
+Benchmarking G=8, M=1024, N=5632, K=4096...
+  torch_fp16:    1607.0 TFLOPS, 0.235 ms
+  torch_fp8:     412.2 TFLOPS, 0.917 ms (loop baseline)
+  deepgemm_fp8:  2354.8 TFLOPS, 0.161 ms
+Benchmarking G=8, M=2048, N=5632, K=4096...
+  torch_fp16:    1681.0 TFLOPS, 0.450 ms
+  torch_fp8:     711.2 TFLOPS, 1.063 ms (loop baseline)
+  deepgemm_fp8:  2596.2 TFLOPS, 0.291 ms
+Benchmarking G=8, M=4096, N=5632, K=4096...
+  torch_fp16:    1745.5 TFLOPS, 0.866 ms
+  torch_fp8:     869.3 TFLOPS, 1.739 ms (loop baseline)
+  deepgemm_fp8:  2810.1 TFLOPS, 0.538 ms
+Benchmarking G=8, M=1024, N=4096, K=5632...
+  torch_fp16:    1599.8 TFLOPS, 0.236 ms
+  torch_fp8:     435.2 TFLOPS, 0.868 ms (loop baseline)
+  deepgemm_fp8:  2376.5 TFLOPS, 0.159 ms
+Benchmarking G=8, M=2048, N=4096, K=5632...
+  torch_fp16:    1677.5 TFLOPS, 0.451 ms
+  torch_fp8:     674.3 TFLOPS, 1.121 ms (loop baseline)
+  deepgemm_fp8:  2617.9 TFLOPS, 0.289 ms
+Benchmarking G=8, M=4096, N=4096, K=5632...
+  torch_fp16:    1667.5 TFLOPS, 0.907 ms
+  torch_fp8:     917.5 TFLOPS, 1.648 ms (loop baseline)
+  deepgemm_fp8:  2888.4 TFLOPS, 0.523 ms
+Benchmarking G=2, M=1024, N=14336, K=4096...
+  torch_fp16:    1643.5 TFLOPS, 0.146 ms
+  torch_fp8:     436.5 TFLOPS, 0.551 ms (loop baseline)
+  deepgemm_fp8:  2307.7 TFLOPS, 0.104 ms
+Benchmarking G=2, M=2048, N=14336, K=4096...
+  torch_fp16:    1700.5 TFLOPS, 0.283 ms
+  torch_fp8:     747.8 TFLOPS, 0.643 ms (loop baseline)
+  deepgemm_fp8:  2588.1 TFLOPS, 0.186 ms
+Benchmarking G=2, M=4096, N=14336, K=4096...
+  torch_fp16:    1731.3 TFLOPS, 0.556 ms
+  torch_fp8:     1160.5 TFLOPS, 0.829 ms (loop baseline)
+  deepgemm_fp8:  2797.2 TFLOPS, 0.344 ms
+Benchmarking G=2, M=1024, N=4096, K=14336...
+  torch_fp16:    1655.2 TFLOPS, 0.145 ms
+  torch_fp8:     447.2 TFLOPS, 0.538 ms (loop baseline)
+  deepgemm_fp8:  2332.1 TFLOPS, 0.103 ms
+Benchmarking G=2, M=2048, N=4096, K=14336...
+  torch_fp16:    1626.2 TFLOPS, 0.296 ms
+  torch_fp8:     788.8 TFLOPS, 0.610 ms (loop baseline)
+  deepgemm_fp8:  2553.3 TFLOPS, 0.188 ms
+Benchmarking G=2, M=4096, N=4096, K=4096...
+  torch_fp16:    1654.2 TFLOPS, 0.166 ms
+  torch_fp8:     1095.1 TFLOPS, 0.251 ms (loop baseline)
+  deepgemm_fp8:  2536.3 TFLOPS, 0.108 ms
+Benchmarking G=4, M=4096, N=4096, K=4096...
+  torch_fp16:    1697.0 TFLOPS, 0.324 ms
+  torch_fp8:     1117.2 TFLOPS, 0.492 ms (loop baseline)
+  deepgemm_fp8:  2637.9 TFLOPS, 0.208 ms
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1696.4 TFLOPS, 0.648 ms
+  torch_fp8:     982.1 TFLOPS, 1.120 ms (loop baseline)
+  deepgemm_fp8:  2824.6 TFLOPS, 0.389 ms
+Benchmarking G=16, M=4096, N=4096, K=4096...
+  torch_fp16:    1745.4 TFLOPS, 1.260 ms
+  torch_fp8:     1066.6 TFLOPS, 2.062 ms (loop baseline)
+  deepgemm_fp8:  2858.5 TFLOPS, 0.769 ms
+Benchmarking G=32, M=4096, N=4096, K=4096...
+  torch_fp16:    1751.2 TFLOPS, 2.511 ms
+  torch_fp8:     1039.4 TFLOPS, 4.231 ms (loop baseline)
+  deepgemm_fp8:  2852.2 TFLOPS, 1.542 ms
+Benchmarking G=8, M=256, N=4096, K=4096...
+  torch_fp16:    1218.9 TFLOPS, 0.056 ms
+  torch_fp8:     99.1 TFLOPS, 0.693 ms (loop baseline)
+  deepgemm_fp8:  1618.5 TFLOPS, 0.042 ms
+Benchmarking G=8, M=512, N=4096, K=4096...
+  torch_fp16:    1336.1 TFLOPS, 0.103 ms
+  torch_fp8:     198.4 TFLOPS, 0.693 ms (loop baseline)
+  deepgemm_fp8:  2049.9 TFLOPS, 0.067 ms
+Benchmarking G=8, M=1024, N=4096, K=4096...
+  torch_fp16:    1587.3 TFLOPS, 0.173 ms
+  torch_fp8:     409.8 TFLOPS, 0.671 ms (loop baseline)
+  deepgemm_fp8:  2338.6 TFLOPS, 0.118 ms
+Benchmarking G=8, M=2048, N=4096, K=4096...
+  torch_fp16:    1702.6 TFLOPS, 0.323 ms
+  torch_fp8:     723.0 TFLOPS, 0.760 ms (loop baseline)
+  deepgemm_fp8:  2605.6 TFLOPS, 0.211 ms
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1697.9 TFLOPS, 0.648 ms
+  torch_fp8:     980.0 TFLOPS, 1.122 ms (loop baseline)
+  deepgemm_fp8:  2818.8 TFLOPS, 0.390 ms
+Benchmarking G=8, M=8192, N=4096, K=4096...
+  torch_fp16:    1679.6 TFLOPS, 1.309 ms
+  torch_fp8:     1227.1 TFLOPS, 1.792 ms (loop baseline)
+  deepgemm_fp8:  2891.5 TFLOPS, 0.761 ms
+Benchmarking G=8, M=1024, N=4096, K=4096...
+  torch_fp16:    1591.0 TFLOPS, 0.173 ms
+  torch_fp8:     406.3 TFLOPS, 0.677 ms (loop baseline)
+  deepgemm_fp8:  2329.0 TFLOPS, 0.118 ms
+Benchmarking G=8, M=2048, N=4096, K=4096...
+  torch_fp16:    1705.2 TFLOPS, 0.322 ms
+  torch_fp8:     720.4 TFLOPS, 0.763 ms (loop baseline)
+  deepgemm_fp8:  2598.0 TFLOPS, 0.212 ms
+Benchmarking G=16, M=1024, N=4096, K=4096...
+  torch_fp16:    1650.1 TFLOPS, 0.333 ms
+  torch_fp8:     418.8 TFLOPS, 1.313 ms (loop baseline)
+  deepgemm_fp8:  2445.4 TFLOPS, 0.225 ms
+Benchmarking G=16, M=2048, N=4096, K=4096...
+  torch_fp16:    1701.9 TFLOPS, 0.646 ms
+  torch_fp8:     688.2 TFLOPS, 1.598 ms (loop baseline)
+  deepgemm_fp8:  2691.0 TFLOPS, 0.409 ms
+Benchmarking G=8, M=2048, N=2048, K=7168...
+  torch_fp16:    1591.6 TFLOPS, 0.302 ms
+  torch_fp8:     717.6 TFLOPS, 0.670 ms (loop baseline)
+  deepgemm_fp8:  2396.9 TFLOPS, 0.201 ms
+Benchmarking G=8, M=2048, N=7168, K=2048...
+  torch_fp16:    1680.6 TFLOPS, 0.286 ms
+  torch_fp8:     670.8 TFLOPS, 0.717 ms (loop baseline)
+  deepgemm_fp8:  2543.3 TFLOPS, 0.189 ms
+Benchmarking G=1, M=4096, N=4096, K=4096...
+  torch_fp16:    1580.6 TFLOPS, 0.087 ms
+  torch_fp8:     1122.5 TFLOPS, 0.122 ms (loop baseline)
+  deepgemm_fp8:  2535.5 TFLOPS, 0.054 ms
+Benchmarking G=1, M=8192, N=4096, K=4096...
+  torch_fp16:    1652.1 TFLOPS, 0.166 ms
+  torch_fp8:     1543.6 TFLOPS, 0.178 ms (loop baseline)
+  deepgemm_fp8:  2622.7 TFLOPS, 0.105 ms
+Benchmarking G=1, M=4096, N=14336, K=4096...
+  torch_fp16:    1711.6 TFLOPS, 0.281 ms
+  torch_fp8:     1158.5 TFLOPS, 0.415 ms (loop baseline)
+  deepgemm_fp8:  2583.8 TFLOPS, 0.186 ms
+Benchmarking G=2, M=4096, N=4096, K=4096...
+  torch_fp16:    1653.0 TFLOPS, 0.166 ms
+  torch_fp8:     1097.5 TFLOPS, 0.250 ms (loop baseline)
+  deepgemm_fp8:  2528.1 TFLOPS, 0.109 ms
+Benchmarking G=2, M=8192, N=4096, K=4096...
+  torch_fp16:    1693.0 TFLOPS, 0.325 ms
+  torch_fp8:     1559.4 TFLOPS, 0.353 ms (loop baseline)
+  deepgemm_fp8:  2700.8 TFLOPS, 0.204 ms
+Benchmarking G=2, M=4096, N=14336, K=4096...
+  torch_fp16:    1742.4 TFLOPS, 0.552 ms
+  torch_fp8:     1175.5 TFLOPS, 0.818 ms (loop baseline)
+  deepgemm_fp8:  2796.9 TFLOPS, 0.344 ms
+
+====================================================================================================
+Grouped GEMM Benchmark Results - NVIDIA GB200
+====================================================================================================
+
+Shape                     | Backend         | Time (ms)    | TFLOPS     | BW (GB/s)   
+--------------------------------------------------------------------------------------
+G16_M1024_N4096_K4096     | deepgemm_fp8    | 0.2248       | 2445.4     | 1791.1      
+                          | torch_fp16      | 0.3332       | 1650.1     | 2417.1      
+                          | torch_fp8       | 1.3127       | 418.8      | 306.7       
+G16_M2048_N4096_K4096     | deepgemm_fp8    | 0.4086       | 2691.0     | 1313.9      
+                          | torch_fp16      | 0.6460       | 1701.9     | 1662.0      
+                          | torch_fp8       | 1.5977       | 688.2      | 336.0       
+G16_M4096_N4096_K4096     | deepgemm_fp8    | 0.7693       | 2858.5     | 1046.8      
+                          | torch_fp16      | 1.2599       | 1745.4     | 1278.4      
+                          | torch_fp8       | 2.0617       | 1066.6     | 390.6       
+G1_M4096_N14336_K4096     | deepgemm_fp8    | 0.1862       | 2583.8     | 720.9       
+                          | torch_fp16      | 0.2810       | 1711.6     | 955.2       
+                          | torch_fp8       | 0.4152       | 1158.5     | 323.2       
+G1_M4096_N4096_K4096      | deepgemm_fp8    | 0.0542       | 2535.5     | 928.5       
+                          | torch_fp16      | 0.0870       | 1580.6     | 1157.6      
+                          | torch_fp8       | 0.1224       | 1122.5     | 411.1       
+G1_M8192_N4096_K4096      | deepgemm_fp8    | 0.1048       | 2622.7     | 800.4       
+                          | torch_fp16      | 0.1664       | 1652.1     | 1008.3      
+                          | torch_fp8       | 0.1781       | 1543.6     | 471.1       
+G2_M1024_N14336_K4096     | deepgemm_fp8    | 0.1042       | 2307.7     | 1489.0      
+                          | torch_fp16      | 0.1463       | 1643.5     | 2120.9      
+                          | torch_fp8       | 0.5510       | 436.5      | 281.6       
+G2_M1024_N4096_K14336     | deepgemm_fp8    | 0.1031       | 2332.1     | 1504.7      
+                          | torch_fp16      | 0.1453       | 1655.2     | 2136.0      
+                          | torch_fp8       | 0.5379       | 447.2      | 288.5       
+G2_M2048_N14336_K4096     | deepgemm_fp8    | 0.1859       | 2588.1     | 1038.1      
+                          | torch_fp16      | 0.2829       | 1700.5     | 1364.1      
+                          | torch_fp8       | 0.6433       | 747.8      | 299.9       
+G2_M2048_N4096_K14336     | deepgemm_fp8    | 0.1884       | 2553.3     | 1024.1      
+                          | torch_fp16      | 0.2958       | 1626.2     | 1304.5      
+                          | torch_fp8       | 0.6098       | 788.8      | 316.4       
+G2_M4096_N14336_K4096     | deepgemm_fp8    | 0.3439       | 2797.2     | 780.5       
+                          | deepgemm_fp8    | 0.3440       | 2796.9     | 780.4       
+                          | torch_fp16      | 0.5557       | 1731.3     | 966.1       
+                          | torch_fp16      | 0.5521       | 1742.4     | 972.3       
+                          | torch_fp8       | 0.8290       | 1160.5     | 323.8       
+                          | torch_fp8       | 0.8185       | 1175.5     | 328.0       
+G2_M4096_N4096_K4096      | deepgemm_fp8    | 0.1084       | 2536.3     | 928.8       
+                          | deepgemm_fp8    | 0.1087       | 2528.1     | 925.8       
+                          | torch_fp16      | 0.1662       | 1654.2     | 1211.6      
+                          | torch_fp16      | 0.1663       | 1653.0     | 1210.7      
+                          | torch_fp8       | 0.2510       | 1095.1     | 401.0       
+                          | torch_fp8       | 0.2505       | 1097.5     | 401.9       
+G2_M8192_N4096_K4096      | deepgemm_fp8    | 0.2036       | 2700.8     | 824.2       
+                          | torch_fp16      | 0.3247       | 1693.0     | 1033.3      
+                          | torch_fp8       | 0.3525       | 1559.4     | 475.9       
+G32_M4096_N4096_K4096     | deepgemm_fp8    | 1.5420       | 2852.2     | 1044.5      
+                          | torch_fp16      | 2.5115       | 1751.2     | 1282.6      
+                          | torch_fp8       | 4.2314       | 1039.4     | 380.6       
+G4_M4096_N4096_K4096      | deepgemm_fp8    | 0.2084       | 2637.9     | 966.0       
+                          | torch_fp16      | 0.3240       | 1697.0     | 1242.9      
+                          | torch_fp8       | 0.4921       | 1117.2     | 409.1       
+G4_M8192_N4096_K2048      | deepgemm_fp8    | 0.2171       | 2532.2     | 1081.9      
+                          | torch_fp16      | 0.3280       | 1676.2     | 1432.3      
+                          | torch_fp8       | 0.4019       | 1368.0     | 584.5       
+G4_M8192_N4096_K4096      | deepgemm_fp8    | 0.3913       | 2810.1     | 857.6       
+                          | torch_fp16      | 0.6400       | 1718.0     | 1048.6      
+                          | torch_fp8       | 0.7536       | 1459.0     | 445.3       
+G4_M8192_N6144_K7168      | deepgemm_fp8    | 1.0110       | 2854.8     | 605.7       
+                          | torch_fp16      | 1.7007       | 1697.1     | 720.2       
+                          | torch_fp8       | 1.6964       | 1701.4     | 361.0       
+G4_M8192_N7168_K3072      | deepgemm_fp8    | 0.5148       | 2803.4     | 822.9       
+                          | torch_fp16      | 0.8303       | 1738.1     | 1020.4      
+                          | torch_fp8       | 1.1011       | 1310.7     | 384.7       
+G8_M1024_N2048_K7168      | deepgemm_fp8    | 0.1198       | 2007.4     | 1610.3      
+                          | torch_fp16      | 0.1620       | 1484.5     | 2381.6      
+                          | torch_fp8       | 0.6529       | 368.4      | 295.5       
+G8_M1024_N4096_K4096      | deepgemm_fp8    | 0.1175       | 2338.6     | 1712.8      
+                          | deepgemm_fp8    | 0.1180       | 2329.0     | 1705.8      
+                          | torch_fp16      | 0.1732       | 1587.3     | 2325.2      
+                          | torch_fp16      | 0.1728       | 1591.0     | 2330.5      
+                          | torch_fp8       | 0.6708       | 409.8      | 300.1       
+                          | torch_fp8       | 0.6765       | 406.3      | 297.6       
+G8_M1024_N4096_K5632      | deepgemm_fp8    | 0.1590       | 2376.5     | 1661.5      
+                          | torch_fp16      | 0.2363       | 1599.8     | 2236.9      
+                          | torch_fp8       | 0.8684       | 435.2      | 304.3       
+G8_M1024_N5632_K4096      | deepgemm_fp8    | 0.1605       | 2354.8     | 1646.3      
+                          | torch_fp16      | 0.2352       | 1607.0     | 2247.0      
+                          | torch_fp8       | 0.9170       | 412.2      | 288.2       
+G8_M1024_N7168_K2048      | deepgemm_fp8    | 0.1098       | 2191.2     | 1757.8      
+                          | torch_fp16      | 0.1504       | 1598.9     | 2565.1      
+                          | torch_fp8       | 0.6677       | 360.2      | 289.0       
+G8_M2048_N2048_K7168      | deepgemm_fp8    | 0.2057       | 2338.4     | 1304.9      
+                          | deepgemm_fp8    | 0.2007       | 2396.9     | 1337.6      
+                          | torch_fp16      | 0.3023       | 1591.4     | 1776.2      
+                          | torch_fp16      | 0.3022       | 1591.6     | 1776.3      
+                          | torch_fp8       | 0.6786       | 708.9      | 395.6       
+                          | torch_fp8       | 0.6703       | 717.6      | 400.4       
+G8_M2048_N4096_K4096      | deepgemm_fp8    | 0.2110       | 2605.6     | 1272.3      
+                          | deepgemm_fp8    | 0.2116       | 2598.0     | 1268.6      
+                          | torch_fp16      | 0.3229       | 1702.6     | 1662.7      
+                          | torch_fp16      | 0.3224       | 1705.2     | 1665.2      
+                          | torch_fp8       | 0.7604       | 723.0      | 353.0       
+                          | torch_fp8       | 0.7632       | 720.4      | 351.7       
+G8_M2048_N4096_K5632      | deepgemm_fp8    | 0.2888       | 2617.9     | 1191.1      
+                          | torch_fp16      | 0.4506       | 1677.5     | 1526.5      
+                          | torch_fp8       | 1.1211       | 674.3      | 306.8       
+G8_M2048_N5632_K4096      | deepgemm_fp8    | 0.2912       | 2596.2     | 1181.2      
+                          | torch_fp16      | 0.4497       | 1681.0     | 1529.6      
+                          | torch_fp8       | 1.0629       | 711.2      | 323.6       
+G8_M2048_N7168_K2048      | deepgemm_fp8    | 0.1944       | 2474.2     | 1380.7      
+                          | deepgemm_fp8    | 0.1891       | 2543.3     | 1419.2      
+                          | torch_fp16      | 0.2899       | 1659.5     | 1852.1      
+                          | torch_fp16      | 0.2862       | 1680.6     | 1875.7      
+                          | torch_fp8       | 0.7258       | 662.7      | 369.8       
+                          | torch_fp8       | 0.7171       | 670.8      | 374.4       
+G8_M256_N4096_K4096       | deepgemm_fp8    | 0.0425       | 1618.5     | 3556.3      
+                          | torch_fp16      | 0.0564       | 1218.9     | 5356.6      
+                          | torch_fp8       | 0.6933       | 99.1       | 217.8       
+G8_M4096_N2048_K7168      | deepgemm_fp8    | 0.3695       | 2603.6     | 1135.1      
+                          | torch_fp16      | 0.5832       | 1649.8     | 1438.5      
+                          | torch_fp8       | 0.9244       | 1040.8     | 453.7       
+G8_M4096_N4096_K2048      | deepgemm_fp8    | 0.2192       | 2508.4     | 1224.8      
+                          | torch_fp16      | 0.3305       | 1663.6     | 1624.6      
+                          | torch_fp8       | 0.6556       | 838.5      | 409.4       
+G8_M4096_N4096_K4096      | deepgemm_fp8    | 0.3966       | 2772.7     | 1015.4      
+                          | deepgemm_fp8    | 0.3893       | 2824.6     | 1034.4      
+                          | deepgemm_fp8    | 0.3901       | 2818.8     | 1032.3      
+                          | torch_fp16      | 0.6363       | 1728.0     | 1265.6      
+                          | torch_fp16      | 0.6482       | 1696.4     | 1242.5      
+                          | torch_fp16      | 0.6476       | 1697.9     | 1243.6      
+                          | torch_fp8       | 1.0235       | 1074.3     | 393.4       
+                          | torch_fp8       | 1.1196       | 982.1      | 359.7       
+                          | torch_fp8       | 1.1220       | 980.0      | 358.9       
+G8_M4096_N4096_K5632      | deepgemm_fp8    | 0.5234       | 2888.4     | 961.6       
+                          | torch_fp16      | 0.9066       | 1667.5     | 1110.3      
+                          | torch_fp8       | 1.6478       | 917.5      | 305.4       
+G8_M4096_N5632_K4096      | deepgemm_fp8    | 0.5380       | 2810.1     | 935.5       
+                          | torch_fp16      | 0.8661       | 1745.5     | 1162.2      
+                          | torch_fp8       | 1.7390       | 869.3      | 289.4       
+G8_M4096_N6144_K7168      | deepgemm_fp8    | 0.9989       | 2889.4     | 789.4       
+                          | torch_fp16      | 1.7425       | 1656.3     | 905.0       
+                          | torch_fp8       | 2.8315       | 1019.3     | 278.5       
+G8_M4096_N7168_K2048      | deepgemm_fp8    | 0.3547       | 2712.0     | 1182.3      
+                          | torch_fp16      | 0.5646       | 1704.1     | 1485.8      
+                          | torch_fp8       | 1.0244       | 939.1      | 409.4       
+G8_M4096_N7168_K3072      | deepgemm_fp8    | 0.5128       | 2814.3     | 997.9       
+                          | torch_fp16      | 0.8320       | 1734.5     | 1230.1      
+                          | torch_fp8       | 1.6131       | 894.6      | 317.2       
+G8_M512_N4096_K4096       | deepgemm_fp8    | 0.0670       | 2049.9     | 2502.3      
+                          | torch_fp16      | 0.1029       | 1336.1     | 3262.0      
+                          | torch_fp8       | 0.6926       | 198.4      | 242.2       
+G8_M8192_N4096_K4096      | deepgemm_fp8    | 0.7605       | 2891.5     | 882.4       
+                          | torch_fp16      | 1.3093       | 1679.6     | 1025.1      
+                          | torch_fp8       | 1.7920       | 1227.1     | 374.5       
+
+Plot saved to: /tmp/gemm_bench_all.png

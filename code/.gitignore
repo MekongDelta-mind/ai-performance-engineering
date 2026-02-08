@@ -1,4 +1,8 @@
+
 book/
+clustermax/
+clustermax_from_node2
+clustermax*/
 third_party/TransformerEngine-src/
 third_party/wheels/
 third_party/cutlass/
@@ -24,6 +28,8 @@ config/.env
 config/.env.local
 benchmark_test_results.json
 benchmark_test_results.md
+benchmark_events.jsonl
+benchmark_events_*.jsonl
 benchmark_status_table.json
 benchmark_status_table.txt
 benchmark_results/

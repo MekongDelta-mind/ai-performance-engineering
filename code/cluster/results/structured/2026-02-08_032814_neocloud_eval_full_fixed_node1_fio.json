@@ -1,0 +1,39 @@
+{
+  "bs_rand": "4K",
+  "bs_seq": "1M",
+  "file_size": "8G",
+  "iodepth": 64,
+  "label": "node1",
+  "numjobs": 4,
+  "raw": {
+    "rand_read_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_032814_neocloud_eval_full_fixed_node1_fio/rand_read.json",
+    "rand_write_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_032814_neocloud_eval_full_fixed_node1_fio/rand_write.json",
+    "seq_read_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_032814_neocloud_eval_full_fixed_node1_fio/seq_read.json",
+    "seq_write_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_032814_neocloud_eval_full_fixed_node1_fio/seq_write.json"
+  },
+  "results": {
+    "rand_read": {
+      "bw_mb_s": 142.59088230133057,
+      "iops": 36503.266013,
+      "p99_lat_ms": null
+    },
+    "rand_write": {
+      "bw_mb_s": 69.48608207702637,
+      "iops": 17788.437188,
+      "p99_lat_ms": null
+    },
+    "seq_read": {
+      "bw_mb_s": 1412.2254438400269,
+      "iops": 1412.225444,
+      "p99_lat_ms": null
+    },
+    "seq_write": {
+      "bw_mb_s": 727.5454082489014,
+      "iops": 727.545409,
+      "p99_lat_ms": null
+    }
+  },
+  "run_id": "2026-02-08_032814_neocloud_eval_full_fixed",
+  "runtime_s": 30,
+  "work_dir": "/tmp/aisp_fio_2026-02-08_032814_neocloud_eval_full_fixed_node1"
+}

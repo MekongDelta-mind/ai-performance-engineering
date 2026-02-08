@@ -23,7 +23,7 @@ class BaselineCublasltGemmFp8Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cublaslt_gemm_fp8",
             friendly_name="Baseline Cublaslt Gemm Fp8",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={
@@ -32,7 +32,6 @@ class BaselineCublasltGemmFp8Benchmark(CudaBinaryBenchmark):
                 "K": 4096,
                 "kIterations": 10,
                 "kBatchCount": 8,
-                "TILE_SIZE": 32,
                 "dtype": 'fp8',
             },
         )

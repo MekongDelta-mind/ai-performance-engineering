@@ -1,0 +1,69 @@
+{
+  "dest": {
+    "git_head": "f698cf2566bebc8e52b7acdc701c1a2862d60783",
+    "git_remote_v": [
+      "origin\tREDACTED_REMOTE (fetch)",
+      "origin\tREDACTED_REMOTE (push)"
+    ],
+    "git_status_porcelain": [
+      " M standalone/docs/gb200-networking.md",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-212920.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215109.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215614.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215735.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215932.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215941.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215959.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-220833.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-225323.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-225451.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-230024.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-230819.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-231346.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-231722.txt",
+      "?? standalone/inference/vllm/run-vllm-bench-multinode.sh",
+      "?? standalone/networking/allreduce/run_2node_bench.sh"
+    ],
+    "path": "$CLUSTER_PERF_SNAPSHOT_DIR"
+  },
+  "src": {
+    "git_head": "f698cf2566bebc8e52b7acdc701c1a2862d60783",
+    "git_remote_v": [
+      "origin\tREDACTED_REMOTE (fetch)",
+      "origin\tREDACTED_REMOTE (push)"
+    ],
+    "git_status_porcelain": [
+      "M standalone/docs/gb200-networking.md",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-212920.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215109.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215614.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215735.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215932.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215941.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-215959.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-220833.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-225323.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-225451.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-230024.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-230819.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-231346.txt",
+      "?? standalone/inference/vllm/results/vllm_openai_gpt-oss-120b_isl1024_osl1024_tp8_2node_conc64_20260206-231722.txt",
+      "?? standalone/inference/vllm/run-vllm-bench-multinode.sh",
+      "?? standalone/networking/allreduce/run_2node_bench.sh"
+    ],
+    "host": "node2",
+    "path": "$CLUSTER_PERF_SUITE_DIR_NODE2",
+    "user": "ubuntu"
+  },
+  "timestamp_utc": "2026-02-08T03:14:14.624504+00:00",
+  "transfer": {
+    "excluded": [
+      ".venv"
+    ],
+    "local_tgz": "/tmp/cluster_perf_node2_2026-02-08_031318.tgz",
+    "local_tgz_sha256": "0a2cd7dc9cf5bbed98e7567130ad123d5fadff4f56a5467f04f350edc99c9ed7",
+    "local_tgz_size_bytes": 81342720,
+    "method": "ssh tar (exclude .venv) + scp",
+    "remote_tgz": "/tmp/cluster_perf_node2_2026-02-08_031318.tgz"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "files": [
+    "results/structured/2026-02-06_neocloud_fullstack_node1_meta.json",
+    "results/structured/2026-02-06_neocloud_fullstack_node1_tcp_sysctl.json",
+    "results/structured/2026-02-06_neocloud_fullstack_node1_tcp_sysctl.txt",
+    "results/structured/2026-02-06_neocloud_fullstack_node2_meta.json",
+    "results/structured/2026-02-06_neocloud_fullstack_node2_tcp_sysctl.json",
+    "results/structured/2026-02-06_neocloud_fullstack_node2_tcp_sysctl.txt",
+    "results/structured/2026-02-06_neocloud_fullstack_tcp_sysctl_diff.json"
+  ],
+  "manifest_version": 1,
+  "nodes": [
+    {
+      "ip": "138.252.188.89",
+      "label": "node1"
+    },
+    {
+      "ip": "138.252.188.113",
+      "label": "node2"
+    }
+  ],
+  "run_id": "2026-02-06_neocloud_fullstack",
+  "summary": {
+    "artifact_counts": {
+      "json": 5,
+      "txt": 2
+    },
+    "file_count": 7,
+    "sha256": {
+      "results/structured/2026-02-06_neocloud_fullstack_node1_meta.json": "6a173db247b7ff6bba2a16f419abe1cb00ec25c4d58bdbe9dfc80a7cc84557c9",
+      "results/structured/2026-02-06_neocloud_fullstack_node1_tcp_sysctl.json": "2a95f667d8c175b53c7e3544e391beb4870de54023ca8fc92f61d71e6a989fd1",
+      "results/structured/2026-02-06_neocloud_fullstack_node1_tcp_sysctl.txt": "3b0853aef80f2b69875b78d2062fb455ab0f294327c0999cd6deec062c8326b4",
+      "results/structured/2026-02-06_neocloud_fullstack_node2_meta.json": "2cdaf3ebf2b84f4cbceb0a9b142e7b00c72ab3e74aebb7a7f123e3a58eb4d31f",
+      "results/structured/2026-02-06_neocloud_fullstack_node2_tcp_sysctl.json": "ba7e6567ec3bc008602bdb39d726b75b686194fe44443de766a4ba7915b87dde",
+      "results/structured/2026-02-06_neocloud_fullstack_node2_tcp_sysctl.txt": "28fa230bfbfe54ff1fc373ef891e72a3c946204d1ebbfb7d499588794a05f552",
+      "results/structured/2026-02-06_neocloud_fullstack_tcp_sysctl_diff.json": "eaa06e79226478e2b372e698155db7afc1faf58a08f65992920703cc8ead47cc"
+    }
+  },
+  "timestamp_utc": "2026-02-06T22:15:49.208831+00:00"
+}

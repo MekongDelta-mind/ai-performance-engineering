@@ -27,12 +27,8 @@ class BaselineLaunchBoundsGmemBenchmark(CudaBinaryBenchmark):
             warmup=5,
             timeout_seconds=180,
             workload_params={
-                "kLaunchBoundsWorkIters": 96,
-                "kLaunchBoundsTransformRepeats": 3,
-                "kTransformPasses": 8,
-                "kThreads": 64,
-                "kBlocks": 8,
-                "dtype": 'float32',
+                "N": 1024 * 64,
+                "dtype": "float32",
                 "batch_size": 1,
             },
         )

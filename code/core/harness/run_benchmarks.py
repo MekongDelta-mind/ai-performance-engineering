@@ -187,10 +187,19 @@ def reset_gpu_via_script(reason: str) -> None:
 
 
 def maybe_reset_gpu_for_error(error_message: str, context: str) -> None:
-    """Trigger GPU reset when the error message indicates a hang/timeout."""
+    """Optionally reset the GPU when the error message indicates a hang/timeout.
+
+    Disabled by default because the reset helper terminates all GPU compute
+    processes, which can include this harness runner. Enable explicitly by
+    setting `AISP_AUTO_RESET_GPU_ON_TIMEOUT=1`.
+    """
     normalized = error_message.strip().upper()
-    if "TIMEOUT" in normalized or "HANG" in normalized:
-        reset_gpu_via_script(f"{context}: {error_message.splitlines()[0]}")
+    if "TIMEOUT" not in normalized and "HANG" not in normalized:
+        return
+    flag = os.environ.get("AISP_AUTO_RESET_GPU_ON_TIMEOUT", "").strip().lower()
+    if flag not in {"1", "true", "yes", "on"}:
+        return
+    reset_gpu_via_script(f"{context}: {error_message.splitlines()[0]}")
 
 
 def extract_from_pytorch_trace(trace_path: Path) -> Dict[str, float]:
@@ -1904,6 +1913,9 @@ def profile_python_benchmark(
         except Exception:
             bench_config = None
     nvtx_includes = getattr(bench_config, "nsys_nvtx_include", None) if bench_config else None
+    lock_gpu_clocks_flag = bool(getattr(bench_config, "lock_gpu_clocks", False)) if bench_config else False
+    gpu_sm_clock_mhz = getattr(bench_config, "gpu_sm_clock_mhz", None) if bench_config else None
+    gpu_mem_clock_mhz = getattr(bench_config, "gpu_mem_clock_mhz", None) if bench_config else None
     repo_root = chapter_dir.parent
 
     # Create a temporary wrapper script that runs the benchmark
@@ -1913,6 +1925,7 @@ def profile_python_benchmark(
         wrapper_script.write(f"""
 import sys
 from pathlib import Path
+from contextlib import nullcontext
 
 # Add repo root so NVTX helpers can be imported
 sys.path.insert(0, r'{repo_root}')
@@ -1924,30 +1937,54 @@ sys.path.insert(0, r'{chapter_dir}')
 from {benchmark_path.stem} import get_benchmark
 
 benchmark = get_benchmark()
-from core.harness.benchmark_harness import BenchmarkConfig, ReadOnlyBenchmarkConfigView
+from core.harness.benchmark_harness import (
+    BenchmarkConfig,
+    ReadOnlyBenchmarkConfigView,
+    lock_gpu_clocks,
+    ramp_gpu_clocks,
+)
+from core.profiling.nvtx_helper import nvtx_range
 _profiling_config = BenchmarkConfig(
     enable_profiling=True,
     enable_nvtx=True,
     nsys_nvtx_include={nvtx_includes!r},
+    lock_gpu_clocks={lock_gpu_clocks_flag!r},
+    gpu_sm_clock_mhz={gpu_sm_clock_mhz!r},
+    gpu_mem_clock_mhz={gpu_mem_clock_mhz!r},
 )
 benchmark._config = ReadOnlyBenchmarkConfigView.from_config(_profiling_config)
-benchmark.setup()
+lock_ctx = (
+    lock_gpu_clocks(
+        device=0,
+        sm_clock_mhz=getattr(_profiling_config, "gpu_sm_clock_mhz", None),
+        mem_clock_mhz=getattr(_profiling_config, "gpu_mem_clock_mhz", None),
+    )
+    if getattr(_profiling_config, "lock_gpu_clocks", False)
+    else nullcontext()
+)
+with lock_ctx:
+    # Best-effort clock ramp before capture.
+    try:
+        ramp_gpu_clocks(device=0)
+    except Exception:
+        pass
+    benchmark.setup()
 
-# Warmup
-for _ in range(5):
+    # Warmup (keep short; profiling is not a timing run)
     benchmark.benchmark_fn()
 
-# Profile execution
-import torch
-if torch.cuda.is_available():
-    torch.cuda.synchronize()
+    # Profile execution
+    import torch
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
-benchmark.benchmark_fn()
+    with nvtx_range("compute_kernel:profile", enable=True):
+        benchmark.benchmark_fn()
 
-if torch.cuda.is_available():
-    torch.cuda.synchronize()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
-benchmark.teardown()
+    benchmark.teardown()
 """)
         wrapper_script.close()
         
@@ -1958,20 +1995,31 @@ benchmark.teardown()
             target_command = [sys.executable, wrapper_script.name]
             env = None
 
+        trace_types = "cuda,nvtx,osrt,cublas,cudnn"
+        preset = str(getattr(bench_config, "profile_type", None) or "minimal").lower()
+        if preset == "minimal":
+            trace_types = "cuda,nvtx,osrt"
         nsys_command = [
             "nsys",
             "profile",
             "--force-overwrite=true",
             "-o",
             str(nsys_output.with_suffix("")),  # nsys adds .nsys-rep automatically
-            "-t", "cuda,nvtx,osrt,cublas,cudnn",
-            "-s", "cpu",
-            "--python-sampling=true",
-            "--python-sampling-frequency=1000",
-            "--cudabacktrace=true",
-            "--stats=true",
-            *target_command,
+            "-t",
+            trace_types,
         ]
+        # Keep Nsight Systems lightweight for minimal runs.
+        if preset != "minimal":
+            nsys_command.extend(
+                [
+                    "-s",
+                    "cpu",
+                    "--python-sampling=true",
+                    "--python-sampling-frequency=1000",
+                    "--cudabacktrace=true",
+                ]
+            )
+        nsys_command.extend(["--stats=true", *target_command])
         timeout = 120
         if bench_config is not None and hasattr(bench_config, "get_effective_timeout"):
             timeout = bench_config.get_effective_timeout("nsys") or timeout
@@ -2127,12 +2175,27 @@ def profile_python_benchmark_ncu(
 
     profiler_config = build_profiler_config_from_benchmark(config)
     nvtx_includes = profiler_config.nvtx_includes
+    profile_nvtx_label = "compute_kernel:profile"
+    try:
+        from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+        is_cuda_binary = isinstance(benchmark, CudaBinaryBenchmark)
+    except Exception:
+        is_cuda_binary = False
+
+    # For in-process Python benchmarks, create a stable NVTX range and use it as
+    # the default NCU filter to avoid profiling every kernel in the process.
+    ncu_nvtx_includes = nvtx_includes
+    if not ncu_nvtx_includes and not is_cuda_binary:
+        ncu_nvtx_includes = [profile_nvtx_label]
     repo_root = chapter_dir.parent
     chapter_num = None
     chapter_name = chapter_dir.name
     if chapter_name.startswith("ch") and chapter_name[2:].isdigit():
         chapter_num = int(chapter_name[2:])
     metrics_override = resolve_ncu_metrics(config.ncu_metric_set, chapter=chapter_num)
+    lock_gpu_clocks_flag = bool(getattr(config, "lock_gpu_clocks", False))
+    gpu_sm_clock_mhz = getattr(config, "gpu_sm_clock_mhz", None)
+    gpu_mem_clock_mhz = getattr(config, "gpu_mem_clock_mhz", None)
 
     # Create a temporary wrapper script that runs the benchmark
     wrapper_script = tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False)
@@ -2141,6 +2204,7 @@ def profile_python_benchmark_ncu(
         wrapper_script.write(f"""
 import sys
 from pathlib import Path
+from contextlib import nullcontext
 
 # Add repo root so NVTX helpers can be imported
 sys.path.insert(0, r'{repo_root}')
@@ -2152,7 +2216,13 @@ sys.path.insert(0, r'{chapter_dir}')
 from {benchmark_path.stem} import get_benchmark
 
 benchmark = get_benchmark()
-from core.harness.benchmark_harness import BenchmarkConfig, ReadOnlyBenchmarkConfigView
+from core.harness.benchmark_harness import (
+    BenchmarkConfig,
+    ReadOnlyBenchmarkConfigView,
+    lock_gpu_clocks,
+    ramp_gpu_clocks,
+)
+from core.profiling.nvtx_helper import nvtx_range
 _profiling_config = BenchmarkConfig(
     enable_profiling=True,
     enable_nsys=True,
@@ -2163,46 +2233,62 @@ _profiling_config = BenchmarkConfig(
     ncu_metric_set={config.ncu_metric_set!r},
     pm_sampling_interval={config.pm_sampling_interval!r},
     ncu_replay_mode={config.ncu_replay_mode!r},
+    lock_gpu_clocks={lock_gpu_clocks_flag!r},
+    gpu_sm_clock_mhz={gpu_sm_clock_mhz!r},
+    gpu_mem_clock_mhz={gpu_mem_clock_mhz!r},
 )
 benchmark._config = ReadOnlyBenchmarkConfigView.from_config(_profiling_config)
-benchmark.setup()
+lock_ctx = (
+    lock_gpu_clocks(
+        device=0,
+        sm_clock_mhz=getattr(_profiling_config, "gpu_sm_clock_mhz", None),
+        mem_clock_mhz=getattr(_profiling_config, "gpu_mem_clock_mhz", None),
+    )
+    if getattr(_profiling_config, "lock_gpu_clocks", False)
+    else nullcontext()
+)
+with lock_ctx:
+    try:
+        ramp_gpu_clocks(device=0)
+    except Exception:
+        pass
+    benchmark.setup()
 
-# Warmup
-for _ in range(5):
+    # Warmup (keep short; profiling is not a timing run)
     benchmark.benchmark_fn()
 
-# Profile execution
-import torch
-if torch.cuda.is_available():
-    torch.cuda.synchronize()
+    # Profile execution
+    import torch
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
-benchmark.benchmark_fn()
+    with nvtx_range({profile_nvtx_label!r}, enable=True):
+        benchmark.benchmark_fn()
 
-if torch.cuda.is_available():
-    torch.cuda.synchronize()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
-benchmark.teardown()
+    benchmark.teardown()
 """)
         wrapper_script.close()
         
         use_torchrun = _is_torchrun_launch(config)
         if use_torchrun:
             target_command, env = _build_torchrun_profile_command(config, wrapper_script.name)
-            env = _harden_profile_env(env, repo_root, chapter_dir)
             ncu_command = profiler_config.get_ncu_command_for_target(
                 str(ncu_output.with_suffix("")),
                 target_command,
                 metrics=metrics_override,
-                nvtx_includes=nvtx_includes,
+                nvtx_includes=ncu_nvtx_includes,
             )
         else:
-            env = _harden_profile_env(None, repo_root, chapter_dir)
+            env = os.environ.copy()
             ncu_command = profiler_config.get_ncu_command(
                 str(ncu_output.with_suffix("")),
                 wrapper_script.name,
                 python_executable=sys.executable,
                 metrics=metrics_override,
-                nvtx_includes=nvtx_includes,
+                nvtx_includes=ncu_nvtx_includes,
             )
         ncu_env_overrides = getattr(benchmark, "ncu_env_overrides", None)
         if ncu_env_overrides:
@@ -2393,58 +2479,73 @@ def profile_python_benchmark_torch(
     
     log_base = output_dir / f"{benchmark_name}__{variant}__torch"
 
-    def _run_profile(profile_kwargs: dict, label: str) -> Optional[Path]:
-        try:
-            # Warmup
-            for _ in range(5):
-                benchmark.benchmark_fn()
+    from contextlib import nullcontext
 
-            # Profile execution with PyTorch profiler
+    from core.harness.benchmark_harness import ReadOnlyBenchmarkConfigView, lock_gpu_clocks, ramp_gpu_clocks
+
+    # The main harness may have executed timing in a subprocess, so this in-memory
+    # benchmark instance has not necessarily been setup() yet. Always setup/teardown
+    # for torch profiler captures.
+    profiling_config = BenchmarkConfig(
+        enable_profiling=True,
+        enable_nvtx=True,
+    )
+    benchmark._config = ReadOnlyBenchmarkConfigView.from_config(profiling_config)
+
+    # Keep torch-profiler lightweight; nsys/ncu cover the deep dives.
+    profile_kwargs = {
+        "record_shapes": False,
+        "profile_memory": False,
+        "with_stack": False,
+        "with_flops": False,
+        "with_modules": False,
+    }
+
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    if torch.cuda.is_available():
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+
+    lock_ctx = (
+        lock_gpu_clocks(
+            device=0,
+            sm_clock_mhz=getattr(profiling_config, "gpu_sm_clock_mhz", None),
+            mem_clock_mhz=getattr(profiling_config, "gpu_mem_clock_mhz", None),
+        )
+        if getattr(profiling_config, "lock_gpu_clocks", False) and torch.cuda.is_available()
+        else nullcontext()
+    )
+
+    try:
+        with lock_ctx:
+            if torch.cuda.is_available():
+                ramp_gpu_clocks(device=0)
+            benchmark.setup()
+
+            # Small warmup so the trace focuses on steady-state kernels.
+            benchmark.benchmark_fn()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+
             with torch.profiler.profile(
-                activities=[
-                    torch.profiler.ProfilerActivity.CPU,
-                    torch.profiler.ProfilerActivity.CUDA,
-                ],
+                activities=activities,
                 **profile_kwargs,
             ) as prof:
                 benchmark.benchmark_fn()
                 prof.step()
 
-            prof.export_chrome_trace(str(torch_output))
-            if torch_output.exists():
-                return torch_output
-            return None
-        except Exception as exc:
-            log_base.with_suffix(".stderr.log").write_text(
-                f"[{label}] torch profiler failed: {exc}\n"
-            )
-            return None
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            benchmark.teardown()
 
-    # First try: full-featured profiler
-    torch_path = _run_profile(
-        {
-            "record_shapes": True,
-            "profile_memory": True,
-            "with_stack": True,
-            "with_flops": True,
-            "with_modules": True,
-        },
-        "full",
-    )
-    if torch_path:
-        return torch_path
-
-    # Fallback: minimal profiler settings
-    return _run_profile(
-        {
-            "record_shapes": False,
-            "profile_memory": False,
-            "with_stack": False,
-            "with_flops": False,
-            "with_modules": False,
-        },
-        "minimal",
-    )
+        prof.export_chrome_trace(str(torch_output))
+        return torch_output if torch_output.exists() else None
+    except Exception as exc:
+        try:
+            benchmark.teardown()
+        except Exception:
+            pass
+        log_base.with_suffix(".stderr.log").write_text(f"torch profiler failed: {exc}\n")
+        return None
 
 
 def ensure_cuda_executables_built(chapter_dir: Path) -> Tuple[bool, Optional[str]]:
@@ -3348,9 +3449,13 @@ def _test_chapter_impl(
                         example=example_name,
                         example_type=example_type,
                         reason=skip_reason,
-                    )
+                        )
                 else:
-                    result_entry['error'] = 'Failed to load baseline'
+                    detail = load_error.strip().splitlines()[0] if load_error.strip() else ""
+                    msg = "Failed to load baseline"
+                    if detail:
+                        msg = f"{msg}: {detail}"
+                    result_entry['error'] = msg
                     benchmark_results.append(result_entry)
                     failed_error += 1
                     emit_event(
@@ -3360,7 +3465,7 @@ def _test_chapter_impl(
                         chapter=chapter_name,
                         example=example_name,
                         example_type=example_type,
-                        error="Failed to load baseline",
+                        error=msg,
                     )
                 reset_cuda_state()  # Reset after failure or skip
                 if cold_start:
@@ -3965,6 +4070,11 @@ def _test_chapter_impl(
                 mark_progress(example_name)
                 continue
             
+            # When running the full benchmark suite with --profile minimal, profiling every
+            # optimization variant can make runs prohibitively slow. Collect candidates
+            # during timing, then profile only the best optimization after selection.
+            optimized_profile_candidates: Dict[str, Dict[str, Any]] = {}
+
             # Test each optimization
             for optimized_path in optimized_paths:
                 opt_name = optimized_path.name
@@ -4031,12 +4141,16 @@ def _test_chapter_impl(
                             reason=skip_reason,
                         )
                     else:
+                        detail = load_error.strip().splitlines()[0] if load_error.strip() else ""
+                        msg = "Failed to load"
+                        if detail:
+                            msg = f"{msg}: {detail}"
                         logger.error(f"    Testing: {opt_name}... FAILED (load)")
                         result_entry['optimizations'].append({
                             'file': opt_name,
                             'technique': technique,
                             'status': 'failed_error',
-                            'error': 'Failed to load',
+                            'error': msg,
                         })
                         failed_error += 1
                         emit_event(
@@ -4048,7 +4162,7 @@ def _test_chapter_impl(
                             example_type=example_type,
                             optimization_file=opt_name,
                             technique=technique,
-                            error="Failed to load",
+                            error=msg,
                         )
                     continue
                 
@@ -4409,7 +4523,25 @@ def _test_chapter_impl(
                         opt_result['throughput'] = throughput_payload
                     
                     # Profile optimized if profiling is enabled (nsys, ncu, PyTorch)
-                    if enable_profiling and profiling_output_dir:
+                    if (
+                        enable_profiling
+                        and profiling_output_dir
+                        and str(profile_type).lower() == "minimal"
+                        and opt_result.get("status") == "succeeded"
+                    ):
+                        optimized_profile_candidates[technique] = {
+                            "benchmark": optimized_benchmark,
+                            "path": optimized_path,
+                            "config": optimized_config,
+                            "result": opt_result,
+                        }
+
+                    if (
+                        enable_profiling
+                        and profiling_output_dir
+                        and str(profile_type).lower() != "minimal"
+                        and opt_result.get("status") == "succeeded"
+                    ):
                         pair_dir = _profile_pair_dir(
                             profile_output_root, chapter_id, example_name, technique
                         )
@@ -4667,10 +4799,6 @@ def _test_chapter_impl(
                             )
                         
                         logger.info(f" ({', '.join(profiler_results)})")
-                        if baseline_profile_paths:
-                            for path in baseline_profile_paths.values():
-                                if path and path.exists():
-                                    shutil.copy2(path, pair_dir / path.name)
                         
                         # Display extracted metrics
                         if optimized_metrics:
@@ -4837,6 +4965,293 @@ def _test_chapter_impl(
                 example_key = expectation_example_key(result_entry['example'], result_entry.get('type', 'python'))
                 optimization_goal = (result_entry.get("optimization_goal") or "speed").strip().lower()
                 best_opt = select_best_optimization(result_entry.get("optimizations", []), goal=optimization_goal)
+                if (
+                    enable_profiling
+                    and profiling_output_dir
+                    and str(profile_type).lower() == "minimal"
+                    and best_opt
+                    and isinstance(best_opt, dict)
+                    and best_opt.get("status") == "succeeded"
+                ):
+                    best_key = str(best_opt.get("technique") or best_opt.get("file") or "")
+                    cand = optimized_profile_candidates.get(best_key)
+                    if cand:
+                        try:
+                            pair_dir = _profile_pair_dir(
+                                profile_output_root, chapter_id, example_name, best_key
+                            )
+                            pair_dir.mkdir(parents=True, exist_ok=True)
+                            logger.info(f"\n    Profiling optimized (best only: {best_key})...")
+                            profiler_results = []
+                            optimized_metrics = {}
+
+                            optimized_benchmark = cand.get("benchmark")
+                            optimized_path = cand.get("path")
+                            optimized_config = cand.get("config")
+
+                            # nsys profiling
+                            if check_nsys_available():
+                                emit_progress(
+                                    "optimized_nsys",
+                                    step=f"{chapter_name}:{example_name}",
+                                    step_detail=f"nsys profiling (optimized {best_key})",
+                                )
+                                logger.info("      nsys...")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_start",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    profiler="nsys",
+                                    technique=best_key,
+                                    timeout_seconds=optimized_config.get_effective_timeout("nsys") if optimized_config else None,
+                                )
+                                nsys_path = profile_python_benchmark(
+                                    optimized_benchmark,
+                                    optimized_path,
+                                    chapter_dir,
+                                    pair_dir,
+                                    optimized_config,
+                                    variant="optimized",
+                                    output_stem=example_profile_stem,
+                                )
+                                if nsys_path:
+                                    best_opt["optimized_nsys_rep"] = str(nsys_path.relative_to(repo_root))
+                                    profiler_results.append("nsys✓")
+                                    nsys_metrics = extract_from_nsys_report(nsys_path)
+                                    if nsys_metrics:
+                                        optimized_metrics["nsys"] = nsys_metrics
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type=example_type,
+                                        variant="optimized",
+                                        profiler="nsys",
+                                        technique=best_key,
+                                        status="succeeded",
+                                        output_path=str(nsys_path),
+                                        metrics=nsys_metrics,
+                                    )
+                                else:
+                                    profiler_results.append("nsys✗")
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type=example_type,
+                                        variant="optimized",
+                                        profiler="nsys",
+                                        technique=best_key,
+                                        status="failed",
+                                        output_path=None,
+                                        metrics=None,
+                                    )
+                            else:
+                                profiler_results.append("nsys-")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_end",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    profiler="nsys",
+                                    technique=best_key,
+                                    status="skipped",
+                                    output_path=None,
+                                    metrics=None,
+                                )
+
+                            # ncu profiling
+                            if check_ncu_available():
+                                emit_progress(
+                                    "optimized_ncu",
+                                    step=f"{chapter_name}:{example_name}",
+                                    step_detail=f"ncu profiling (optimized {best_key})",
+                                )
+                                logger.info("ncu...")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_start",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    profiler="ncu",
+                                    technique=best_key,
+                                    timeout_seconds=optimized_config.get_effective_timeout("ncu") if optimized_config else None,
+                                )
+                                ncu_path = profile_python_benchmark_ncu(
+                                    optimized_benchmark,
+                                    optimized_path,
+                                    chapter_dir,
+                                    pair_dir,
+                                    optimized_config,
+                                    variant="optimized",
+                                    output_stem=example_profile_stem,
+                                )
+                                if ncu_path:
+                                    best_opt["optimized_ncu_rep"] = str(ncu_path.relative_to(repo_root))
+                                    profiler_results.append("ncu✓")
+                                    ncu_metrics = extract_from_ncu_report(ncu_path)
+                                    if ncu_metrics:
+                                        optimized_metrics["ncu"] = ncu_metrics
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type=example_type,
+                                        variant="optimized",
+                                        profiler="ncu",
+                                        technique=best_key,
+                                        status="succeeded",
+                                        output_path=str(ncu_path),
+                                        metrics=ncu_metrics,
+                                    )
+                                else:
+                                    profiler_results.append("ncu✗")
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type=example_type,
+                                        variant="optimized",
+                                        profiler="ncu",
+                                        technique=best_key,
+                                        status="failed",
+                                        output_path=None,
+                                        metrics=None,
+                                    )
+                            else:
+                                profiler_results.append("ncu-")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_end",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    profiler="ncu",
+                                    technique=best_key,
+                                    status="skipped",
+                                    output_path=None,
+                                    metrics=None,
+                                )
+
+                            # PyTorch profiler
+                            if TORCH_PROFILER_AVAILABLE:
+                                emit_progress(
+                                    "optimized_torch",
+                                    step=f"{chapter_name}:{example_name}",
+                                    step_detail=f"torch profiling (optimized {best_key})",
+                                )
+                                logger.info("PyTorch...")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_start",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    profiler="torch",
+                                    technique=best_key,
+                                    timeout_seconds=optimized_config.get_effective_timeout("torch") if optimized_config else None,
+                                )
+                                torch_path = profile_python_benchmark_torch(
+                                    optimized_benchmark,
+                                    optimized_path,
+                                    chapter_dir,
+                                    pair_dir,
+                                    variant="optimized",
+                                    output_stem=example_profile_stem,
+                                )
+                                if torch_path:
+                                    best_opt["optimized_torch_trace"] = str(torch_path.relative_to(repo_root))
+                                    profiler_results.append("torch✓")
+                                    torch_metrics = extract_from_pytorch_trace(torch_path)
+                                    if torch_metrics:
+                                        optimized_metrics["torch"] = torch_metrics
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type=example_type,
+                                        variant="optimized",
+                                        profiler="torch",
+                                        technique=best_key,
+                                        status="succeeded",
+                                        output_path=str(torch_path),
+                                        metrics=torch_metrics,
+                                    )
+                                else:
+                                    profiler_results.append("torch✗")
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type=example_type,
+                                        variant="optimized",
+                                        profiler="torch",
+                                        technique=best_key,
+                                        status="failed",
+                                        output_path=None,
+                                        metrics=None,
+                                    )
+                            else:
+                                profiler_results.append("torch-")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_end",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    profiler="torch",
+                                    technique=best_key,
+                                    status="skipped",
+                                    output_path=None,
+                                    metrics=None,
+                                )
+
+                            logger.info(f" ({', '.join(profiler_results)})")
+                            if optimized_metrics:
+                                logger.info("        📈 Profiler Metrics:")
+                                log_profiler_metrics_table(logger, optimized_metrics, indent="          ")
+                                best_opt["optimized_profiler_metrics"] = optimized_metrics
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_summary",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type=example_type,
+                                    variant="optimized",
+                                    technique=best_key,
+                                    metrics=optimized_metrics,
+                                )
+                        except Exception:
+                            logger.warning("    WARNING: Best-only profiling failed", exc_info=True)
                 if best_opt:
                     emit_event(
                         event_logger,
@@ -5386,6 +5801,10 @@ def _test_chapter_impl(
                         metrics=baseline_metrics,
                     )
 
+            # Defer optimized profiling for --profile minimal to avoid profiling every
+            # variant; profile only the best optimization after selection.
+            cuda_optimized_profile_candidates: Dict[str, Dict[str, Any]] = {}
+
             # Test each optimization
             for optimized_cu_path in optimized_cu_paths:
                 opt_name = optimized_cu_path.name
@@ -5624,7 +6043,24 @@ def _test_chapter_impl(
                     logger.info(f"        🌡️ GPU Telemetry: {format_gpu_telemetry(cuda_opt_gpu_metrics)}")
 
                 # Profile optimized if profiling is enabled (nsys, ncu)
-                if enable_profiling and profiling_output_dir:
+                if (
+                    enable_profiling
+                    and profiling_output_dir
+                    and str(profile_type).lower() == "minimal"
+                    and opt_result.get("status") == "succeeded"
+                ):
+                    cuda_optimized_profile_candidates[technique] = {
+                        "executable": optimized_executable,
+                        "config": base_config,
+                        "result": opt_result,
+                    }
+
+                if (
+                    enable_profiling
+                    and profiling_output_dir
+                    and str(profile_type).lower() != "minimal"
+                    and opt_result.get("status") == "succeeded"
+                ):
                     pair_dir = _profile_pair_dir(
                         profile_output_root, chapter_id, example_name, technique
                     )
@@ -5798,10 +6234,6 @@ def _test_chapter_impl(
                         )
 
                     logger.info(f" ({', '.join(profiler_results)})")
-                    if baseline_profile_paths:
-                        for path in baseline_profile_paths.values():
-                            if path and path.exists():
-                                shutil.copy2(path, pair_dir / path.name)
 
                     # Display extracted metrics
                     if optimized_metrics:
@@ -5860,6 +6292,207 @@ def _test_chapter_impl(
                 example_key = expectation_example_key(result_entry["example"], result_entry.get("type", "cuda"))
                 optimization_goal = (result_entry.get("optimization_goal") or "speed").strip().lower()
                 best_opt = select_best_optimization(result_entry.get("optimizations", []), goal=optimization_goal)
+                if (
+                    enable_profiling
+                    and profiling_output_dir
+                    and str(profile_type).lower() == "minimal"
+                    and best_opt
+                    and isinstance(best_opt, dict)
+                    and best_opt.get("status") == "succeeded"
+                ):
+                    best_key = str(best_opt.get("technique") or best_opt.get("file") or "")
+                    cand = cuda_optimized_profile_candidates.get(best_key)
+                    if cand:
+                        try:
+                            pair_dir = _profile_pair_dir(
+                                profile_output_root, chapter_id, example_name, best_key
+                            )
+                            pair_dir.mkdir(parents=True, exist_ok=True)
+                            logger.info(f"\n    Profiling optimized (best only: {best_key})...")
+                            profiler_results = []
+                            optimized_metrics = {}
+
+                            optimized_executable = cand.get("executable")
+                            optimized_config = cand.get("config") or base_config
+
+                            if check_nsys_available():
+                                emit_progress(
+                                    "optimized_nsys",
+                                    step=f"{chapter_name}:{example_name}",
+                                    step_detail=f"nsys profiling (cuda optimized {best_key})",
+                                )
+                                logger.info("      nsys...")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_start",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type="cuda",
+                                    variant="optimized",
+                                    profiler="nsys",
+                                    technique=best_key,
+                                    timeout_seconds=optimized_config.get_effective_timeout("nsys") if optimized_config else None,
+                                )
+                                nsys_path = profile_cuda_executable(
+                                    optimized_executable,
+                                    chapter_dir,
+                                    pair_dir,
+                                    variant="optimized",
+                                    output_stem=example_profile_stem,
+                                    timeout_seconds=optimized_config.get_effective_timeout("nsys") if optimized_config else None,
+                                )
+                                if nsys_path:
+                                    best_opt["optimized_nsys_rep"] = str(nsys_path.relative_to(repo_root))
+                                    profiler_results.append("nsys✓")
+                                    nsys_metrics = extract_from_nsys_report(nsys_path)
+                                    if nsys_metrics:
+                                        optimized_metrics["nsys"] = nsys_metrics
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type="cuda",
+                                        variant="optimized",
+                                        profiler="nsys",
+                                        technique=best_key,
+                                        status="succeeded",
+                                        output_path=str(nsys_path),
+                                        metrics=nsys_metrics,
+                                    )
+                                else:
+                                    profiler_results.append("nsys✗")
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type="cuda",
+                                        variant="optimized",
+                                        profiler="nsys",
+                                        technique=best_key,
+                                        status="failed",
+                                        output_path=None,
+                                        metrics=None,
+                                    )
+                            else:
+                                profiler_results.append("nsys-")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_end",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type="cuda",
+                                    variant="optimized",
+                                    profiler="nsys",
+                                    technique=best_key,
+                                    status="skipped",
+                                    output_path=None,
+                                    metrics=None,
+                                )
+
+                            if check_ncu_available():
+                                emit_progress(
+                                    "optimized_ncu",
+                                    step=f"{chapter_name}:{example_name}",
+                                    step_detail=f"ncu profiling (cuda optimized {best_key})",
+                                )
+                                logger.info("ncu...")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_start",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type="cuda",
+                                    variant="optimized",
+                                    profiler="ncu",
+                                    technique=best_key,
+                                    timeout_seconds=optimized_config.get_effective_timeout("ncu") if optimized_config else None,
+                                )
+                                ncu_path = profile_cuda_executable_ncu(
+                                    optimized_executable,
+                                    chapter_dir,
+                                    pair_dir,
+                                    optimized_config,
+                                    variant="optimized",
+                                    output_stem=example_profile_stem,
+                                )
+                                if ncu_path:
+                                    best_opt["optimized_ncu_rep"] = str(ncu_path.relative_to(repo_root))
+                                    profiler_results.append("ncu✓")
+                                    ncu_metrics = extract_from_ncu_report(ncu_path)
+                                    if ncu_metrics:
+                                        optimized_metrics["ncu"] = ncu_metrics
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type="cuda",
+                                        variant="optimized",
+                                        profiler="ncu",
+                                        technique=best_key,
+                                        status="succeeded",
+                                        output_path=str(ncu_path),
+                                        metrics=ncu_metrics,
+                                    )
+                                else:
+                                    profiler_results.append("ncu✗")
+                                    emit_event(
+                                        event_logger,
+                                        logger,
+                                        "profiler_end",
+                                        chapter=chapter_name,
+                                        example=example_name,
+                                        example_type="cuda",
+                                        variant="optimized",
+                                        profiler="ncu",
+                                        technique=best_key,
+                                        status="failed",
+                                        output_path=None,
+                                        metrics=None,
+                                    )
+                            else:
+                                profiler_results.append("ncu-")
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_end",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type="cuda",
+                                    variant="optimized",
+                                    profiler="ncu",
+                                    technique=best_key,
+                                    status="skipped",
+                                    output_path=None,
+                                    metrics=None,
+                                )
+
+                            logger.info(f" ({', '.join(profiler_results)})")
+                            if optimized_metrics:
+                                logger.info("        📈 Profiler Metrics:")
+                                log_profiler_metrics_table(logger, optimized_metrics, indent="          ")
+                                best_opt["optimized_profiler_metrics"] = optimized_metrics
+                                emit_event(
+                                    event_logger,
+                                    logger,
+                                    "profiler_summary",
+                                    chapter=chapter_name,
+                                    example=example_name,
+                                    example_type="cuda",
+                                    variant="optimized",
+                                    technique=best_key,
+                                    metrics=optimized_metrics,
+                                )
+                        except Exception:
+                            logger.warning("    WARNING: Best-only profiling failed", exc_info=True)
                 if best_opt:
                     emit_event(
                         event_logger,
@@ -8403,12 +9036,45 @@ def main():
     )
     
     args = parser.parse_args()
+    # Keep "auto" aligned with the profile preset so `--profile minimal` stays fast.
+    if getattr(args, "ncu_metric_set", None) == "auto" and getattr(args, "profile", None) in {
+        "minimal",
+        "deep_dive",
+        "roofline",
+    }:
+        args.ncu_metric_set = args.profile
     active_bench_root = Path(args.bench_root).resolve() if args.bench_root else repo_root
     if args.output == repo_root / 'benchmark_test_results.json' and args.bench_root:
         args.output = active_bench_root / 'benchmark_test_results.json'
 
     # Refresh benchmark defaults.
-    set_defaults(BenchmarkDefaults())
+    #
+    # NOTE: Many managed clusters do not grant users permission to lock GPU
+    # clocks via `nvidia-smi`. When that's the case, attempting to lock clocks
+    # inside every isolated benchmark subprocess is pure overhead and spams
+    # warnings. Detect support once and disable clock locking for this run.
+    defaults = BenchmarkDefaults()
+    if getattr(defaults, "lock_gpu_clocks", False):
+        try:
+            import torch
+            if not torch.cuda.is_available():
+                defaults.lock_gpu_clocks = False
+            else:
+                from core.harness.benchmark_harness import lock_gpu_clocks
+                can_lock = False
+                with lock_gpu_clocks(
+                    device=0,
+                    sm_clock_mhz=getattr(defaults, "gpu_sm_clock_mhz", None),
+                    mem_clock_mhz=getattr(defaults, "gpu_mem_clock_mhz", None),
+                ) as (tflops, gbps):
+                    can_lock = bool(tflops) or bool(gbps)
+                if not can_lock:
+                    defaults.lock_gpu_clocks = False
+                    logger.info("GPU clock locking unavailable; disabling lock_gpu_clocks for this run.")
+        except Exception as exc:
+            defaults.lock_gpu_clocks = False
+            logger.info("Disabling lock_gpu_clocks for this run (%s).", exc)
+    set_defaults(defaults)
     extra_arg_map: Dict[str, List[str]] = {}
     for entry in args.target_extra_arg or []:
         target, sep, payload = entry.partition("=")

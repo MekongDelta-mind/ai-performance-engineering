@@ -1,0 +1,60 @@
+{
+  "examples": {
+    "llama_3_1_8b": {
+      "example": "llama_3_1_8b",
+      "metadata": {
+        "best_memory_savings_pct": 37.060556339943034,
+        "best_memory_savings_ratio": 1.588828788193796,
+        "best_optimization": "optimized_llama_3_1_8b",
+        "best_optimization_file": "optimized_llama_3_1_8b.py",
+        "best_optimization_memory_mb": 2078.48876953125,
+        "best_optimization_speedup": 8.297667524004128,
+        "best_optimization_technique": "optimized_llama_3_1_8b",
+        "best_optimization_time_ms": 3.414964980092542,
+        "optimization_goal": "speed"
+      },
+      "metrics": {
+        "baseline_memory_mb": 3302.36279296875,
+        "baseline_p75_ms": 8.42950439453125,
+        "baseline_throughput.bytes_per_s": null,
+        "baseline_throughput.custom_unit_name": null,
+        "baseline_throughput.custom_unit_per_s": null,
+        "baseline_throughput.goodput": null,
+        "baseline_throughput.latency_ms": 28.33624401092529,
+        "baseline_throughput.requests_per_s": 35.2904922619399,
+        "baseline_throughput.samples_per_s": null,
+        "baseline_throughput.schemaVersion": "1.0",
+        "baseline_throughput.tokens_per_s": null,
+        "baseline_time_ms": 28.33624401092529,
+        "best_memory_savings_pct": 37.060556339943034,
+        "best_memory_savings_ratio": 1.588828788193796,
+        "best_optimized_memory_mb": 2078.48876953125,
+        "best_optimized_p75_ms": 3.4528000354766846,
+        "best_optimized_speedup": 8.297667524004128,
+        "best_optimized_throughput.bytes_per_s": null,
+        "best_optimized_throughput.custom_unit_name": null,
+        "best_optimized_throughput.custom_unit_per_s": null,
+        "best_optimized_throughput.goodput": null,
+        "best_optimized_throughput.latency_ms": 3.414964980092542,
+        "best_optimized_throughput.requests_per_s": 292.82877154801776,
+        "best_optimized_throughput.samples_per_s": null,
+        "best_optimized_throughput.schemaVersion": "1.0",
+        "best_optimized_throughput.tokens_per_s": null,
+        "best_optimized_time_ms": 3.414964980092542,
+        "best_speedup": 8.297667524004128,
+        "is_regression": false
+      },
+      "provenance": {
+        "git_commit": "46394dc563475242d973d1ad57d7ec221705f59b",
+        "hardware_key": "4x_gb200",
+        "iterations": 20,
+        "profile_name": "none",
+        "timestamp": "2026-02-07T13:12:46.571336",
+        "warmup_iterations": 5
+      },
+      "type": "python"
+    }
+  },
+  "hardware_key": "4x_gb200",
+  "schema_version": 2
+}

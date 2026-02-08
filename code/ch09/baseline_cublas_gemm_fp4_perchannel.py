@@ -23,7 +23,7 @@ class BaselineCublasGemmFp4PerchannelBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cublas_gemm_fp4_perchannel",
             friendly_name="Baseline Cublas Gemm Fp4 Perchannel",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={

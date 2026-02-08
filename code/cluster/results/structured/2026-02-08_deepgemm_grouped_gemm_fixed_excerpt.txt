@@ -1,0 +1,60 @@
+Grouped GEMM Benchmark
+  Device: NVIDIA GB200
+  PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+  DeepGEMM: installed
+  Preset: all
+  Shapes: 48
+
+Benchmarking G=4, M=8192, N=6144, K=7168...
+  torch_fp16:    1697.1 TFLOPS, 1.701 ms
+  torch_fp8:     1701.4 TFLOPS, 1.696 ms (loop baseline)
+  deepgemm_fp8:  2854.8 TFLOPS, 1.011 ms
+Benchmarking G=4, M=8192, N=7168, K=3072...
+  torch_fp16:    1738.1 TFLOPS, 0.830 ms
+  torch_fp8:     1310.7 TFLOPS, 1.101 ms (loop baseline)
+  deepgemm_fp8:  2803.4 TFLOPS, 0.515 ms
+Benchmarking G=4, M=8192, N=4096, K=4096...
+  torch_fp16:    1718.0 TFLOPS, 0.640 ms
+  torch_fp8:     1459.0 TFLOPS, 0.754 ms (loop baseline)
+  deepgemm_fp8:  2810.1 TFLOPS, 0.391 ms
+Benchmarking G=4, M=8192, N=4096, K=2048...
+  torch_fp16:    1676.2 TFLOPS, 0.328 ms
+  torch_fp8:     1368.0 TFLOPS, 0.402 ms (loop baseline)
+  deepgemm_fp8:  2532.2 TFLOPS, 0.217 ms
+Benchmarking G=8, M=4096, N=6144, K=7168...
+  torch_fp16:    1656.3 TFLOPS, 1.743 ms
+  torch_fp8:     1019.3 TFLOPS, 2.831 ms (loop baseline)
+  deepgemm_fp8:  2889.4 TFLOPS, 0.999 ms
+Benchmarking G=8, M=4096, N=7168, K=3072...
+  torch_fp16:    1734.5 TFLOPS, 0.832 ms
+  torch_fp8:     894.6 TFLOPS, 1.613 ms (loop baseline)
+  deepgemm_fp8:  2814.3 TFLOPS, 0.513 ms
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    1728.0 TFLOPS, 0.636 ms
+  torch_fp8:     1074.3 TFLOPS, 1.023 ms (loop baseline)
+  deepgemm_fp8:  2772.7 TFLOPS, 0.397 ms
+Benchmarking G=8, M=4096, N=4096, K=2048...
+  torch_fp16:    1663.6 TFLOPS, 0.330 ms
+  torch_fp8:     838.5 TFLOPS, 0.656 ms (loop baseline)
+  deepgemm_fp8:  2508.4 TFLOPS, 0.219 ms
+Benchmarking G=8, M=1024, N=2048, K=7168...
+  torch_fp16:    1484.5 TFLOPS, 0.162 ms
+  torch_fp8:     368.4 TFLOPS, 0.653 ms (loop baseline)
+  deepgemm_fp8:  2007.4 TFLOPS, 0.120 ms
+Benchmarking G=8, M=2048, N=2048, K=7168...
+  torch_fp16:    1591.4 TFLOPS, 0.302 ms
+  torch_fp8:     708.9 TFLOPS, 0.679 ms (loop baseline)
+  deepgemm_fp8:  2338.4 TFLOPS, 0.206 ms
+Benchmarking G=8, M=4096, N=2048, K=7168...
+  torch_fp16:    1649.8 TFLOPS, 0.583 ms
+  torch_fp8:     1040.8 TFLOPS, 0.924 ms (loop baseline)
+  deepgemm_fp8:  2603.6 TFLOPS, 0.370 ms
+Benchmarking G=8, M=1024, N=7168, K=2048...
+  torch_fp16:    1598.9 TFLOPS, 0.150 ms
+  torch_fp8:     360.2 TFLOPS, 0.668 ms (loop baseline)
+  deepgemm_fp8:  2191.2 TFLOPS, 0.110 ms
+Benchmarking G=8, M=2048, N=7168, K=2048...
+  torch_fp16:    1659.5 TFLOPS, 0.290 ms
+  torch_fp8:     662.7 TFLOPS, 0.726 ms (loop baseline)
+  deepgemm_fp8:  2474.2 TFLOPS, 0.194 ms
+Benchmarking G=8, M=4096, N=7168, K=2048...

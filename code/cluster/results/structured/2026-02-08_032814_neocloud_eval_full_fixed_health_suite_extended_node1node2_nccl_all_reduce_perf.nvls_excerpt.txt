@@ -1,0 +1,74 @@
+Excerpt: NVLS-enabled run shows nvls channels + NVLS comm (NVLink SHARP active)
+Source raw log: results/raw/2026-02-08_032814_neocloud_eval_full_fixed_health_suite_extended_node1node2_nccl_all_reduce_perf.log
+
+   270	node2:837896:837938 [0] NCCL INFO [Proxy Service] Device 2 CPU core 82
+   271	node2:837904:837941 [0] NCCL INFO [Proxy Service] Device 3 CPU core 83
+   272	node2:837896:837942 [0] NCCL INFO [Proxy Service UDS] Device 2 CPU core 84
+   273	node2:837883:837939 [0] NCCL INFO [Proxy Service] Device 1 CPU core 2
+   274	node2:837901:837945 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 3
+   275	node2:837904:837943 [0] NCCL INFO [Proxy Service UDS] Device 3 CPU core 84
+   276	node2:837901:837940 [0] NCCL INFO [Proxy Service] Device 0 CPU core 2
+   277	node2:837883:837944 [0] NCCL INFO [Proxy Service UDS] Device 1 CPU core 37
+   278	node2:837904:837904 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   279	node2:837904:837904 [3] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   280	node2:837904:837904 [3] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   281	node2:837901:837901 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   282	node2:837901:837901 [0] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   283	node2:837901:837901 [0] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   284	node1:1942166:1942166 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   285	node1:1942166:1942166 [0] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   286	node1:1942166:1942166 [0] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   287	node2:837896:837896 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   288	node2:837896:837896 [2] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   289	node2:837896:837896 [2] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   290	node2:837883:837883 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   291	node2:837883:837883 [1] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   292	node2:837883:837883 [1] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   293	node1:1942187:1942187 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   294	node1:1942187:1942187 [3] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   295	node1:1942187:1942187 [3] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   296	node1:1942179:1942179 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   297	node1:1942179:1942179 [2] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   298	node1:1942179:1942179 [2] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   299	node1:1942169:1942169 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+   300	node1:1942169:1942169 [1] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+   301	node1:1942169:1942169 [1] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+   302	node1:1942166:1942166 [0] NCCL INFO CC Off, workFifoBytes 1048576
+   303	node1:1942187:1942187 [3] NCCL INFO ncclCommInitRankConfig comm 0xb2d49cad3940 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 1901000 commId 0xf942c165f377761e - Init COMPLETE
+   304	node1:1942187:1942187 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 3 nranks 8 total 1.69 (kernels 0.45, alloc 0.12, bootstrap 0.02, allgathers 0.01, topo 0.61, graphs 0.02, connections 0.45, rest 0.00)
+   305	node1:1942179:1942179 [2] NCCL INFO ncclCommInitRankConfig comm 0xb81d1cbe3ae0 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 1801000 commId 0xf942c165f377761e - Init COMPLETE
+   306	node1:1942179:1942179 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 2 nranks 8 total 1.69 (kernels 0.45, alloc 0.13, bootstrap 0.01, allgathers 0.01, topo 0.61, graphs 0.02, connections 0.45, rest 0.00)
+   307	node2:837896:837896 [2] NCCL INFO ncclCommInitRankConfig comm 0xb98248659ab0 rank 6 nranks 8 cudaDev 2 nvmlDev 2 busId 1801000 commId 0xf942c165f377761e - Init COMPLETE
+   308	node2:837896:837896 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 6 nranks 8 total 1.69 (kernels 0.43, alloc 0.14, bootstrap 0.02, allgathers 0.01, topo 0.61, graphs 0.02, connections 0.38, rest 0.08)
+   309	node1:1942169:1942169 [1] NCCL INFO ncclCommInitRankConfig comm 0xb28d639a3320 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 901000 commId 0xf942c165f377761e - Init COMPLETE
+   310	node1:1942169:1942169 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 8 total 1.69 (kernels 0.45, alloc 0.12, bootstrap 0.02, allgathers 0.01, topo 0.61, graphs 0.02, connections 0.45, rest 0.00)
+   311	node1:1942166:1942166 [0] NCCL INFO ncclCommInitRankConfig comm 0xb3b802eeb730 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 801000 commId 0xf942c165f377761e - Init COMPLETE
+   312	node1:1942166:1942166 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 8 total 1.69 (kernels 0.45, alloc 0.14, bootstrap 0.00, allgathers 0.00, topo 0.61, graphs 0.02, connections 0.45, rest 0.01)
+   313	node2:837883:837883 [1] NCCL INFO ncclCommInitRankConfig comm 0xbdaa829f95e0 rank 5 nranks 8 cudaDev 1 nvmlDev 1 busId 901000 commId 0xf942c165f377761e - Init COMPLETE
+   314	node2:837883:837883 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 5 nranks 8 total 1.69 (kernels 0.43, alloc 0.15, bootstrap 0.01, allgathers 0.01, topo 0.61, graphs 0.02, connections 0.38, rest 0.08)
+   315	node2:837901:837901 [0] NCCL INFO ncclCommInitRankConfig comm 0xc49ec22793e0 rank 4 nranks 8 cudaDev 0 nvmlDev 0 busId 801000 commId 0xf942c165f377761e - Init COMPLETE
+   316	node2:837901:837901 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 4 nranks 8 total 1.69 (kernels 0.43, alloc 0.15, bootstrap 0.01, allgathers 0.00, topo 0.61, graphs 0.02, connections 0.38, rest 0.08)
+   317	node2:837904:837904 [3] NCCL INFO ncclCommInitRankConfig comm 0xbbb543502640 rank 7 nranks 8 cudaDev 3 nvmlDev 3 busId 1901000 commId 0xf942c165f377761e - Init COMPLETE
+   318	node2:837904:837904 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 7 nranks 8 total 1.69 (kernels 0.43, alloc 0.09, bootstrap 0.07, allgathers 0.01, topo 0.61, graphs 0.02, connections 0.38, rest 0.08)
+   319	#
+   320	#                                                              out-of-place                       in-place          
+   321	#       size         count      type   redop    root     time   algbw   busbw  #wrong     time   algbw   busbw  #wrong 
+   322	#        (B)    (elements)                               (us)  (GB/s)  (GB/s)             (us)  (GB/s)  (GB/s)         
+   323	node1:1942166:1942166 [0] NCCL INFO NVLS comm 0xb3b802eeb730 headRank 0 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   324	node1:1942179:1942179 [2] NCCL INFO NVLS comm 0xb81d1cbe3ae0 headRank 2 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   325	node1:1942187:1942187 [3] NCCL INFO NVLS comm 0xb2d49cad3940 headRank 3 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   326	node1:1942169:1942169 [1] NCCL INFO NVLS comm 0xb28d639a3320 headRank 1 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   327	node2:837883:837883 [1] NCCL INFO NVLS comm 0xbdaa829f95e0 headRank 5 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   328	node2:837901:837901 [0] NCCL INFO NVLS comm 0xc49ec22793e0 headRank 4 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   329	node2:837896:837896 [2] NCCL INFO NVLS comm 0xb98248659ab0 headRank 6 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   330	node2:837904:837904 [3] NCCL INFO NVLS comm 0xbbb543502640 headRank 7 nHeads 8 nvlsRanks 8 buffSize 1048576 nvlsPerRankSize 50331648 nvlsTotalSize 402653184
+   331	    67108864      16777216     float     sum      -1   283.81  236.46  413.80       0   281.19  238.66  417.65       0
+   332	   134217728      33554432     float     sum      -1   396.94  338.13  591.73       0   398.49  336.82  589.43       0
+   333	   268435456      67108864     float     sum      -1   721.08  372.27  651.47       0   720.47  372.59  652.02       0
+   334	   536870912     134217728     float     sum      -1  1341.91  400.08  700.14       0  1340.48  400.51  700.88       0
+   335	  1073741824     268435456     float     sum      -1  2606.61  411.93  720.88       0  2604.67  412.24  721.42       0
+   336	  2147483648     536870912     float     sum      -1  4582.39  468.64  820.12       0  4582.44  468.63  820.11       0
+   337	  4294967296    1073741824     float     sum      -1  9007.51  476.82  834.44       0  9009.13  476.73  834.29       0
+   338	  8589934592    2147483648     float     sum      -1  17953.9  478.44  837.28       0  17951.3  478.51  837.40       0
+   339	 17179869184    4294967296     float     sum      -1  35817.5  479.65  839.39       0  35799.3  479.89  839.82       0
+   340	node2:837904:837904 [3] NCCL INFO comm 0xbbb543502640 rank 7 nranks 8 cudaDev 3 busId 1901000 - Destroy COMPLETE

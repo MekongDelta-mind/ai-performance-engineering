@@ -1,0 +1,69 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+Grouped GEMM Benchmark
+  Device: NVIDIA GB200
+  PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+  DeepGEMM: installed
+  Preset: all
+  Shapes: 48
+
+Benchmarking G=4, M=8192, N=6144, K=7168...
+  torch_fp16:    898.6 TFLOPS, 3.212 ms
+  torch_fp8:     1012.8 TFLOPS, 2.850 ms (loop baseline)
+  deepgemm_fp8:  2097.5 TFLOPS, 1.376 ms
+Benchmarking G=4, M=8192, N=7168, K=3072...
+  torch_fp16:    1318.3 TFLOPS, 1.095 ms
+  torch_fp8:     1312.7 TFLOPS, 1.099 ms (loop baseline)
+  deepgemm_fp8:  2164.0 TFLOPS, 0.667 ms
+Benchmarking G=4, M=8192, N=4096, K=4096...
+  torch_fp16:    1693.8 TFLOPS, 0.649 ms
+  torch_fp8:     1613.5 TFLOPS, 0.681 ms (loop baseline)
+  deepgemm_fp8:  2297.9 TFLOPS, 0.478 ms
+Benchmarking G=4, M=8192, N=4096, K=2048...
+  torch_fp16:    1089.9 TFLOPS, 0.504 ms
+  torch_fp8:     1111.6 TFLOPS, 0.495 ms (loop baseline)
+  deepgemm_fp8:  739.3 TFLOPS, 0.744 ms
+Benchmarking G=8, M=4096, N=6144, K=7168...
+  torch_fp16:    698.4 TFLOPS, 4.132 ms
+  torch_fp8:     545.7 TFLOPS, 5.289 ms (loop baseline)
+  deepgemm_fp8:  2893.0 TFLOPS, 0.998 ms
+Benchmarking G=8, M=4096, N=7168, K=3072...
+  torch_fp16:    1714.2 TFLOPS, 0.842 ms
+  torch_fp8:     1094.2 TFLOPS, 1.319 ms (loop baseline)
+  deepgemm_fp8:  2824.6 TFLOPS, 0.511 ms
+Benchmarking G=8, M=4096, N=4096, K=4096...
+  torch_fp16:    850.8 TFLOPS, 1.292 ms
+  torch_fp8:     1053.0 TFLOPS, 1.044 ms (loop baseline)

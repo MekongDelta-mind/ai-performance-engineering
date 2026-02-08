@@ -52,6 +52,7 @@ class BaselinePrefillDecodeDisaggBenchmark(VerificationPayloadMixin, BaseBenchma
         self.decode_models: List[nn.Module] = []
         self.prefill_inputs: List[torch.Tensor] = []
         self._verify_probe: Optional[torch.Tensor] = None
+        self._output_shards: Optional[List[torch.Tensor]] = None
         self.output: Optional[torch.Tensor] = None
 
     def _resolve_pairs(self) -> List[Tuple[int, int]]:
@@ -151,15 +152,18 @@ class BaselinePrefillDecodeDisaggBenchmark(VerificationPayloadMixin, BaseBenchma
         for prefill_id, decode_id in self.pairs:
             torch.cuda.synchronize(prefill_id)
             torch.cuda.synchronize(decode_id)
-        self.output = torch.stack(outputs, dim=0)
+        self._output_shards = outputs
+        self.output = None
 
     def capture_verification_payload(self) -> None:
-        if self.output is None or self._verify_probe is None:
+        if self._output_shards is None or self._verify_probe is None:
             raise RuntimeError("setup() and benchmark_fn() must run before capture_verification_payload()")
         param_count = sum(p.numel() for m in self.prefill_models for p in m.parameters()) + sum(
             p.numel() for m in self.decode_models for p in m.parameters()
         )
-        output_slice = self.output[:2, :256].detach().cpu().float().clone()
+        selected = self._output_shards[:2]
+        output_cpu = torch.stack([t.detach().cpu() for t in selected], dim=0)
+        output_slice = output_cpu[:, :256].float().clone()
         self._set_verification_payload(
             inputs={"probe": self._verify_probe.detach().cpu()},
             output=output_slice,
@@ -179,6 +183,7 @@ class BaselinePrefillDecodeDisaggBenchmark(VerificationPayloadMixin, BaseBenchma
         self.decode_models = []
         self.prefill_inputs = []
         self._verify_probe = None
+        self._output_shards = None
         self.output = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

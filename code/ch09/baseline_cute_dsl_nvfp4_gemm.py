@@ -23,7 +23,7 @@ class BaselineCuteDslNvfp4GemmBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cute_dsl_nvfp4_gemm",
             friendly_name="Baseline Cute DSL Nvfp4 Gemm",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={

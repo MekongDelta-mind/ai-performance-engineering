@@ -1,0 +1,40 @@
+NCCL forced CollNet all-reduce error excerpt
+time: 2026-02-08T08:06:52+00:00
+run_id: 2026-02-08_082000_ib_sharp_check_v3
+label: after_start
+rc: 3
+raw_log: /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_082000_ib_sharp_check_v3_nccl_collnet_all_reduce_after_start.log
+cmd_log: /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-08_082000_ib_sharp_check_v3_nccl_collnet_all_reduce_after_start.cmd.txt
+
+94:node2:894869:894869 [2] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+109:node2:894879:894879 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+110:node2:894876:894876 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+111:node2:894872:894872 [3] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+154:node1:2185439:2185439 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+160:node1:2185398:2185398 [2] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+161:node1:2185442:2185442 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+162:node1:2185444:2185444 [3] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+1416:node1:2185439:2185439 [0] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1419:node2:894879:894879 [1] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1422:node2:894876:894876 [0] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1428:node1:2185444:2185444 [3] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1429:node1:2185398:2185398 [2] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1432:node1:2185442:2185442 [1] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1435:node2:894869:894869 [2] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1438:node2:894872:894872 [3] NCCL INFO 32 coll channels, 32 collnet channels, 24 nvls channels, 32 p2p channels, 32 p2p channels per peer
+1464:[2026-02-08 08:06:49] node1:2185444:2185444 [3] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1472:[2026-02-08 08:06:49] node1:2185442:2185442 [1] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1480:[2026-02-08 08:06:49] node1:2185398:2185398 [2] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1487:node1: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1489:node1: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1498:[2026-02-08 08:06:49] node1:2185439:2185439 [0] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1505:node1: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1508:node1: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1527:[2026-02-08 08:06:49] node2:894869:894869 [2] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1534:node2: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1542:[2026-02-08 08:06:49] node2:894872:894872 [3] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1549:node2: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1558:[2026-02-08 08:06:49] node2:894876:894876 [0] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1569:node2: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '
+1579:[2026-02-08 08:06:49] node2:894879:894879 [1] enqueue.cc:1859 NCCL WARN Error : no algorithm/protocol available for function AllReduce with datatype ncclFloat32. NCCL_ALGO was set to allreduce:CollnetDirect,CollnetChain.
+1586:node2: Test NCCL failure all_reduce.cu:494 'invalid usage (run with NCCL_DEBUG=WARN for details) / '

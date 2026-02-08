@@ -27,8 +27,8 @@ class OptimizedWarpSpecializedClusterPipelineBenchmark(CudaBinaryBenchmark):
             warmup=5,
             timeout_seconds=180,
             workload_params={
-                "TILE_SIZE": 16,
-                "dtype": 'float32',
+                "N": 1024,
+                "dtype": "float32",
                 "batch_size": 1,
             },
         )

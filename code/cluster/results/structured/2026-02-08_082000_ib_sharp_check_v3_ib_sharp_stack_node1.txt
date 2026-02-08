@@ -1,0 +1,86 @@
+IB SHARP (software stack) quick check on this node
+2026-02-08T08:06:16+00:00
+
+## /opt/mellanox/sharp present?
+drwxr-xr-x 9 root root 4096 Jan 15 02:54 /opt/mellanox/sharp
+
+## SHARP binaries
+sharp_am
+sharp_cmd
+sharp_coll_dump_config
+sharp_coll_test
+sharp_hello
+
+## SHARP libs
+libalog.a
+libalog.la
+libalog.so
+libalog.so.1
+libalog.so.1.0.0
+libam.a
+libsharp.a
+libsharp.la
+libsharp.so
+libsharp.so.6
+libsharp.so.6.1.0
+libsharp_coll.a
+libsharp_coll.la
+libsharp_coll.so
+libsharp_coll.so.5
+libsharp_coll.so.5.0.1
+libsharprdmacm-3.13.so
+libsharprdmacm.a
+libsharprdmacm.la
+libsharprdmacm.so
+libsmx-3.13.so
+libsmx.a
+libsmx.la
+libsmx.so
+pkgconfig
+
+## sharp_am systemd unit installed?
+installed
+
+## sharp_am systemd state
+failed
+
+## sharp_am unit file present (but maybe not installed into systemd)?
+-rw-r--r-- 1 root root 312 Sep 11  2013 /opt/mellanox/sharp/systemd/system/sharp_am.service
+
+## OpenMPI version
+mpirun (Open MPI) 4.1.6
+
+Report bugs to http://www.open-mpi.org/community/help/
+
+## HCOLL + NCCL net plugin presence (ldconfig)
+
+## NCCL net plugin presence (common /opt paths)
+
+## sharp_daemons_setup.sh present?
+present
+Usage: sharp_daemons_setup.sh (-s | -r) [-p SHARP location dir]
+   or: sharp_daemons_setup.sh -h
+sharp_daemons_setup helps system administrator to manage SHARP daemons.
+All management operations require root access.
+
+Operation flags (must specify one for setup/remove):
+	-s - Setup SHARP daemon (sharp_am)
+	-r - Remove SHARP daemon (sharp_am)
+	-h - Print this help and exit
+
+Additional options:
+	-p - Path to SHARP source installation directory (default: auto-detected)
+
+Examples:
+	Show this help message:
+		/opt/mellanox/sharp/sbin/sharp_daemons_setup.sh -h
+	Setup SHARP daemon with default path:
+		/opt/mellanox/sharp/sbin/sharp_daemons_setup.sh -s
+	Setup SHARP daemon with custom path:
+		/opt/mellanox/sharp/sbin/sharp_daemons_setup.sh -s -p /path/to/sharp
+	Remove SHARP daemon:
+		/opt/mellanox/sharp/sbin/sharp_daemons_setup.sh -r
+
+Note: sharp_am.service is NOT started automatically and does NOT support by default auto-restart.
+Starting sharp_am.service resets SHARP trees and cleans allocated resources.
+It could affect running applications.

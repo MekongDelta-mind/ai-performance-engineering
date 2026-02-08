@@ -1,0 +1,128 @@
+
+=============
+== PyTorch ==
+=============
+
+NVIDIA Release 26.01 (build 256811084)
+PyTorch Version 2.10.0a0+a36e1d3
+Container image Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+Copyright (c) 2014-2024 Facebook Inc.
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+Copyright (c) 2015      Google Inc.
+Copyright (c) 2015      Yangqing Jia
+Copyright (c) 2013-2016 The Caffe contributors
+All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
+
+GOVERNING TERMS: The software and materials are governed by the NVIDIA Software License Agreement
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/)
+and the Product-Specific Terms for NVIDIA AI Products
+(found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/).
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.1 driver version 590.48.01 with kernel driver version 580.105.08.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+NOTE: Mellanox network driver detected, but NVIDIA peer memory driver not
+      detected.  Multi-node communication performance may be reduced.
+
+NOTE: The SHMEM allocation limit is set to the default of 64MB.  This may be
+   insufficient for PyTorch.  NVIDIA recommends the use of the following flags:
+   docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 ...
+
+============================================================
+GPU Peer-to-Peer (P2P) Bandwidth Test
+============================================================
+PyTorch: 2.10.0a0+a36e1d39eb.nv26.01.42222806
+CUDA: 13.1
+GPUs: 4
+
+=== GPU Information ===
+GPU 0: NVIDIA GB200, 197.6 GB
+GPU 1: NVIDIA GB200, 197.6 GB
+GPU 2: NVIDIA GB200, 197.6 GB
+GPU 3: NVIDIA GB200, 197.6 GB
+
+=== GPU Topology ===
+	[4mGPU0	GPU1	GPU2	GPU3	NIC0	NIC1	NIC2	NIC3	NIC4	NIC5	NIC6	NIC7	CPU Affinity	NUMA Affinity	GPU NUMA ID[0m
+GPU0	 X 	NV18	NV18	NV18	NODE	NODE	NODE	NODE	SYS	SYS	SYS	SYS	0-71	0		2
+GPU1	NV18	 X 	NV18	NV18	NODE	NODE	NODE	NODE	SYS	SYS	SYS	SYS	0-71	0		10
+GPU2	NV18	NV18	 X 	NV18	SYS	SYS	SYS	SYS	NODE	NODE	NODE	NODE	72-143	1		18
+GPU3	NV18	NV18	NV18	 X 	SYS	SYS	SYS	SYS	NODE	NODE	NODE	NODE	72-143	1		26
+NIC0	NODE	NODE	SYS	SYS	 X 	NODE	NODE	NODE	SYS	SYS	SYS	SYS				
+NIC1	NODE	NODE	SYS	SYS	NODE	 X 	NODE	NODE	SYS	SYS	SYS	SYS				
+NIC2	NODE	NODE	SYS	SYS	NODE	NODE	 X 	PIX	SYS	SYS	SYS	SYS				
+NIC3	NODE	NODE	SYS	SYS	NODE	NODE	PIX	 X 	SYS	SYS	SYS	SYS				
+NIC4	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	 X 	NODE	NODE	NODE				
+NIC5	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	NODE	 X 	NODE	NODE				
+NIC6	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	NODE	NODE	 X 	PIX				
+NIC7	SYS	SYS	NODE	NODE	SYS	SYS	SYS	SYS	NODE	NODE	PIX	 X 				
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+NIC Legend:
+
+  NIC0: mlx5_0
+  NIC1: mlx5_1
+  NIC2: mlx5_2
+  NIC3: mlx5_3
+  NIC4: mlx5_4
+  NIC5: mlx5_5
+  NIC6: mlx5_6
+  NIC7: mlx5_7
+
+
+
+=== P2P Access Matrix (4 GPUs) ===
+
+      GPU 0 GPU 1 GPU 2 GPU 3
+GPU 0    -   ✓    ✓    ✓  
+GPU 1  ✓      -   ✓    ✓  
+GPU 2  ✓    ✓      -   ✓  
+GPU 3  ✓    ✓    ✓      - 
+
+P2P access available for 12 GPU pairs (auto-enabled in PyTorch 2.x)
+
+=== P2P Bandwidth Matrix (256MB transfers) ===
+
+Bandwidth in GB/s (row=src, col=dst)
+
+       GPU      0GPU      1GPU      2GPU      3
+GPU 0       -    741.1   743.3   742.0 
+GPU 1    741.9      -    742.9   744.0 
+GPU 2    737.0   734.5      -    744.8 
+GPU 3    736.4   736.8   742.3      -  
+
+Bandwidth Summary:
+  Min: 734.5 GB/s
+  Max: 744.8 GB/s
+  Avg: 740.6 GB/s
+
+============================================================
+Reference Performance
+============================================================
+NVLink 4.0 (H100): ~450 GB/s unidirectional per link
+                   ~900 GB/s bidirectional total
+PCIe 5.0 x16:      ~64 GB/s unidirectional
+PCIe 4.0 x16:      ~32 GB/s unidirectional
+
+✅ High bandwidth detected - likely NVLink connected
+
+============================================================
+Benchmark complete.
+============================================================

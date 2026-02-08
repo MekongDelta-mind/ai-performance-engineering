@@ -202,13 +202,14 @@ int main(int argc, char** argv) {
 
     std::vector<float> h_A(static_cast<size_t>(M) * K);
     std::vector<float> h_B(static_cast<size_t>(K) * N);
-    for (size_t i = 0; i < h_A.size() {
+    {
         NVTX_RANGE("setup");
-        ; ++i) h_A[i] = (float)(rand() % 100) / 100.0f;
-    }
-    for (size_t i = 0; i < h_B.size() {
-        NVTX_RANGE("setup");
-        ; ++i) h_B[i] = (float)(rand() % 100) / 100.0f;
+        for (size_t i = 0; i < h_A.size(); ++i) {
+            h_A[i] = static_cast<float>(rand() % 100) / 100.0f;
+        }
+        for (size_t i = 0; i < h_B.size(); ++i) {
+            h_B[i] = static_cast<float>(rand() % 100) / 100.0f;
+        }
     }
 
     CUDA_CHECK(cudaMemcpy(d_A, h_A.data(), bytes_A, cudaMemcpyHostToDevice));
@@ -219,7 +220,6 @@ int main(int argc, char** argv) {
               (N + TILE_N - 1) / TILE_N);
 
     cudaLaunchAttribute attrs[1]{};
-        NVTX_RANGE("tile");
     attrs[0].id = cudaLaunchAttributeClusterDimension;
     attrs[0].val.clusterDim.x = CLUSTER_M;
     attrs[0].val.clusterDim.y = CLUSTER_N;

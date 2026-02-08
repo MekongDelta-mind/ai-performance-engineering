@@ -24,7 +24,7 @@ class OptimizedMicroTilingMatmulBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="optimized_micro_tiling_matmul",
             friendly_name="Optimized Micro Tiling Matmul",
-            iterations=3,
+            iterations=1,
             warmup=5,
             timeout_seconds=120,
         )

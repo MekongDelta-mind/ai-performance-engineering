@@ -1,0 +1,56 @@
+{
+  "cuda_visible_devices": "1,2,3",
+  "gpus_per_node": 3,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "ib_write_bw": {},
+  "iperf3": {},
+  "label": "node1node2",
+  "nccl": {
+    "all_gather_perf": {
+      "max_busbw": {
+        "busbw_gbps": 635.12,
+        "size_bytes": 4294967232
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_213800_suite_gpu123_base_sudo_lock_node1node2_nccl_all_gather_perf.json"
+    },
+    "all_reduce_perf": {
+      "max_busbw": {
+        "busbw_gbps": 689.23,
+        "size_bytes": 17179869184
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_213800_suite_gpu123_base_sudo_lock_node1node2_nccl_all_reduce_perf.json"
+    },
+    "reduce_scatter_perf": {
+      "max_busbw": {
+        "busbw_gbps": 658.93,
+        "size_bytes": 4294967232
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_213800_suite_gpu123_base_sudo_lock_node1node2_nccl_reduce_scatter_perf.json"
+    }
+  },
+  "nccl_ib_hca": "mlx5_0,mlx5_1,mlx5_4,mlx5_5",
+  "oob_if": "enP22p3s0f3",
+  "run_id": "2026-02-07_213800_suite_gpu123_base_sudo_lock",
+  "steps": {
+    "order": [
+      "preflight",
+      "nccl_all_reduce",
+      "nccl_all_gather",
+      "nccl_reduce_scatter",
+      "torchdist",
+      "summary"
+    ]
+  },
+  "sudo_clock_lock": true,
+  "suite_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_213800_suite_gpu123_base_sudo_lock_node1node2_cluster_health_suite.log",
+  "torchdist": {
+    "max_busbw": {
+      "busbw_gbps": 591.5868180614091,
+      "size_bytes": 1073741824
+    },
+    "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_213800_suite_gpu123_base_sudo_lock_torchrun_allreduce.json"
+  }
+}

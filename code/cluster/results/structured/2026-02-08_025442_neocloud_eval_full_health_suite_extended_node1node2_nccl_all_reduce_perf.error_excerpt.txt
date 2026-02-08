@@ -1,0 +1,12 @@
+277:[2026-02-08 02:58:01] node2:813989:813989 [2] transport/nvls.cc:91 NCCL WARN Cuda failure 801 'operation not supported'
+278:node2:813989:813989 [2] NCCL INFO transport/nvls.cc:251 -> 1
+279:node2:813989:813989 [2] NCCL INFO transport/nvls.cc:434 -> 1
+291:[2026-02-08 02:58:01] node2:813998:813998 [3] transport/nvls.cc:91 NCCL WARN Cuda failure 801 'operation not supported'
+292:node2:813998:813998 [3] NCCL INFO transport/nvls.cc:251 -> 1
+293:node2:813998:813998 [3] NCCL INFO transport/nvls.cc:434 -> 1
+305:[2026-02-08 02:58:01] node2:813992:813992 [1] transport/nvls.cc:91 NCCL WARN Cuda failure 801 'operation not supported'
+306:node2:813992:813992 [1] NCCL INFO transport/nvls.cc:251 -> 1
+307:node2:813992:813992 [1] NCCL INFO transport/nvls.cc:434 -> 1
+319:[2026-02-08 02:58:01] node2:813995:813995 [0] transport/nvls.cc:91 NCCL WARN Cuda failure 801 'operation not supported'
+320:node2:813995:813995 [0] NCCL INFO transport/nvls.cc:251 -> 1
+321:node2:813995:813995 [0] NCCL INFO transport/nvls.cc:434 -> 1

@@ -1,0 +1,2 @@
+label,m,n,k,dtype,iters,avg_ms,p50_ms,p99_ms,avg_tflops,p50_tflops,p99_tflops,physical_gpu,app_sm_mhz,app_mem_mhz,cur_sm_mhz,cur_mem_mhz
+node1_gpu0_post_reset,16384,16384,16384,bf16,20,5.626531448797323,5.785501009086147,5.959070986136794,1563.3242437644553,1520.368418982852,1476.0846183358556,0,2062,3996,1950,3996

@@ -1,0 +1,41 @@
+{
+  "cuda_visible_devices": "",
+  "gpus_per_node": 4,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "ib_write_bw": {},
+  "iperf3": {},
+  "label": "node1node2",
+  "mpi": {
+    "bind_to": "socket",
+    "map_by": "ppr:2:socket",
+    "rank_by": "",
+    "report_bindings": true
+  },
+  "nccl": {
+    "all_reduce_perf": {
+      "max_busbw": {
+        "busbw_gbps": 529.42,
+        "size_bytes": 17179869184
+      },
+      "structured_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-07_225200_nccl_16g_bind_socket_ppr2socket_node1node2_nccl_all_reduce_perf.json"
+    }
+  },
+  "nccl_debug": "INFO",
+  "nccl_debug_subsys": "INIT",
+  "nccl_ib_hca": "mlx5_0,mlx5_1,mlx5_4,mlx5_5",
+  "oob_if": "enP22p3s0f3",
+  "run_id": "2026-02-07_225200_nccl_16g_bind_socket_ppr2socket",
+  "steps": {
+    "order": [
+      "preflight",
+      "nccl_all_reduce",
+      "summary"
+    ]
+  },
+  "sudo_clock_lock": true,
+  "suite_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-07_225200_nccl_16g_bind_socket_ppr2socket_node1node2_cluster_health_suite.log",
+  "torchdist": {}
+}

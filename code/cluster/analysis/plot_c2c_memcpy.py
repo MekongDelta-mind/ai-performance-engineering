@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _load(path: Path) -> dict:
@@ -76,6 +77,7 @@ def _plot_lat(meta: dict, out_path: Path) -> None:
 
 
 def main() -> int:
+    apply_plot_style()
     p = argparse.ArgumentParser(description="Plot CPU<->GPU memcpy (C2C) results.")
     p.add_argument("--input", required=True, help="Structured JSON from run_c2c_memcpy_bench.sh")
     p.add_argument("--out-dir", required=True)

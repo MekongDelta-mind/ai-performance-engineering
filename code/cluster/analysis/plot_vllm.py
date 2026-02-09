@@ -5,6 +5,7 @@ from pathlib import Path
 from statistics import mean
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def load_rows(path: Path):
@@ -108,6 +109,7 @@ def plot_latency(groups, out_path: Path, title: str):
 
 
 def main():
+    apply_plot_style()
     parser = argparse.ArgumentParser(description="Plot vLLM benchmark results.")
     parser.add_argument("--input", required=True, help="Path to structured vLLM CSV")
     parser.add_argument("--out-dir", required=True, help="Directory for output figures")

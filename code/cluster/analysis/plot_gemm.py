@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def load_rows(path: Path):
@@ -46,6 +47,7 @@ def plot_tflops(rows, out_path: Path, title: str):
 
 
 def main():
+    apply_plot_style()
     parser = argparse.ArgumentParser(description="Plot GEMM microbench results.")
     parser.add_argument("--input", required=True, help="Path to GEMM CSV")
     parser.add_argument("--out-dir", required=True, help="Directory for output figures")

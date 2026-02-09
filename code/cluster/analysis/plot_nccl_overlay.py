@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _load_results(path: Path) -> list[dict]:
@@ -41,6 +42,7 @@ def _sorted_points(results: list[dict], key: str) -> tuple[list[float], list[flo
 
 
 def main() -> None:
+    apply_plot_style()
     p = argparse.ArgumentParser(
         description="Overlay NCCL busbw/algbw curves from structured nccl-tests JSON files."
     )

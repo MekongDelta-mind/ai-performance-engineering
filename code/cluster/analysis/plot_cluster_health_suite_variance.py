@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _read_json(path: Path) -> Dict[str, Any]:
@@ -178,6 +179,7 @@ def _all_repeat_indices(summaries: List[Tuple[Path, Dict[str, Any]]]) -> List[in
 
 
 def main() -> int:
+    apply_plot_style()
     ap = argparse.ArgumentParser(description="Plot repeated cluster health suite metrics.")
     ap.add_argument("--glob", required=True, help="Glob for *_cluster_health_suite_summary.json files")
     ap.add_argument("--output", required=True, help="Output figure path (PNG recommended)")

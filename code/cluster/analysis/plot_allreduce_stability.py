@@ -19,10 +19,12 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 import numpy as np
 
 
 def main() -> int:
+    apply_plot_style()
     ap = argparse.ArgumentParser(description="Plot all-reduce stability results")
     ap.add_argument("--input", required=True, help="Input JSON from allreduce_stability_bench.py")
     ap.add_argument("--output", required=True, help="Output PNG path")

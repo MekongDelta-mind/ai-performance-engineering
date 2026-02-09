@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 import numpy as np
 
 
@@ -160,6 +161,7 @@ def plot_shape_sweep(csv_paths: List[Path], output: Path, title: str) -> None:
 
 
 def main() -> int:
+    apply_plot_style()
     ap = argparse.ArgumentParser(description="Plot MAMF results")
     ap.add_argument("--inputs", nargs="*", default=[], help="MAMF CSV file(s)")
     ap.add_argument("--summary-inputs", nargs="*", default=[], help="MAMF summary JSON file(s)")

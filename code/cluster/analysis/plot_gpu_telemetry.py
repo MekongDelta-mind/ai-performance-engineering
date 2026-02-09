@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _parse_float(val: str) -> Optional[float]:
@@ -140,6 +141,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    apply_plot_style()
     args = parse_args(argv)
     csv_paths = [Path(p) for p in args.csv]
     labels: List[str] = list(args.label or [])

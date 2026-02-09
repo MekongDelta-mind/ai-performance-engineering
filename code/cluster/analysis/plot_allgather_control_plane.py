@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _method_label(method: str) -> str:
@@ -20,6 +21,7 @@ def _method_label(method: str) -> str:
 
 
 def main() -> int:
+    apply_plot_style()
     parser = argparse.ArgumentParser(description="Plot all-gather control-plane benchmark")
     parser.add_argument("--input", required=True, help="Input JSON from scripts/allgather_control_plane_bench.py")
     parser.add_argument("--output", required=True, help="Output PNG path")

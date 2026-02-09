@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 import numpy as np
 from matplotlib.colors import ListedColormap
 
@@ -162,6 +163,7 @@ def parse_sharp(sharp_path: Path) -> dict:
 
 
 def build() -> None:
+    apply_plot_style()
     nodes = ["node1", "node2"]
     services = {n: parse_service_states(NODE_META[n]) for n in nodes}
     numa = {n: parse_numa_types(NUMACTL_EVIDENCE[n]) for n in nodes}

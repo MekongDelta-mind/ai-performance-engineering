@@ -14,9 +14,11 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def main() -> int:
+    apply_plot_style()
     parser = argparse.ArgumentParser(description="Plot all-reduce latency comparison")
     parser.add_argument("--input", required=True, help="Input JSON from scripts/allreduce_latency_comp.py")
     parser.add_argument("--output", required=True, help="Output PNG path")

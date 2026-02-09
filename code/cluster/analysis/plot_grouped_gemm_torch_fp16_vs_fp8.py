@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _shape_label(s: Dict[str, Any]) -> str:
@@ -14,6 +15,7 @@ def _shape_label(s: Dict[str, Any]) -> str:
 
 
 def main() -> int:
+    apply_plot_style()
     ap = argparse.ArgumentParser(description="Plot grouped GEMM summary JSON (torch fp16/fp8 + DeepGEMM when available).")
     ap.add_argument(
         "--summary-json",

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-02-09T05:56:06.458148Z",
+  "generated_at_utc": "2026-02-09T06:02:43.625191Z",
   "inference": {
     "concurrency_at_max_throughput": 512,
     "max_total_token_throughput": 53759.158,
@@ -21,6 +21,7 @@
     "oob_tcp_rev_gbps": 7.526530183032093
   },
   "node2_over_node1_ratios": {
+    "fio_seq_read_mb_s": 2.0432343231140058,
     "gemm_mean_tflops": 0.9958630675195901,
     "numa_local_bw_gbps": 1.0113532514594796
   },
@@ -47,7 +48,7 @@
       }
     },
     {
-      "fio_seq_read_mb_s": null,
+      "fio_seq_read_mb_s": 1444.4222240447998,
       "gemm": {
         "max_tflops": 1561.4374429629625,
         "mean_tflops": 1531.3107483571662,

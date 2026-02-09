@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 import numpy as np
 
 
@@ -46,6 +47,7 @@ def _load(csv_path: Path) -> dict[str, float]:
 
 
 def main() -> None:
+    apply_plot_style()
     labels = ["node2_gpu0", "node2_gpu1", "node2_gpu2", "node2_gpu3"]
     loaded = []
     for key, path, pretty in RUNS:

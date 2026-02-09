@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def parse_args() -> argparse.Namespace:
@@ -18,6 +19,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    apply_plot_style()
     args = parse_args()
     src = Path(args.input)
     if not src.exists():

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +24,7 @@ def _extract(summary_path: Path) -> tuple[float, int]:
 
 
 def main() -> None:
+    apply_plot_style()
     on_bw, on_size = _extract(ON_SUMMARY)
     off_bw, off_size = _extract(OFF_SUMMARY)
     if on_size != off_size:

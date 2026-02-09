@@ -189,8 +189,11 @@ python3 scripts/write_manifest.py --run-id <run_id> --hosts node1,node2 --includ
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv`
 - Dedicated nvbandwidth bundle artifacts:
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json`
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv`
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_clock_lock.json`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_clock_lock.json`
 - NVLink/NVSwitch topology artifacts:
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json`
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json`
@@ -199,6 +202,9 @@ python3 scripts/write_manifest.py --run-id <run_id> --hosts node1,node2 --includ
 - Story dashboard + parity summary:
   - `docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png`
   - `results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json`
+- Storage parity fio artifacts:
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json`
 
 ## Notes
 - `results/raw/` is intentionally gitignored and for debugging only.

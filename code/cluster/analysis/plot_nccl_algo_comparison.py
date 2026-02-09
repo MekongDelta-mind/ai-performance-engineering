@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 ALGO_COLORS = {
@@ -41,6 +42,7 @@ def _extract_algo(path: Path) -> Optional[str]:
 
 
 def main() -> int:
+    apply_plot_style()
     ap = argparse.ArgumentParser(description="Plot NCCL algorithm comparison")
     ap.add_argument("--inputs", nargs="+", required=True, help="NCCL algo JSON files")
     ap.add_argument("--output", required=True, help="Output PNG path")

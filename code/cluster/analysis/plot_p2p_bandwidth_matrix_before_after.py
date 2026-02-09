@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 import numpy as np
 
 
@@ -111,6 +112,7 @@ def plot(before_path: Path, after_path: Path, out_path: Path):
 
 
 def main():
+    apply_plot_style()
     ap = argparse.ArgumentParser()
     ap.add_argument("--before", required=True)
     ap.add_argument("--after", required=True)

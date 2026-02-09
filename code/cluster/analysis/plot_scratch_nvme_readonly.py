@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _node_label(node: str) -> str:
@@ -13,6 +14,7 @@ def _node_label(node: str) -> str:
 
 
 def main() -> int:
+    apply_plot_style()
     ap = argparse.ArgumentParser(description="Plot scratch NVMe read-only fio summary JSON")
     ap.add_argument("--summary-json", required=True, help="Input summary JSON from summarize_scratch_nvme_readonly.py")
     ap.add_argument("--out", required=True, help="Output PNG path")

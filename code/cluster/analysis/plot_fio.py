@@ -4,9 +4,11 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def main() -> int:
+    apply_plot_style()
     p = argparse.ArgumentParser(description="Plot fio summary JSON from scripts/run_fio_bench.sh")
     p.add_argument("--input", required=True, help="Path to structured fio summary JSON")
     p.add_argument("--out", required=True, help="Output PNG path")

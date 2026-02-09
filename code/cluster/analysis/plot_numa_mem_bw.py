@@ -6,9 +6,11 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def main() -> int:
+    apply_plot_style()
     p = argparse.ArgumentParser(description="Plot NUMA memory memcpy bandwidth probe results.")
     p.add_argument("--input", required=True, help="Structured JSON from run_numa_mem_bw.sh")
     p.add_argument("--out", required=True, help="Output PNG path")

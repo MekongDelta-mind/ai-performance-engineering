@@ -105,6 +105,7 @@ Options:
   --skip-nvbandwidth       Force-disable nvbandwidth bundle
   --nvbandwidth-runtime <host|container>  nvbandwidth runtime (default: host)
   --nvbandwidth-image <image>             nvbandwidth image for runtime=container
+                                          (default: cfregly/cluster_perf_orig_parity:latest)
   --nvbandwidth-bin <path>                nvbandwidth executable for runtime=host (default: nvbandwidth)
   --nvbandwidth-quick      Use reduced nvbandwidth testcase subset
 
@@ -249,7 +250,7 @@ FIO_RUNTIME="30"
 RUN_NVBANDWIDTH_MODE="auto"
 RUN_NVBANDWIDTH=0
 NVBANDWIDTH_RUNTIME="host"
-NVBANDWIDTH_IMAGE=""
+NVBANDWIDTH_IMAGE="cfregly/cluster_perf_orig_parity:latest"
 NVBANDWIDTH_BIN="nvbandwidth"
 NVBANDWIDTH_QUICK=0
 

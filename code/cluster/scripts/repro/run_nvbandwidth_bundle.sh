@@ -13,7 +13,7 @@ Options:
   --label <label>      Label for artifact names (default: hostname -s)
   --runtime <mode>     host|container (default: host)
   --image <image>      Container image for runtime=container
-                       (default: cfregly/cluster_perf@sha256:f9b2f503384d1780206dda1435cc2fb4eebe43bb15ff4b040a3601356af63a42 or $CONTAINER_IMAGE)
+                       (default: cfregly/cluster_perf_orig_parity:latest or $CONTAINER_IMAGE)
   --nvbw-bin <path>    nvbandwidth executable path (default: nvbandwidth)
   --quick              Run reduced testcase subset with lower samples for faster turnaround
 
@@ -29,7 +29,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RUN_ID="$(date +%Y-%m-%d)"
 LABEL="$(hostname -s)"
 RUNTIME="host"
-CONTAINER_IMAGE="${CONTAINER_IMAGE:-cfregly/cluster_perf@sha256:f9b2f503384d1780206dda1435cc2fb4eebe43bb15ff4b040a3601356af63a42}"
+CONTAINER_IMAGE="${CONTAINER_IMAGE:-cfregly/cluster_perf_orig_parity:latest}"
 NVBW_BIN="${NVBW_BIN:-nvbandwidth}"
 QUICK=0
 
@@ -97,21 +97,24 @@ echo "SUMS_CSV=${SUMS_CSV}"
 echo "LOCK_META=${LOCK_META}"
 echo ""
 
-if [[ "$RUNTIME" == "host" ]]; then
-  if ! command -v "$NVBW_BIN" >/dev/null 2>&1; then
-    echo "ERROR: nvbandwidth binary not found on PATH: ${NVBW_BIN}" >&2
-    exit 1
+contains_ptx_toolchain_mismatch() {
+  local log_path="$1"
+  if [[ ! -f "$log_path" ]]; then
+    return 1
   fi
+  grep -qiE "cudaErrorUnsupportedPtxVersion|unsupported toolchain" "$log_path"
+}
+
+run_host_nvbandwidth() {
   RUN_ID="$RUN_ID" LABEL="$LABEL" \
     "${ROOT_DIR}/scripts/run_with_gpu_clocks.sh" \
     --lock-meta-out "$LOCK_META" \
     -- "$NVBW_BIN" "${NVBW_ARGS[@]}" 2>&1 | tee "$RAW_LOG"
-else
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "ERROR: docker not found; required for runtime=container." >&2
-    exit 1
-  fi
-  DOCKER_ARGS=(
+  return "${PIPESTATUS[0]}"
+}
+
+run_container_nvbandwidth() {
+  local -a docker_args=(
     docker run --rm
     --gpus all
     --ipc=host
@@ -120,20 +123,66 @@ else
     --ulimit stack=67108864
   )
   if [[ -d /dev/infiniband ]]; then
-    DOCKER_ARGS+=( -v /dev/infiniband:/dev/infiniband )
+    docker_args+=( -v /dev/infiniband:/dev/infiniband )
   fi
   if [[ -e /dev/nvidia_imex ]]; then
-    DOCKER_ARGS+=( -v /dev/nvidia_imex:/dev/nvidia_imex )
+    docker_args+=( -v /dev/nvidia_imex:/dev/nvidia_imex )
   fi
   NVBW_ARGS_STR="$(printf ' %q' "${NVBW_ARGS[@]}")"
-  DOCKER_ARGS+=( "${CONTAINER_IMAGE}" bash -lc "set -euo pipefail; ${NVBW_BIN}${NVBW_ARGS_STR}" )
+  docker_args+=( "${CONTAINER_IMAGE}" bash -lc "set -euo pipefail; ${NVBW_BIN}${NVBW_ARGS_STR}" )
+
   RUN_ID="$RUN_ID" LABEL="$LABEL" \
     "${ROOT_DIR}/scripts/run_with_gpu_clocks.sh" \
     --lock-meta-out "$LOCK_META" \
-    -- "${DOCKER_ARGS[@]}" 2>&1 | tee "$RAW_LOG"
+    -- "${docker_args[@]}" 2>&1 | tee "$RAW_LOG"
+  return "${PIPESTATUS[0]}"
+}
+
+REQUESTED_RUNTIME="$RUNTIME"
+EFFECTIVE_RUNTIME="$RUNTIME"
+FALLBACK_USED=0
+run_rc=0
+
+if [[ "$REQUESTED_RUNTIME" == "host" ]]; then
+  if ! command -v "$NVBW_BIN" >/dev/null 2>&1; then
+    echo "ERROR: nvbandwidth binary not found on PATH: ${NVBW_BIN}" >&2
+    exit 1
+  fi
+  set +e
+  run_host_nvbandwidth
+  run_rc=$?
+  set -e
+
+  if [[ "$run_rc" -ne 0 ]] && contains_ptx_toolchain_mismatch "$RAW_LOG"; then
+    if ! command -v docker >/dev/null 2>&1; then
+      echo "ERROR: nvbandwidth host run failed with unsupported PTX toolchain and docker is unavailable for fallback." >&2
+      exit "$run_rc"
+    fi
+    echo "Host nvbandwidth failed with unsupported PTX/toolchain. Retrying in container runtime." | tee -a "$RAW_LOG"
+    FALLBACK_USED=1
+    EFFECTIVE_RUNTIME="container_fallback"
+    set +e
+    run_container_nvbandwidth
+    run_rc=$?
+    set -e
+  fi
+else
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: docker not found; required for runtime=container." >&2
+    exit 1
+  fi
+  set +e
+  run_container_nvbandwidth
+  run_rc=$?
+  set -e
 fi
 
-python3 - <<'PY' "$RUN_ID" "$LABEL" "$RAW_LOG" "$LOCK_META" "$SUMMARY_JSON" "$SUMS_CSV" "$RUNTIME" "$NVBW_BIN" "$CONTAINER_IMAGE" "$QUICK"
+if [[ "$run_rc" -ne 0 ]]; then
+  echo "ERROR: nvbandwidth execution failed (requested_runtime=${REQUESTED_RUNTIME}, effective_runtime=${EFFECTIVE_RUNTIME}, rc=${run_rc})." >&2
+  exit "$run_rc"
+fi
+
+python3 - <<'PY' "$RUN_ID" "$LABEL" "$RAW_LOG" "$LOCK_META" "$SUMMARY_JSON" "$SUMS_CSV" "$REQUESTED_RUNTIME" "$EFFECTIVE_RUNTIME" "$FALLBACK_USED" "$NVBW_BIN" "$CONTAINER_IMAGE" "$QUICK"
 import csv
 import json
 import re
@@ -147,7 +196,9 @@ from pathlib import Path
     lock_meta_path,
     summary_json_path,
     sums_csv_path,
-    runtime_mode,
+    requested_runtime,
+    effective_runtime,
+    fallback_used,
     nvbw_bin,
     container_image,
     quick_flag,
@@ -224,9 +275,12 @@ payload = {
     "run_id": run_id,
     "label": label,
     "status": "ok" if sums and clock_summary["all_devices_locked"] else "failed",
-    "runtime": runtime_mode,
-    "image": container_image if runtime_mode == "container" else None,
-    "nvbandwidth_bin": nvbw_bin if runtime_mode == "host" else None,
+    "requested_runtime": requested_runtime,
+    "effective_runtime": effective_runtime,
+    "fallback_used": fallback_used == "1",
+    "runtime": effective_runtime,
+    "image": container_image if "container" in effective_runtime else None,
+    "nvbandwidth_bin": nvbw_bin if effective_runtime == "host" else None,
     "quick": quick_flag == "1",
     "artifacts": {
         "raw_log": str(raw_log),

@@ -21,6 +21,7 @@ Options:
 
   --runtime <mode>       host|container (default: host)
   --image <image>        Container image for runtime=container
+                         (default: cfregly/cluster_perf_orig_parity:latest)
   --nvbw-bin <path>      nvbandwidth executable path (default: nvbandwidth)
   --quick                Use reduced testcase subset
 EOF
@@ -35,7 +36,7 @@ SSH_KEY="${SSH_KEY:-}"
 REMOTE_ROOT="${REMOTE_ROOT:-$ROOT_DIR}"
 
 RUNTIME="${RUNTIME:-host}"
-IMAGE="${IMAGE:-}"
+IMAGE="${IMAGE:-cfregly/cluster_perf_orig_parity:latest}"
 NVBW_BIN="${NVBW_BIN:-nvbandwidth}"
 QUICK=0
 
@@ -65,11 +66,6 @@ if [[ "$RUNTIME" != "host" && "$RUNTIME" != "container" ]]; then
   echo "ERROR: --runtime must be host or container (got: ${RUNTIME})" >&2
   exit 2
 fi
-if [[ "$RUNTIME" == "container" && -z "$IMAGE" ]]; then
-  echo "ERROR: --image is required for --runtime container" >&2
-  exit 2
-fi
-
 IFS=',' read -r -a HOST_ARR <<<"$HOSTS"
 IFS=',' read -r -a LABEL_ARR <<<"$LABELS"
 if [[ -n "$LABELS" && "${#LABEL_ARR[@]}" -ne "${#HOST_ARR[@]}" ]]; then

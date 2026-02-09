@@ -1,0 +1,13 @@
+run_id,label,cpu_node,node,bytes,iters,threads,warmup,elapsed_s,bw_gbps,rc,error
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,0,1073741824,10,16,2,0.079669,134.774686,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,1,1073741824,10,16,2,0.162243,66.181187,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,2,1073741824,10,16,2,0.176211,60.935147,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,10,1073741824,10,16,2,0.303117,35.423341,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,18,1073741824,10,16,2,0.327199,32.816205,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,26,1073741824,10,16,2,0.327917,32.744275,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,0,1073741824,10,16,2,0.078396,136.964568,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,1,1073741824,10,16,2,0.16246,66.09263,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,2,1073741824,10,16,2,0.175559,61.161249,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,10,1073741824,10,16,2,0.303046,35.431688,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,18,1073741824,10,16,2,0.327973,32.738715,0,
+2026-02-09_fresh_full_suite_e2e_fixed,node1,0,26,1073741824,10,16,2,0.328354,32.700693,0,

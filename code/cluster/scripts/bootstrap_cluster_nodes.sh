@@ -7,7 +7,7 @@ Usage:
   scripts/bootstrap_cluster_nodes.sh --hosts <h1,h2,...> [options]
 
 Bootstraps nodes so cluster checks are reproducible:
-  1) Syncs harness code (scripts/, analysis/, env/requirements.txt)
+  1) Syncs harness code (scripts/, analysis/, configs/, env/requirements.txt)
   2) Optionally installs missing system packages required by checks
   3) Ensures env/venv exists and installs Python deps (torch + plotting deps)
   4) Optionally syncs Cluster Perf standalone compute suite for FP4 checks
@@ -198,6 +198,11 @@ build_rsync_ssh() {
 }
 RSYNC_SSH_CMD="$(build_rsync_ssh)"
 
+LOCAL_PARITY_IMAGE_AVAILABLE=0
+if command -v docker >/dev/null 2>&1 && docker image inspect "$HOST_PARITY_IMAGE" >/dev/null 2>&1; then
+  LOCAL_PARITY_IMAGE_AVAILABLE=1
+fi
+
 run_remote() {
   local host="$1"
   shift
@@ -225,6 +230,32 @@ is_local_host() {
   return 1
 }
 
+ensure_parity_image_on_host() {
+  local host="$1"
+  local q_parity_image
+  printf -v q_parity_image '%q' "$HOST_PARITY_IMAGE"
+
+  if run_host_cmd "$host" "docker image inspect ${q_parity_image} >/dev/null 2>&1"; then
+    return 0
+  fi
+
+  if ! is_local_host "$host" && [[ "$LOCAL_PARITY_IMAGE_AVAILABLE" -eq 1 ]]; then
+    echo "INFO: host ${host} missing parity image; streaming local cache (${HOST_PARITY_IMAGE})"
+    if docker save "$HOST_PARITY_IMAGE" | ssh "${SSH_OPTS[@]}" "${SSH_USER}@${host}" "docker load >/dev/null"; then
+      if run_host_cmd "$host" "docker image inspect ${q_parity_image} >/dev/null 2>&1"; then
+        return 0
+      fi
+      echo "WARNING: streamed parity image to ${host}, but ${HOST_PARITY_IMAGE} was not resolved afterward; falling back to pull." >&2
+    else
+      echo "WARNING: failed to stream local parity image to ${host}; falling back to pull." >&2
+    fi
+  fi
+
+  echo "INFO: pulling parity image on host ${host}: ${HOST_PARITY_IMAGE}"
+  run_host_cmd "$host" "docker pull ${q_parity_image} >/dev/null"
+  run_host_cmd "$host" "docker image inspect ${q_parity_image} >/dev/null 2>&1"
+}
+
 mkdir -p "${ROOT_DIR}/results/raw" "${ROOT_DIR}/results/structured"
 LOG_DIR="${ROOT_DIR}/results/raw/${RUN_ID}_bootstrap_nodes"
 mkdir -p "$LOG_DIR"
@@ -243,12 +274,14 @@ sync_code_to_host() {
     return 0
   fi
 
-  run_host_cmd "$host" "mkdir -p $(printf '%q' "${REMOTE_ROOT}/scripts") $(printf '%q' "${REMOTE_ROOT}/analysis") $(printf '%q' "${REMOTE_ROOT}/env")"
+  run_host_cmd "$host" "mkdir -p $(printf '%q' "${REMOTE_ROOT}/scripts") $(printf '%q' "${REMOTE_ROOT}/analysis") $(printf '%q' "${REMOTE_ROOT}/configs") $(printf '%q' "${REMOTE_ROOT}/env")"
 
   rsync -az --exclude '__pycache__' -e "$RSYNC_SSH_CMD" \
     "${ROOT_DIR}/scripts/" "${SSH_USER}@${host}:${REMOTE_ROOT}/scripts/"
   rsync -az --exclude '__pycache__' -e "$RSYNC_SSH_CMD" \
     "${ROOT_DIR}/analysis/" "${SSH_USER}@${host}:${REMOTE_ROOT}/analysis/"
+  rsync -az --exclude '__pycache__' -e "$RSYNC_SSH_CMD" \
+    "${ROOT_DIR}/configs/" "${SSH_USER}@${host}:${REMOTE_ROOT}/configs/"
   rsync -az -e "$RSYNC_SSH_CMD" \
     "${ROOT_DIR}/env/requirements.txt" "${SSH_USER}@${host}:${REMOTE_ROOT}/env/requirements.txt"
 }
@@ -343,6 +376,8 @@ install_python_deps_on_host() {
   local venv_py="${venv_dir}/bin/python"
   local installer_script="${REMOTE_ROOT}/scripts/install_host_orig_parity_stack.sh"
   local req_file="${REMOTE_ROOT}/env/requirements.txt"
+
+  ensure_parity_image_on_host "$host"
 
   local q_venv_dir q_venv_py q_installer q_req q_parity_image
   local q_torch_version q_torch_cuda q_torch_cudnn q_torch_nccl q_deep_gemm_version

@@ -23,6 +23,10 @@ Options:
   --warmup <n>        Warmup iterations (default: 5).
   --iters <n>         Benchmark iterations (default: 30).
   --image <image>     Container image (required; or set CONTAINER_IMAGE).
+  --require-deepgemm  Fail if grouped GEMM summary reports DeepGEMM unsupported
+                      or no DeepGEMM datapoints (default: off).
+  --allow-deepgemm-unsupported
+                      Disable --require-deepgemm after it was set earlier.
 EOF
 }
 
@@ -34,6 +38,7 @@ WARMUP="5"
 ITERS="30"
 SUITE_DIR="${CLUSTER_PERF_SUITE_DIR:-}"
 IMAGE="${CONTAINER_IMAGE:-}"
+REQUIRE_DEEPGEMM=0
 
 while [[ $# -gt 0 ]]; do
   case "${1:-}" in
@@ -44,6 +49,8 @@ while [[ $# -gt 0 ]]; do
     --warmup) WARMUP="${2:-}"; shift 2 ;;
     --iters) ITERS="${2:-}"; shift 2 ;;
     --image) IMAGE="${2:-}"; shift 2 ;;
+    --require-deepgemm) REQUIRE_DEEPGEMM=1; shift ;;
+    --allow-deepgemm-unsupported) REQUIRE_DEEPGEMM=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
@@ -90,6 +97,29 @@ echo
   "${ROOT_DIR}/analysis/summarize_grouped_gemm_torch_fp16_vs_fp8.py" \
   --in-log "$OUT_LOG" \
   --out-json "$OUT_JSON"
+
+if [[ "$REQUIRE_DEEPGEMM" -eq 1 ]]; then
+  "${ROOT_DIR}/env/venv/bin/python" - "$OUT_JSON" <<'PY'
+import json
+import sys
+
+summary_path = sys.argv[1]
+with open(summary_path, "r", encoding="utf-8") as fh:
+    payload = json.load(fh)
+
+counts = payload.get("counts") or {}
+deepgemm = payload.get("deepgemm") or {}
+unsupported_reason = str(deepgemm.get("unsupported_reason") or "").strip()
+datapoints_ok = int(counts.get("deepgemm_datapoints_ok") or 0)
+
+if unsupported_reason:
+    raise SystemExit(f"DeepGEMM grouped GEMM unsupported: {unsupported_reason}")
+if datapoints_ok < 1:
+    raise SystemExit("DeepGEMM grouped GEMM produced no valid datapoints")
+
+print(f"DeepGEMM grouped GEMM validation passed: deepgemm_datapoints_ok={datapoints_ok}")
+PY
+fi
 
 "${ROOT_DIR}/env/venv/bin/python" \
   "${ROOT_DIR}/analysis/plot_grouped_gemm_torch_fp16_vs_fp8.py" \

@@ -6,6 +6,15 @@ Key rule (GPU benchmarks):
 - GPU clock locking is **mandatory**. GPU benchmark scripts fail if clock locking cannot be acquired via the repo harness (`lock_gpu_clocks`).
 - Practically, this usually means you must configure passwordless sudo for `nvidia-smi` clock locking (so `sudo -n true` succeeds).
 
+## Validated Reference Package
+- Canonical validated run (used by the current field report): `2026-02-09_gb200_fullflags_all_0117`.
+- Manifest: `results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json`.
+- Sanitized cluster metadata: `results/structured/2026-02-09_gb200_fullflags_all_0117_cluster_meta.json`.
+- Multi-node vLLM path attempt (strict-lock + structured failure package): `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json`.
+- NVLink/NVSwitch topology summaries: `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json`, `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json`.
+- Narrative report: `field-report.md`.
+- Claim-to-evidence ledger: `field-report-notes.md`.
+
 ## Core Run Flow
 
 ### 1) Run The Full Suite
@@ -47,6 +56,14 @@ Optional high-impact cross-reference diagnostics:
   --enable-allreduce-latency-comp --allreduce-latency-payload-gib 4.0 --allreduce-latency-chunks 1000 \
   --enable-allgather-control-plane --allgather-control-iters 2000 --allgather-control-warmup 200 \
   --enable-nccl-algo-comparison --nccl-algos Ring,Tree,NVLS,auto
+```
+
+Optional multi-node vLLM serving path (Ray + TP across both nodes):
+```bash
+  --run-vllm-multinode \
+  --vllm-multinode-concurrency 16 \
+  --vllm-multinode-num-prompts 64 \
+  --vllm-multinode-ray-port 6379
 ```
 
 Portable baseline profile (recommended first run when FP4 deps are not available):
@@ -240,6 +257,44 @@ python3 analysis/plot_vllm_serve_sweep.py \
 This benchmark self-locks clocks (strict) and writes a clock-lock artifact to:
 `results/structured/<run_id>_<label>_vllm_serve_sweep_clock_lock.json`.
 
+### 8b) Inference (vLLM multi-node serving, Ray)
+```bash
+scripts/repro/run_vllm_serve_multinode_container.sh \
+  --run-id <run_id> \
+  --hosts node1,node2 \
+  --labels node1,node2 \
+  --ssh-key ~/.ssh/ssh_key.pem \
+  --model openai/gpt-oss-120b \
+  --tp 8 \
+  --isl 512 \
+  --osl 256 \
+  --concurrency 16 \
+  --num-prompts 64 \
+  --socket-ifname <iface> \
+  --nccl-ib-hca mlx5_0,mlx5_1,mlx5_4,mlx5_5
+```
+Artifacts:
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_serve.json`
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_serve.csv`
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_serve.jsonl`
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_leader_clock_lock.json`
+- `results/structured/<run_id>_<worker_label>_vllm_multinode_worker_clock_lock.json`
+- `results/raw/<run_id>_<leader_label>_vllm_multinode_serve/leader.log`
+
+Latest known state for the canonical run (`2026-02-09_gb200_fullflags_all_0117`):
+- command path executed correctly with strict lock on both nodes
+- benchmark failed before ready with `ModuleNotFoundError: No module named 'vllm.config.kernel'` in Ray workers
+- failure is preserved as a reproducible structured artifact, not dropped
+
+### 8c) NVLink/NVSwitch Topology Artifact
+Generate topology figure + structured summary from node meta (`nvidia-smi topo -m`):
+```bash
+python3 analysis/plot_nvlink_topology.py \
+  --meta results/structured/<run_id>_<label>_meta.json \
+  --fig-out docs/figures/<run_id>_<label>_nvlink_topology.png \
+  --summary-out results/structured/<run_id>_<label>_nvlink_topology.json
+```
+
 ### 9) Compute Sanity (GEMM per GPU, all nodes)
 ```bash
 scripts/run_gemm_sanity_all_nodes.sh --run-id <run_id> --hosts node1,node2 --ssh-key ~/.ssh/ssh_key.pem
@@ -404,11 +459,16 @@ scripts/run_fp4_checks_all_nodes.sh \
 Example suite path: `e.g. /path/to/clustermax` (set via `--suite-dir` or `CLUSTER_PERF_SUITE_DIR`).
 Outputs:
 `results/structured/<run_id>_<label>_cluster_perf_fp4_platform.json`,
+`results/structured/<run_id>_fp4_attestation_consistency.json`,
 `results/structured/<run_id>_r<round>_<label>_cluster_perf_fp4_smoke.json`,
 `results/structured/<run_id>_r<round>_<label>_cluster_perf_fp4_smoke_clock_lock.json`,
 `results/structured/<run_id>_fp4_smoke_skew_guard.json`,
 `results/structured/<run_id>_<label>_cluster_perf_grouped_gemm_summary.json`,
 `docs/figures/<run_id>_<label>_cluster_perf_grouped_gemm_tflops.png`.
+
+Attestation mode is `balanced` by default. This records semantic patch checks,
+container/suite provenance metadata, and cross-host consistency without pinning
+or mutating host state.
 
 #### Local Patch Prerequisite (GB200 DeepGEMM Grouped GEMM)
 FP4 grouped-GEMM reproducibility on GB200 requires the local patch:
@@ -453,17 +513,9 @@ scripts/run_cluster_perf_grouped_gemm.sh \
   --label <label> \
   --image <image> \
   --preset auto \
+  --require-deepgemm \
   --warmup 2 \
   --iters 5
-
-python3 - <<'PY' "results/structured/<run_id>_<label>_cluster_perf_grouped_gemm_summary.json"
-import json, sys
-summary = json.load(open(sys.argv[1], "r", encoding="utf-8"))
-reason = ((summary.get("deepgemm") or {}).get("unsupported_reason") or "")
-if "Unsupported architecture or scaling factor types" in reason:
-    raise SystemExit("FAIL: legacy DeepGEMM scaling-factor error still present")
-print("OK: summary does not contain the legacy scaling-factor error")
-PY
 
 test -f "docs/figures/<run_id>_<label>_cluster_perf_grouped_gemm_tflops.png"
 ```
@@ -514,5 +566,7 @@ cluster/
 - Network/system tools used by suite scripts: `nccl-tests`, `iperf3`, RDMA/IB tools (`ibstat`, `rdma`, perftest utilities), and `fio`.
 - Python runtime: `env/venv` with repo requirements and runnable `vllm` CLI for host-native vLLM scripts.
 - vLLM serving sweep (`scripts/repro/run_vllm_serve_sweep_container.sh`) currently depends on Docker + NVIDIA container runtime and `nvidia-persistenced`.
+- vLLM multi-node serving (`scripts/repro/run_vllm_serve_multinode_container.sh`) depends on the same container runtime plus Ray startup across both nodes and synchronized image/runtime contents.
+- NVLink/NVSwitch topology artifact generation (`analysis/plot_nvlink_topology.py`) depends on valid `nvidia-smi topo -m` capture under `results/structured/<run_id>_<label>_meta.json`.
 - FP4 grouped GEMM checks (`scripts/run_cluster_perf_grouped_gemm.sh`, `scripts/run_fp4_checks_all_nodes.sh`, FP4 path in `scripts/run_cluster_eval_suite.sh`) depend on an external suite directory via `--suite-dir` / `CLUSTER_PERF_SUITE_DIR` (e.g. `/path/to/clustermax`) plus a container image via `--image` / `CONTAINER_IMAGE` (e.g. `ghcr.io/jordannanos/cmax-compute:latest`).
 - DeepGEMM smoke (`analysis/smoke_deepgemm_fp8_fp4.py`) requires importable `deep_gemm` in the selected runtime environment.

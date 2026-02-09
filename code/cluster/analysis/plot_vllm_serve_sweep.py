@@ -5,6 +5,7 @@ from pathlib import Path
 from statistics import mean
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def as_float(v):
@@ -49,6 +50,8 @@ def plot_line(xs, series, out: Path, title: str, ylabel: str):
 
 
 def main() -> int:
+    apply_plot_style()
+
     p = argparse.ArgumentParser(description="Plot vLLM bench serve concurrency sweep CSV.")
     p.add_argument("--input", required=True, help="Structured CSV from vLLM serve sweep")
     p.add_argument("--out-dir", required=True, help="Directory for output figures")
@@ -92,4 +95,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

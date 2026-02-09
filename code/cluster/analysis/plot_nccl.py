@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def load_data(path: Path):
@@ -119,6 +120,8 @@ def plot_scaling_efficiency(cases, out_path: Path, title: str, target_sizes_mb):
 
 
 def main():
+    apply_plot_style()
+
     parser = argparse.ArgumentParser(description="Plot NCCL results.")
     parser.add_argument("--input", required=True, help="Path to structured NCCL JSON")
     parser.add_argument("--out-dir", required=True, help="Directory for output figures")

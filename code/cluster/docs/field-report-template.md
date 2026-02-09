@@ -23,6 +23,7 @@ Manifest (file hashes + artifact counts):
 
 Discovery:
 - `results/structured/<RUN_ID>_<label>_meta.json`
+- `results/structured/<RUN_ID>_<label>_nvlink_topology.json` (generated from captured `nvidia-smi topo -m`)
 - `results/structured/<RUN_ID>_<label>_container_runtime.txt` (includes container runtime details + key CVE checks, e.g. CVE-2025-23266)
 
 ## Cluster Story (First Contact)
@@ -69,6 +70,7 @@ Discovery:
 - Repro commands:
   - `scripts/repro/run_vllm_serve_sweep_container.sh ...`
   - `python3 analysis/plot_vllm_serve_sweep.py ...`
+  - Optional multinode path: `scripts/repro/run_vllm_serve_multinode_container.sh ...`
 - Artifacts:
   - `results/structured/<RUN_ID>_<label>_vllm_serve_sweep.csv`
   - `results/structured/<RUN_ID>_<label>_vllm_serve_sweep.jsonl`
@@ -76,6 +78,12 @@ Discovery:
   - `docs/figures/<RUN_ID>_<label>_vllm_serve_total_tok_s_vs_concurrency.png`
   - `docs/figures/<RUN_ID>_<label>_vllm_serve_ttft_vs_concurrency.png`
   - `docs/figures/<RUN_ID>_<label>_vllm_serve_tpot_vs_concurrency.png`
+  - Optional multinode artifacts:
+    - `results/structured/<RUN_ID>_<leader_label>_vllm_multinode_serve.json`
+    - `results/structured/<RUN_ID>_<leader_label>_vllm_multinode_serve.csv`
+    - `results/structured/<RUN_ID>_<leader_label>_vllm_multinode_serve.jsonl`
+    - `results/structured/<RUN_ID>_<leader_label>_vllm_multinode_leader_clock_lock.json`
+    - `results/structured/<RUN_ID>_<worker_label>_vllm_multinode_worker_clock_lock.json`
 
 ## Supporting: Compute Sanity (BF16 GEMM)
 - Why: catch per-node/per-GPU deltas fast
@@ -157,6 +165,7 @@ Discovery:
   - `scripts/run_cluster_eval_suite.sh --run-id <RUN_ID> --hosts <h1,h2> --labels <l1,l2> --ssh-key <key> --oob-if <iface> --socket-ifname <iface> --nccl-ib-hca <hcas> --health-suite extended --fp4-suite-dir <dir> --fp4-image ghcr.io/jordannanos/cmax-compute:latest`
 - Full GB200 repro (all extended checks enabled):
   - `scripts/run_cluster_eval_suite.sh --run-id <RUN_ID> --hosts <h1,h2> --labels <l1,l2> --ssh-key <key> --oob-if <iface> --socket-ifname <iface> --nccl-ib-hca <hcas> --health-suite extended --health-gdr --health-gdr-gpu 0 --health-gdr-mem-types 0,1 --health-gdr-use-dmabuf --fp4-suite-dir <dir> --fp4-image ghcr.io/jordannanos/cmax-compute:latest --run-c2c --run-numa-mem-bw --run-train-step --train-step-single-node --train-step-multi-node --run-checkpoint-io --enable-mamf --mamf-mode quick --mamf-concurrent --enable-allreduce-stability --allreduce-payload-gib 2.0 --allreduce-iters 200 --allreduce-warmup 20 --enable-allreduce-latency-comp --allreduce-latency-payload-gib 4.0 --allreduce-latency-chunks 1000 --allreduce-latency-iters 5 --allreduce-latency-warmup 1 --enable-allgather-control-plane --allgather-control-iters 2000 --allgather-control-warmup 200 --enable-nccl-algo-comparison --nccl-algos Ring,Tree,NVLS,auto`
+  - Optional multinode vLLM add-on for the suite command: `--run-vllm-multinode --vllm-multinode-concurrency 16 --vllm-multinode-num-prompts 64 --vllm-multinode-ray-port 6379`
   - If grouped GEMM fails on GB200 with DeepGEMM scaling-factor errors, apply `code/cluster_perf_patches/deepgemm_gb200_grouped_gemm_ue8m0.patch` (see `docs/advanced-runbook.md`).
 
 ## Appendix

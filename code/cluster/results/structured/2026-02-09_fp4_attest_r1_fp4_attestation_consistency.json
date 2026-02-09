@@ -1,0 +1,48 @@
+{
+  "consistency": {
+    "image_ids": [
+      "sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e"
+    ],
+    "semantic_signatures": [
+      "26ecfe550b58560d7d087cfba41f6a7887e88e5cf4b109cbb798489af07c18d4"
+    ],
+    "source_sha256": [
+      "fd7570dd0f7588b077826e7e366dc5c18985198d3ef08b8b7b55e528ee0abbf9"
+    ]
+  },
+  "hosts": [
+    {
+      "image_id": "sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e",
+      "label": "node1",
+      "platform_file": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_node1_cluster_perf_fp4_platform.json",
+      "repo_digests": [
+        "ghcr.io/jordannanos/cmax-compute@sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e"
+      ],
+      "semantic_signature": "26ecfe550b58560d7d087cfba41f6a7887e88e5cf4b109cbb798489af07c18d4",
+      "semantic_status": "pass",
+      "source_sha256": "fd7570dd0f7588b077826e7e366dc5c18985198d3ef08b8b7b55e528ee0abbf9"
+    },
+    {
+      "image_id": "sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e",
+      "label": "node2",
+      "platform_file": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_node2_cluster_perf_fp4_platform.json",
+      "repo_digests": [
+        "ghcr.io/jordannanos/cmax-compute@sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e"
+      ],
+      "semantic_signature": "26ecfe550b58560d7d087cfba41f6a7887e88e5cf4b109cbb798489af07c18d4",
+      "semantic_status": "pass",
+      "source_sha256": "fd7570dd0f7588b077826e7e366dc5c18985198d3ef08b8b7b55e528ee0abbf9"
+    }
+  ],
+  "labels": [
+    "node1",
+    "node2"
+  ],
+  "missing_platform_files": [],
+  "mode": "balanced",
+  "reasons": [],
+  "run_id": "2026-02-09_fp4_attest_r1",
+  "status": "pass",
+  "timestamp": "2026-02-09T03:12:18+0000",
+  "warnings": []
+}

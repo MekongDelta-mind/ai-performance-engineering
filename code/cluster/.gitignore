@@ -1,5 +1,3 @@
-field-report-notes.md
-
 # Local virtual environment (keep env/requirements.txt tracked)
 env/venv/
 

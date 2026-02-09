@@ -1,0 +1,82 @@
+{
+  "labels": [
+    "node1",
+    "node2"
+  ],
+  "max_pairwise_median_gap_pair": [
+    "node1",
+    "node2"
+  ],
+  "max_pairwise_median_gap_pct": 0.7859324248370427,
+  "pairwise_median_gaps": [
+    {
+      "median_gap_pct": 0.7859324248370427,
+      "median_tflops": {
+        "node1": 1532.0200981127316,
+        "node2": 1544.1561217637793
+      },
+      "pair": [
+        "node1",
+        "node2"
+      ]
+    }
+  ],
+  "per_host": {
+    "node1": {
+      "deepgemm_avg_tflops": {
+        "max": 1584.0209962426875,
+        "mean": 1547.6411391472286,
+        "median": 1532.0200981127316,
+        "min": 1526.8823230862665
+      },
+      "rounds": [
+        {
+          "deepgemm_avg_tflops": 1532.0200981127316,
+          "round": 1,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_r1_node1_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1584.0209962426875,
+          "round": 2,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_r2_node1_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1526.8823230862665,
+          "round": 3,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_r3_node1_cluster_perf_fp4_smoke.json"
+        }
+      ]
+    },
+    "node2": {
+      "deepgemm_avg_tflops": {
+        "max": 1613.4766491819282,
+        "mean": 1551.0258551774652,
+        "median": 1544.1561217637793,
+        "min": 1495.444794586688
+      },
+      "rounds": [
+        {
+          "deepgemm_avg_tflops": 1613.4766491819282,
+          "round": 1,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_r1_node2_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1544.1561217637793,
+          "round": 2,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_r2_node2_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1495.444794586688,
+          "round": 3,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_fp4_attest_r1_r3_node2_cluster_perf_fp4_smoke.json"
+        }
+      ]
+    }
+  },
+  "reason": "max_pairwise_median_gap_within_threshold",
+  "run_id": "2026-02-09_fp4_attest_r1",
+  "smoke_rounds": 3,
+  "smoke_skew_threshold_pct": 5.0,
+  "status": "pass",
+  "timestamp": "2026-02-09T03:13:43+0000"
+}

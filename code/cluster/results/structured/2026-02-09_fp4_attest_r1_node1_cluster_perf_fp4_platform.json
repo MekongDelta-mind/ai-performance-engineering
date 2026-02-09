@@ -1,0 +1,68 @@
+{
+  "fp4": {
+    "artifacts": {
+      "grouped_clock_lock": "results/structured/2026-02-09_fp4_attest_r1_node1_cluster_perf_grouped_gemm_clock_lock.json",
+      "grouped_log": "results/structured/2026-02-09_fp4_attest_r1_node1_cluster_perf_grouped_gemm.txt",
+      "grouped_summary": "results/structured/2026-02-09_fp4_attest_r1_node1_cluster_perf_grouped_gemm_summary.json"
+    },
+    "attestation": {
+      "mode": "balanced",
+      "semantic": {
+        "forbidden_hits": {
+          "legacy_disable_true_literal": []
+        },
+        "missing_required_markers": [],
+        "profile": "gb200_grouped_gemm_balanced_v1",
+        "required_markers": {
+          "disable_cast_switch": "disable_ue8m0_cast = not use_ue8m0",
+          "global_unsupported_reason": "DEEPGEMM_UNSUPPORTED_REASON: Optional[str] = None",
+          "kernel_disable_cast_var": "disable_ue8m0_cast=disable_ue8m0_cast",
+          "kernel_fallback_getattr": "getattr(deep_gemm, \"m_grouped_fp8_gemm_nt_contiguous\"",
+          "per_block_use_ue8m0": "per_block_cast_to_fp8(b_bf16[i], use_ue8m0=use_ue8m0)",
+          "per_token_use_ue8m0": "per_token_cast_to_fp8(a_bf16, use_ue8m0=use_ue8m0)",
+          "ue8m0_arch_switch": "use_ue8m0 = arch_major >= 10",
+          "unsupported_print": "DeepGEMM unsupported: {e}"
+        },
+        "semantic_signature": "26ecfe550b58560d7d087cfba41f6a7887e88e5cf4b109cbb798489af07c18d4",
+        "source_sha256": "fd7570dd0f7588b077826e7e366dc5c18985198d3ef08b8b7b55e528ee0abbf9",
+        "status": "pass"
+      },
+      "snapshot_relative_path": "results/raw/2026-02-09_fp4_attest_r1_node1_grouped_gemm_bench.snapshot.py",
+      "target_relative_path": "standalone/compute/gemm-bench/grouped_gemm_bench.py"
+    },
+    "image": "ghcr.io/jordannanos/cmax-compute:latest",
+    "provenance": {
+      "container": {
+        "image_id": "sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e",
+        "image_ref": "ghcr.io/jordannanos/cmax-compute:latest",
+        "repo_digests": [
+          "ghcr.io/jordannanos/cmax-compute@sha256:d9ed224b30be7efff651d40801032c1f0117cab4012f143059af2c494a3e353e"
+        ]
+      },
+      "note": "metadata capture only; no state mutation or locking",
+      "runtime": {
+        "cuda_version": "13.0",
+        "driver_version": "580.105.08"
+      },
+      "suite": {
+        "git_commit": "f698cf2566bebc8e52b7acdc701c1a2862d60783",
+        "git_dirty": true,
+        "path": "/home/ubuntu/ai-performance-engineering/code/clustermax"
+      }
+    },
+    "requested_preset": "auto",
+    "selected_preset": "all",
+    "suite_dir": "/home/ubuntu/ai-performance-engineering/code/clustermax"
+  },
+  "gb_family_detected": true,
+  "gb_sku": "GB200",
+  "gpu_names": [
+    "NVIDIA GB200",
+    "NVIDIA GB200",
+    "NVIDIA GB200",
+    "NVIDIA GB200"
+  ],
+  "host": "node1",
+  "label": "node1",
+  "timestamp": "2026-02-09T03:11:10+0000"
+}

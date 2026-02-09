@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _read_rows(path: Path) -> List[Dict[str, str]]:
@@ -59,6 +60,8 @@ def _to_float(v: Optional[str]) -> Optional[float]:
 
 
 def main() -> int:
+    apply_plot_style()
+
     ap = argparse.ArgumentParser(description="Bar plot GEMM TFLOPS by label.")
     ap.add_argument("--inputs", nargs="+", required=True, help="One or more GEMM CSV paths")
     ap.add_argument("--output", required=True, help="Output PNG path")
@@ -120,4 +123,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -10,23 +10,26 @@ Runs a reusable "field report" eval suite:
   1) Discovery + TCP sysctl + storage layout + manifest
   2) Benchmark A: NCCL all_reduce_perf (single-node + multi-node)
   3) Optional: cluster health suite (iperf/IB/NCCL/torchdist, with optional GDR)
-  4) Benchmark B: vLLM online serving sweep (containerized)
-  5) Benchmark C: BF16 GEMM per-GPU sanity (all nodes)
-  6) Optional FP4 checks: DeepGEMM FP8xFP4 smoke + grouped GEMM (all nodes)
-  7) Optional high-impact extras (ml-engineering parity):
+  4) Benchmark B: vLLM online serving sweep (containerized, single-node)
+  5) Optional: vLLM multinode serving benchmark (Ray, 2-node)
+  6) Benchmark C: BF16 GEMM per-GPU sanity (all nodes)
+  7) Optional FP4 checks: DeepGEMM FP8xFP4 smoke + grouped GEMM (all nodes)
+  8) Optional high-impact extras (ml-engineering parity):
      MAMF, all-reduce stability, all-reduce latency comp,
      all_gather_object control-plane comparison, NCCL algo comparison
-  8) Optional: CPU<->GPU C2C memcpy benchmark (local)
-  9) Optional: NUMA memory-bandwidth probe (all nodes)
-  10) Optional: end-to-end transformer train-step benchmark (single-node + multi-node)
-  11) Optional: checkpoint-like I/O benchmark (all nodes)
-  12) Storage: fio (local node)
-  13) Plots + manifest refresh (includes figures)
+  9) Optional: CPU<->GPU C2C memcpy benchmark (local)
+  10) Optional: NUMA memory-bandwidth probe (all nodes)
+  11) Optional: end-to-end transformer train-step benchmark (single-node + multi-node)
+  12) Optional: checkpoint-like I/O benchmark (all nodes)
+  13) Storage: fio (local node)
+  14) Plots (includes NVLink topology) + manifest refresh
 
 Notes:
   - GPU benchmarks are strict: they FAIL if GPU clock lock cannot be acquired.
   - Preflight is strict: it FAILS if `nvidia-persistenced`, `nvidia-dcgm`, or
     (multi-node) IMEX domain health is not ready.
+  - Step execution metadata is written to
+    `results/structured/<run_id>_suite_steps.json`.
   - For multi-node runs, explicitly pin OOB and NCCL socket interfaces.
 
 Options:
@@ -48,6 +51,14 @@ Options:
   --osl <n>                vLLM output seq len (default: 1024)
   --concurrency-range "…"  vLLM concurrencies (default: "32 64 128 256 512")
   --port <port>            vLLM server port (default: 8888)
+  --run-vllm-multinode     Run 2-node vLLM serving benchmark via Ray (default: off)
+  --vllm-multinode-concurrency <n>  Multinode vLLM max concurrency (default: 64)
+  --vllm-multinode-num-prompts <n>  Multinode vLLM prompt count (default: concurrency*10)
+  --vllm-multinode-ray-port <port>  Multinode vLLM Ray head port (default: 6379)
+  --vllm-multinode-image <image>    Multinode vLLM container image (default: auto by arch)
+  --vllm-multinode-ray-timeout <sec>     Timeout waiting for Ray cluster (default: 300)
+  --vllm-multinode-server-timeout <sec>  Timeout waiting for vLLM health (default: 1200)
+  --vllm-multinode-worker-startup-wait <sec>  Delay before leader launch (default: 10)
 
   --enable-fp4             Run FP4 checks on all nodes (default: on)
   --disable-fp4            Disable FP4 checks
@@ -174,6 +185,14 @@ ISL="1024"
 OSL="1024"
 CONCURRENCY_RANGE="32 64 128 256 512"
 PORT="8888"
+RUN_VLLM_MULTINODE=0
+VLLM_MULTINODE_CONCURRENCY="64"
+VLLM_MULTINODE_NUM_PROMPTS=""
+VLLM_MULTINODE_RAY_PORT="6379"
+VLLM_MULTINODE_IMAGE=""
+VLLM_MULTINODE_RAY_TIMEOUT="300"
+VLLM_MULTINODE_SERVER_TIMEOUT="1200"
+VLLM_MULTINODE_WORKER_STARTUP_WAIT="10"
 
 ENABLE_FP4=1
 FP4_SUITE_DIR="${CLUSTER_PERF_SUITE_DIR:-}"
@@ -285,6 +304,14 @@ while [[ $# -gt 0 ]]; do
     --osl) OSL="$2"; shift 2 ;;
     --concurrency-range) CONCURRENCY_RANGE="$2"; shift 2 ;;
     --port) PORT="$2"; shift 2 ;;
+    --run-vllm-multinode) RUN_VLLM_MULTINODE=1; shift ;;
+    --vllm-multinode-concurrency) VLLM_MULTINODE_CONCURRENCY="$2"; shift 2 ;;
+    --vllm-multinode-num-prompts) VLLM_MULTINODE_NUM_PROMPTS="$2"; shift 2 ;;
+    --vllm-multinode-ray-port) VLLM_MULTINODE_RAY_PORT="$2"; shift 2 ;;
+    --vllm-multinode-image) VLLM_MULTINODE_IMAGE="$2"; shift 2 ;;
+    --vllm-multinode-ray-timeout) VLLM_MULTINODE_RAY_TIMEOUT="$2"; shift 2 ;;
+    --vllm-multinode-server-timeout) VLLM_MULTINODE_SERVER_TIMEOUT="$2"; shift 2 ;;
+    --vllm-multinode-worker-startup-wait) VLLM_MULTINODE_WORKER_STARTUP_WAIT="$2"; shift 2 ;;
 
     --enable-fp4) ENABLE_FP4=1; shift ;;
     --disable-fp4) ENABLE_FP4=0; shift ;;
@@ -415,6 +442,31 @@ if [[ -n "$TRAIN_PRECISION" && "$TRAIN_PRECISION" != "bf16" && "$TRAIN_PRECISION
   exit 2
 fi
 
+if ! [[ "$VLLM_MULTINODE_CONCURRENCY" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --vllm-multinode-concurrency must be a positive integer (got: ${VLLM_MULTINODE_CONCURRENCY})" >&2
+  exit 2
+fi
+if [[ -n "$VLLM_MULTINODE_NUM_PROMPTS" && ! "$VLLM_MULTINODE_NUM_PROMPTS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --vllm-multinode-num-prompts must be a positive integer (got: ${VLLM_MULTINODE_NUM_PROMPTS})" >&2
+  exit 2
+fi
+if ! [[ "$VLLM_MULTINODE_RAY_PORT" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --vllm-multinode-ray-port must be a positive integer (got: ${VLLM_MULTINODE_RAY_PORT})" >&2
+  exit 2
+fi
+if ! [[ "$VLLM_MULTINODE_RAY_TIMEOUT" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --vllm-multinode-ray-timeout must be a positive integer (got: ${VLLM_MULTINODE_RAY_TIMEOUT})" >&2
+  exit 2
+fi
+if ! [[ "$VLLM_MULTINODE_SERVER_TIMEOUT" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --vllm-multinode-server-timeout must be a positive integer (got: ${VLLM_MULTINODE_SERVER_TIMEOUT})" >&2
+  exit 2
+fi
+if ! [[ "$VLLM_MULTINODE_WORKER_STARTUP_WAIT" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --vllm-multinode-worker-startup-wait must be a positive integer (got: ${VLLM_MULTINODE_WORKER_STARTUP_WAIT})" >&2
+  exit 2
+fi
+
 resolve_fp4_suite_dir() {
   local raw="${1:-}"
   local cand=""
@@ -542,22 +594,69 @@ fi
 fail=0
 
 SUITE_LOG_DIR="${ROOT_DIR}/results/raw/${RUN_ID}_suite"
+SUITE_STEPS_JSON="${ROOT_DIR}/results/structured/${RUN_ID}_suite_steps.json"
 mkdir -p "$SUITE_LOG_DIR"
+mkdir -p "${ROOT_DIR}/results/structured"
+printf "[]\n" >"${SUITE_STEPS_JSON}"
+
+record_suite_step() {
+  local json_path="$1"
+  local name="$2"
+  local start="$3"
+  local end="$4"
+  local rc="$5"
+  local log_path="$6"
+  local cmd_str="$7"
+  python3 - "$json_path" "$name" "$start" "$end" "$rc" "$log_path" "$cmd_str" <<'PY'
+import json
+import sys
+
+path, name, start, end, rc, log_path, cmd = sys.argv[1:]
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+except Exception:
+    payload = []
+
+if not isinstance(payload, list):
+    payload = []
+
+payload.append(
+    {
+        "name": name,
+        "start_time": start,
+        "end_time": end,
+        "exit_code": int(rc),
+        "log_path": log_path,
+        "command": cmd,
+    }
+)
+
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(payload, f, indent=2)
+    f.write("\n")
+PY
+}
 
 run_step() {
   local name="$1"
   shift
-  local start end rc log_path
+  local start end rc log_path cmd_str
   log_path="${SUITE_LOG_DIR}/${name}.log"
+  cmd_str="$(printf '%q ' "$@")"
+  cmd_str="${cmd_str% }"
   start="$(date -Iseconds)"
   echo "==> [${start}] START ${name}"
-  echo "    cmd: $*"
+  echo "    cmd: ${cmd_str}"
   echo "    log: ${log_path}"
   set +e
   "$@" >"$log_path" 2>&1
   rc=$?
   set -e
   end="$(date -Iseconds)"
+  if ! record_suite_step "${SUITE_STEPS_JSON}" "${name}" "${start}" "${end}" "${rc}" "${log_path}" "${cmd_str}"; then
+    echo "WARNING: failed to append step metadata for ${name}" >&2
+  fi
   echo "<== [${end}] END ${name} rc=${rc}"
   if [[ "$rc" -ne 0 ]]; then
     fail=1
@@ -573,6 +672,7 @@ echo "========================================"
 echo "Date: $(date -Iseconds)"
 echo "RUN_ID(base): ${RUN_ID}"
 echo "HOSTS: ${HOSTS}"
+echo "SUITE_STEPS_JSON: ${SUITE_STEPS_JSON}"
 if [[ -n "$LABELS" ]]; then
   echo "LABELS: ${LABELS}"
 fi
@@ -585,6 +685,9 @@ if [[ "${#HOST_ARR[@]}" -gt 1 ]]; then
   echo "NCCL_NVLS_ENABLE: ${NCCL_NVLS_ENABLE:-<unset>}"
 fi
 echo "vLLM: model=${MODEL} tp=${TP:-<auto>} isl=${ISL} osl=${OSL} conc='${CONCURRENCY_RANGE}' port=${PORT}"
+if [[ "$RUN_VLLM_MULTINODE" -eq 1 ]]; then
+  echo "vLLM(multinode): enabled conc=${VLLM_MULTINODE_CONCURRENCY} prompts=${VLLM_MULTINODE_NUM_PROMPTS:-<auto>} ray_port=${VLLM_MULTINODE_RAY_PORT} ray_timeout_s=${VLLM_MULTINODE_RAY_TIMEOUT} server_timeout_s=${VLLM_MULTINODE_SERVER_TIMEOUT} worker_startup_wait_s=${VLLM_MULTINODE_WORKER_STARTUP_WAIT} image=${VLLM_MULTINODE_IMAGE:-<auto>}"
+fi
 echo "fio: test_dir=${FIO_TEST_DIR} runtime_s=${FIO_RUNTIME}"
 echo "health_suite: ${HEALTH_SUITE_MODE}"
 if [[ "$HEALTH_GDR" -eq 1 ]]; then
@@ -782,6 +885,50 @@ if [[ -n "$TP" ]]; then
   vllm_args+=(--tp "$TP")
 fi
 run_step "vllm_serve_sweep" "${ROOT_DIR}/scripts/repro/run_vllm_serve_sweep_container.sh" "${vllm_args[@]}"
+
+if [[ "$RUN_VLLM_MULTINODE" -eq 1 ]]; then
+  if [[ "${#HOST_ARR[@]}" -gt 1 ]]; then
+    vllm_multi_args=(
+      --run-id "$RUN_ID"
+      --hosts "$HOSTS"
+      --ssh-user "$SSH_USER"
+      --model "$MODEL"
+      --isl "$ISL"
+      --osl "$OSL"
+      --concurrency "$VLLM_MULTINODE_CONCURRENCY"
+      --port "$PORT"
+      --ray-port "$VLLM_MULTINODE_RAY_PORT"
+      --ray-ready-timeout "$VLLM_MULTINODE_RAY_TIMEOUT"
+      --server-ready-timeout "$VLLM_MULTINODE_SERVER_TIMEOUT"
+      --worker-startup-wait "$VLLM_MULTINODE_WORKER_STARTUP_WAIT"
+    )
+    if [[ -n "$LABELS" ]]; then
+      vllm_multi_args+=(--labels "$LABELS")
+    fi
+    if [[ -n "$SSH_KEY" ]]; then
+      vllm_multi_args+=(--ssh-key "$SSH_KEY")
+    fi
+    if [[ -n "$TP" ]]; then
+      vllm_multi_args+=(--tp "$TP")
+    fi
+    if [[ -n "$VLLM_MULTINODE_NUM_PROMPTS" ]]; then
+      vllm_multi_args+=(--num-prompts "$VLLM_MULTINODE_NUM_PROMPTS")
+    fi
+    if [[ -n "$VLLM_MULTINODE_IMAGE" ]]; then
+      vllm_multi_args+=(--image "$VLLM_MULTINODE_IMAGE")
+    fi
+    if [[ -n "$SOCKET_IFNAME" ]]; then
+      vllm_multi_args+=(--socket-ifname "$SOCKET_IFNAME")
+    fi
+    if [[ -n "$NCCL_IB_HCA" ]]; then
+      vllm_multi_args+=(--nccl-ib-hca "$NCCL_IB_HCA")
+    fi
+    run_step "vllm_serve_multinode" "${ROOT_DIR}/scripts/repro/run_vllm_serve_multinode_container.sh" "${vllm_multi_args[@]}"
+  else
+    echo "WARNING: --run-vllm-multinode requested, but only one host was provided; skipping." >&2
+    fail=1
+  fi
+fi
 
 # Benchmark C: GEMM sanity (all nodes)
 gemm_args=(--run-id "$RUN_ID" --hosts "$HOSTS")
@@ -1101,6 +1248,13 @@ if [[ -f "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_vllm_serve_s
     --run-id "${RUN_ID}_${PRIMARY_LABEL}"
 fi
 
+if [[ -f "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_vllm_multinode_serve.csv" ]]; then
+  run_step "plot_vllm_serve_multinode" python3 "${ROOT_DIR}/analysis/plot_vllm_serve_sweep.py" \
+    --input "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_vllm_multinode_serve.csv" \
+    --out-dir "${ROOT_DIR}/docs/figures" \
+    --run-id "${RUN_ID}_${PRIMARY_LABEL}_multinode"
+fi
+
 if [[ "${#HOST_ARR[@]}" -gt 1 && "$HEALTH_SUITE_MODE" != "off" ]]; then
   shopt -s nullglob
   suite_summaries=( "${ROOT_DIR}/results/structured/${RUN_ID}_health_suite_${HEALTH_SUITE_MODE}_"*"_cluster_health_suite_summary.json" )
@@ -1204,6 +1358,36 @@ if [[ -f "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_multinode_to
     --input "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_multinode_torchrun_train_step.json" \
     --out "${ROOT_DIR}/docs/figures/${RUN_ID}_${PRIMARY_LABEL}_multinode_torchrun_train_step.png"
 fi
+
+shopt -s nullglob
+meta_inputs=( "${ROOT_DIR}/results/structured/${RUN_ID}_"*_meta.json )
+shopt -u nullglob
+for meta_in in "${meta_inputs[@]}"; do
+  if [[ "$meta_in" == *_cluster_meta.json ]]; then
+    continue
+  fi
+  meta_base="$(basename "$meta_in" .json)"
+  run_step "plot_nvlink_topology_${meta_base}" python3 "${ROOT_DIR}/analysis/plot_nvlink_topology.py" \
+    --meta "$meta_in" \
+    --fig-out "${ROOT_DIR}/docs/figures/${meta_base}_nvlink_topology.png" \
+    --summary-out "${ROOT_DIR}/results/structured/${meta_base}_nvlink_topology.json"
+done
+
+dashboard_labels=("${PRIMARY_LABEL}")
+if [[ "${#HOST_ARR[@]}" -gt 1 ]]; then
+  if [[ -n "$LABELS" && "${#LABEL_ARR[@]}" -gt 1 ]]; then
+    dashboard_labels+=("$(echo "${LABEL_ARR[1]}" | xargs)")
+  else
+    dashboard_labels+=("$(echo "${HOST_ARR[1]}" | xargs)")
+  fi
+fi
+dashboard_node_labels_csv="$(IFS=','; echo "${dashboard_labels[*]}")"
+run_step "plot_cluster_story_dashboard" python3 "${ROOT_DIR}/analysis/plot_cluster_story_dashboard.py" \
+  --run-id "${RUN_ID}" \
+  --structured-dir "${ROOT_DIR}/results/structured" \
+  --node-labels "${dashboard_node_labels_csv}" \
+  --fig-out "${ROOT_DIR}/docs/figures/${RUN_ID}_cluster_story_dashboard.png" \
+  --summary-out "${ROOT_DIR}/results/structured/${RUN_ID}_node_parity_summary.json"
 
 manifest_args=(--run-id "$RUN_ID" --hosts "$HOSTS" --include-figures)
 if [[ -n "$LABELS" ]]; then

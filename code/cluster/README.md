@@ -87,6 +87,15 @@ scripts/run_cluster_eval_suite.sh \
   --nccl-algos Ring,Tree,NVLS,auto
 ```
 
+Optional extension for 2-node vLLM serving (Ray + TP across nodes):
+
+```bash
+  --run-vllm-multinode \
+  --vllm-multinode-concurrency 16 \
+  --vllm-multinode-num-prompts 64 \
+  --vllm-multinode-ray-port 6379
+```
+
 ### 3) Generate / refresh report plots and manifest
 `run_cluster_eval_suite.sh` already does this. If you need to refresh later:
 
@@ -104,6 +113,12 @@ python3 scripts/write_manifest.py --run-id <run_id> --hosts node1,node2 --includ
 - FP4 execution is containerized:
   - grouped GEMM: `scripts/run_cluster_perf_grouped_gemm.sh` (`docker run ... --image ...`)
   - DeepGEMM smoke: `scripts/run_cluster_perf_fp4_smoke.sh` (`docker run ... --image ...`)
+- FP4 checks now enforce a balanced attestation by default:
+  - semantic source check on `standalone/compute/gemm-bench/grouped_gemm_bench.py` (GB200 UE8M0 markers)
+  - grouped GEMM behavioral validation (`--require-deepgemm`) so unsupported DeepGEMM paths fail fast
+  - per-host provenance capture (suite path/git if available, container image ID/digest, driver/CUDA)
+  - cross-host consistency report at `results/structured/<run_id>_fp4_attestation_consistency.json`
+- Provenance capture is metadata-only. It does not mutate host state, lock versions, or pin files.
 - The GB200 grouped-GEMM compatibility patch is tracked in this repo:
   - `code/cluster_perf_patches/deepgemm_gb200_grouped_gemm_ue8m0.patch`
   - full apply/verify steps are in `docs/advanced-runbook.md`.
@@ -113,6 +128,7 @@ python3 scripts/write_manifest.py --run-id <run_id> --hosts node1,node2 --includ
 
 ## Required Structured Outputs
 - `results/structured/<run_id>_manifest.json`
+- `results/structured/<run_id>_suite_steps.json`
 - `results/structured/<run_id>_preflight_services.json`
 - `results/structured/<run_id>_<label>_meta.json`
 - `results/structured/<run_id>_<label>_container_runtime.txt`
@@ -122,14 +138,46 @@ python3 scripts/write_manifest.py --run-id <run_id> --hosts node1,node2 --includ
 - `results/structured/<run_id>_<label>_vllm_serve_sweep.csv`
 - `results/structured/<run_id>_<label>_vllm_serve_sweep.jsonl`
 - `results/structured/<run_id>_<label>_vllm_serve_sweep_clock_lock.json`
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_serve.json` (when `--run-vllm-multinode`)
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_serve.csv` (when `--run-vllm-multinode`)
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_serve.jsonl` (when `--run-vllm-multinode`)
+- `results/structured/<run_id>_<leader_label>_vllm_multinode_leader_clock_lock.json` (when `--run-vllm-multinode`)
+- `results/structured/<run_id>_<worker_label>_vllm_multinode_worker_clock_lock.json` (when `--run-vllm-multinode`)
 - `results/structured/<run_id>_<label>_gemm_gpu_sanity.csv`
 - `results/structured/<run_id>_<label>_fio.json`
+- `results/structured/<run_id>_node_parity_summary.json`
+- `results/structured/<run_id>_<label>_nvlink_topology.json`
+- `results/structured/<run_id>_fp4_attestation_consistency.json` (when FP4 checks are enabled)
 
 ## Documentation Map
 - Advanced runbook and optional diagnostics: `docs/advanced-runbook.md`
 - Field report template: `docs/field-report-template.md`
 - Manifest schema: `docs/manifest_schema.md`
 - Current report write-up: `field-report.md`
+- Validated notes ledger (claim-to-evidence index): `field-report-notes.md`
+
+## Reference Evidence Package
+- Canonical validated run: `2026-02-09_gb200_fullflags_all_0117`
+- Artifact manifest: `results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json`
+- Sanitized cluster metadata: `results/structured/2026-02-09_gb200_fullflags_all_0117_cluster_meta.json`
+- Networking arc (data + plots):
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json`
+  - `docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png`
+- Inference arc (data + plots):
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv`
+  - `docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png`
+  - `docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png`
+- Multi-node vLLM path evidence (latest attempt, strict-lock, structured failure captured):
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv`
+- NVLink/NVSwitch topology artifacts:
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json`
+  - `docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png`
+  - `docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png`
+- Story dashboard + parity summary:
+  - `docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png`
+  - `results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json`
 
 ## Notes
 - `results/raw/` is intentionally gitignored and for debugging only.

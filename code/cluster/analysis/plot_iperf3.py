@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from plot_style import apply_plot_style
 
 
 def _to_float(v):
@@ -14,6 +15,8 @@ def _to_float(v):
 
 
 def main() -> int:
+    apply_plot_style()
+
     ap = argparse.ArgumentParser(
         description="Plot iperf3 OOB TCP throughput from a cluster health suite summary JSON."
     )
@@ -107,4 +110,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

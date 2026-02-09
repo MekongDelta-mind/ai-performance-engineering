@@ -2,6 +2,30 @@
 
 Last updated: 2026-02-09.
 
+## Table of Contents
+1. [TL;DR](#tldr)
+2. [TL;DR Evidence Anchors](#tldr-evidence-anchors)
+3. [Cluster Story (First Contact)](#cluster-story-first-contact)
+4. [Normal vs Weird Log](#normal-vs-weird-log)
+5. [Benchmark A (Networking Story)](#benchmark-a-networking-story)
+6. [Benchmark B (Inference Story)](#benchmark-b-inference-story)
+7. [Node Parity Snapshot (node1 vs node2)](#node-parity-snapshot-node1-vs-node2)
+8. [NVLink/NVSwitch Topology Snapshot](#nvlinknvswitch-topology-snapshot)
+9. [Dedicated nvbandwidth Snapshot](#dedicated-nvbandwidth-snapshot)
+10. [GB200-Focused Extensions (Enabled in this run)](#gb200-focused-extensions-enabled-in-this-run)
+11. [Weird / New / Interesting Findings](#weird--new--interesting-findings)
+12. [Implications For Small AI Teams](#implications-for-small-ai-teams)
+13. [Stakeholder Recommendations (Prioritized)](#stakeholder-recommendations-prioritized)
+14. [Capability Demonstration (Causal Debugging Workflow)](#capability-demonstration-causal-debugging-workflow)
+15. [<cluster_perf_suite> Patchset](#cluster-perf-suite-patchset)
+16. [Repro Steps](#repro-steps)
+17. [`--disable-fp4` if needed](#disable-fp4-if-needed)
+18. [Local Patch Prerequisite (for FP4-Enabled Repro)](#local-patch-prerequisite)
+19. [Reproducibility Package](#reproducibility-package)
+20. [Repository Handoff (GitHub)](#repository-handoff-github)
+21. [Appendix](#appendix)
+22. [Activity Log](#activity-log)
+
 ## TL;DR
 - In scope hosts: `node1`, `node2` (2 nodes); 4x GB200 per node (8 total); excluded nodes: none.
 - Baseline run for stakeholder conclusions: `2026-02-09_gb200_fullflags_all_0117`.
@@ -17,160 +41,270 @@ Last updated: 2026-02-09.
 - GB200-focused harness updates should be upstreamed into independent `<cluster_perf_suite>`.
 
 ## TL;DR Evidence Anchors
-- Scope + baseline package: [results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json](results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json), [latest_cluster_meta][latest_cluster_meta]
-- NCCL health + NVLS behavior:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png" alt="2-node NCCL bus bandwidth vs message size" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png" alt="NCCL algorithm comparison" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json)
-  Data: [health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [algorithm comparison](results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json)
-- Inference latency knee:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png" alt="vLLM total tokens/sec vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="vLLM TTFT vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [serve sweep JSONL](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.jsonl)
-- Multinode vLLM path status:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png" alt="Multinode vLLM total tokens/sec" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_ttft_vs_concurrency.png" alt="Multinode vLLM TTFT vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json)
-  Data: [multinode structured result](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [multinode CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv)
-- NVLink/NVSwitch topology artifacts:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png" alt="Node1 NVLink topology" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png" alt="Node2 NVLink topology" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json)
-  Data: [node1 topology summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json), [node2 topology summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json)
-- nvbandwidth bundle artifacts:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png" alt="Node1 nvbandwidth sums" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png" alt="Node2 nvbandwidth sums" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv)
-  Data: [node1 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json), [node2 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json), [node1 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv), [node2 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv)
-- OOB vs IB gap:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.png" alt="OOB TCP throughput" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json)
-  Data: [iperf3 OOB JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json), [NCCL health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json)
-- Transient anomaly evidence (kept as incident context):
-  [<img src="docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png" alt="Node2 GPU2 transient GEMM anomaly" width="920"/>](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv)
-  Data: [anomalous run CSV](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [rerun CSV](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv), [clean baseline CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
-- Preflight/DCGM policy evidence:
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json)
-  Data: [latest preflight](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json), [historical before/after](results/structured/2026-02-08_test_preflight_dcgm_before_after_node1node2_preflight_services.json)
+
+### Scope + Baseline Package
+[results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json](results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json), [latest_cluster_meta][latest_cluster_meta]
+
+### NCCL Health + NVLS Behavior
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png" alt="2-node NCCL bus bandwidth vs message size" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png" alt="NCCL algorithm comparison" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png)
+
+Data: [health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [algorithm comparison](results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json)
+
+### Inference Latency Knee
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png" alt="vLLM total tokens/sec vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="vLLM TTFT vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png)
+
+Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [serve sweep JSONL](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.jsonl)
+
+### Multinode vLLM Path Status
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png" alt="Multinode vLLM total tokens/sec" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_ttft_vs_concurrency.png" alt="Multinode vLLM TTFT vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_ttft_vs_concurrency.png)
+
+Data: [multinode structured result](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [multinode CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv)
+
+### NVLink/NVSwitch Topology Artifacts
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png" alt="Node1 NVLink topology" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png" alt="Node2 NVLink topology" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png)
+
+Data: [node1 topology summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json), [node2 topology summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json)
+
+### nvbandwidth Bundle Artifacts
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png" alt="Node1 nvbandwidth sums" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png" alt="Node2 nvbandwidth sums" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png)
+
+Data: [node1 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json), [node2 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json), [node1 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv), [node2 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv)
+
+### OOB vs IB Gap
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.png" alt="OOB TCP throughput" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.png)
+
+Data: [iperf3 OOB JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json), [NCCL health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json)
+
+### Transient Anomaly Evidence (Kept as Incident Context)
+[<img src="docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png" alt="Node2 GPU2 transient GEMM anomaly" width="920"/>](docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png)
+
+Data: [anomalous run CSV](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [rerun CSV](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv), [clean baseline CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
+
+### Preflight/DCGM Policy Evidence
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [latest preflight](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json), [historical before/after](results/structured/2026-02-08_test_preflight_dcgm_before_after_node1node2_preflight_services.json)
 
 ## Cluster Story (First Contact)
-- First-contact timeline (UTC, from canonical run logs):
-  - `01:16:36` bootstrap completed on both nodes.
-  - `01:16:40` strict preflight completed (`persistenced`/`imex`/`dcgm` checks).
-  - `01:17:22` first clean 2-node NCCL run completed.
-  - `01:20:09` extended health suite finished.
-  - `01:34:13` first full vLLM concurrency sweep completed.
-  - `01:50:22` final manifest refresh completed.
-- Time-to-first-multi-node-signal was short (`~1 minute` from preflight completion to first 2-node NCCL completion), but only because interface pinning and service policy were already codified in the harness.
-- Cluster is HPC-flavored: strong IB/NCCL behavior with weak OOB TCP behavior.
-- Largest first-contact friction points were operational, not kernel-level (service readiness + launch hygiene + queue discipline).
-- Story evidence bundle:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png" alt="Cluster story dashboard" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json)
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json)
-  Data: [health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [preflight](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json), [node parity summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json)
+| UTC time | Milestone |
+| --- | --- |
+| `01:16:36` | bootstrap completed on both nodes |
+| `01:16:40` | strict preflight completed (`persistenced`/`imex`/`dcgm` checks) |
+| `01:17:22` | first clean 2-node NCCL run completed |
+| `01:20:09` | extended health suite finished |
+| `01:34:13` | first full vLLM concurrency sweep completed |
+| `01:50:22` | final manifest refresh completed |
+
+Time-to-first-multi-node-signal was short (`~1 minute` from preflight completion to first 2-node NCCL completion) because interface pinning and service policy were already codified in the harness.
+Cluster behavior is HPC-flavored: strong IB/NCCL with weak OOB TCP.
+Largest first-contact friction points were operational (service readiness, launch hygiene, and queue discipline), not kernel-level.
+
+Story evidence bundle:
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png" alt="Cluster story dashboard" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png)
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [preflight](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json), [node parity summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json)
 
 ## Normal vs Weird Log
-| Area | Normal (clean baseline) | Weird (incident / edge case) | Evidence | Visual |
-| --- | --- | --- | --- | --- |
-| NCCL multi-node | all-reduce peak `840.07 GB/s` with stable curve shape | historical low-band regime `~529.64 GB/s` | [latest_health][latest_health], [results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json) | <a href="results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json"><img src="docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png" alt="NCCL bimodal overlay" width="250"/></a><br/>[overlay png](docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png) |
-| Service state | preflight enforces `persistenced`/`imex`/`dcgm` healthy before run | missing service readiness broke NVLS init and vLLM startup | [preflight_latest][preflight_latest], [results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt](results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt), [results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt](results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt) | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json"><img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot" width="250"/></a><br/>[preflight json](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json) |
-| Inference serving | predictable throughput rise through `c=256` | strong TTFT knee at `c=512` (`~5479 ms`) | [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [tok_s_vs_conc][tok_s_vs_conc], [ttft_vs_conc][ttft_vs_conc] | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv"><img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="Single-node vLLM TTFT knee" width="250"/></a><br/>[serve sweep csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv) |
-| Inference serving (multi-node path) | harness path now executes with strict lock metadata on both hosts and digest-pinned image parity | first attempt failed on image mismatch, but latest run is healthy (`status=ok`) with TP=8 across `node1,node2` | [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png) | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json"><img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png" alt="Multinode vLLM throughput" width="250"/></a><br/>[multinode json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json) |
-| GEMM per-GPU | `node2_gpu2` in-family (`~1530.80 TFLOPS`) in clean baseline | one-off collapse (`~709 TFLOPS`) that recovered on immediate rerun (`~1548.7 TFLOPS`) | [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv), [results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv) | <a href="results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv"><img src="docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png" alt="Transient GEMM collapse and recovery" width="250"/></a><br/>[transient plot](docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png) |
+| Area | Normal (clean baseline) | Weird (incident / edge case) | Evidence |
+| --- | --- | --- | --- |
+| NCCL multi-node | all-reduce peak `840.07 GB/s` with stable curve shape | historical low-band regime `~529.64 GB/s` | [latest_health][latest_health], [results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json) |
+| Service state | preflight enforces `persistenced`/`imex`/`dcgm` healthy before run | missing service readiness broke NVLS init and vLLM startup | [preflight_latest][preflight_latest], [results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt](results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt), [results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt](results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt) |
+| Inference serving | predictable throughput rise through `c=256` | strong TTFT knee at `c=512` (`~5479 ms`) | [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [tok_s_vs_conc][tok_s_vs_conc], [ttft_vs_conc][ttft_vs_conc] |
+| Inference serving (multi-node path) | harness path now executes with strict lock metadata on both hosts and digest-pinned image parity | first attempt failed on image mismatch, but latest run is healthy (`status=ok`) with TP=8 across `node1,node2` | [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png) |
+| GEMM per-GPU | `node2_gpu2` in-family (`~1530.80 TFLOPS`) in clean baseline | one-off collapse (`~709 TFLOPS`) that recovered on immediate rerun (`~1548.7 TFLOPS`) | [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv), [results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv) |
+
+### Visual Evidence (Normal vs Weird)
+#### NCCL multi-node regime
+[<img src="docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png" alt="NCCL bimodal overlay" width="920"/>](docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png)
+
+Data: [latest health](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [historical low-band summary](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json), [overlay image](docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png)
+
+#### Service-state gating
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [latest preflight JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json), [NCCL failure excerpt](results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt), [vLLM failure log](results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt)
+
+#### Single-node latency knee
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="Single-node vLLM TTFT knee" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png)
+
+Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [TTFT chart](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png)
+
+#### Multinode serving status
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png" alt="Multinode vLLM throughput" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png)
+
+Data: [multinode JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [multinode CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv), [multinode throughput chart](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png)
+
+#### Transient GEMM anomaly
+[<img src="docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png" alt="Transient GEMM collapse and recovery" width="920"/>](docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png)
+
+Data: [anomalous run CSV](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [rerun CSV](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv), [clean baseline CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
 
 ## Benchmark A (Networking Story)
-- Current full-flags baseline (`2026-02-09_gb200_fullflags_all_0117`) demonstrates strong multi-node fabric behavior with stable collectives.
-- Key metrics:
-  - IB write bandwidth: `~387.14 Gbps` per active HCA.
-  - NCCL max bus bandwidths: all-reduce `840.07 GB/s`, all-gather `655.39 GB/s`, reduce-scatter `675.43 GB/s`, alltoall `604.81 GB/s`.
-  - torch distributed all-reduce sanity max: `715.64 GB/s`.
-- Visuals:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png" alt="2-node NCCL bandwidth vs message size" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_scaling_efficiency.png" alt="2-node NCCL scaling efficiency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl.json)
-  Data: [health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [2-node NCCL scaling JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl.json)
+Current full-flags baseline (`2026-02-09_gb200_fullflags_all_0117`) demonstrates strong multi-node fabric behavior with stable collectives.
+
+| Metric | Value |
+| --- | --- |
+| IB write bandwidth per active HCA | `~387.14 Gbps` |
+| NCCL max bus bandwidth (all-reduce) | `840.07 GB/s` |
+| NCCL max bus bandwidth (all-gather) | `655.39 GB/s` |
+| NCCL max bus bandwidth (reduce-scatter) | `675.43 GB/s` |
+| NCCL max bus bandwidth (alltoall) | `604.81 GB/s` |
+| torch distributed all-reduce sanity max | `715.64 GB/s` |
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png" alt="2-node NCCL bandwidth vs message size" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_bw_vs_msg.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_scaling_efficiency.png" alt="2-node NCCL scaling efficiency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl_scaling_efficiency.png)
+
+Data: [health summary](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json), [2-node NCCL scaling JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_2nodes_nccl.json)
 
 ## Benchmark B (Inference Story)
-- vLLM (`openai/gpt-oss-120b`, TP=4, ISL/OSL=1024/1024) shows throughput scaling with a clear latency knee.
-- Key metrics:
-  - `c=32`: output `6907.77 tok/s`, mean TTFT `184.53 ms`.
-  - `c=256`: output `24876.11 tok/s`, mean TTFT `780.76 ms`.
-  - `c=512`: output `26879.58 tok/s`, mean TTFT `5478.71 ms`.
-- Visuals:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png" alt="Single-node vLLM throughput vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="Single-node vLLM TTFT vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_tpot_vs_concurrency.png" alt="Single-node vLLM TPOT vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [serve sweep JSONL](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.jsonl)
-- Multi-node serving path status (new harness path, TP=8 across `node1,node2`):
-  - Run attempt: `2026-02-09_gb200_fullflags_all_0117` with `isl=512`, `osl=256`, `concurrency=16`, `num_prompts=64`.
-  - Outcome: passing (`status=ok`) after enforcing one image digest across both nodes.
-  - Key metrics: request throughput `8.24 req/s`, output throughput `2110.43 tok/s`, total throughput `6331.29 tok/s`, p99 TTFT `938.02 ms`.
-  - Structured outputs: [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv)
-  - Visuals:
-    [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png" alt="Multinode vLLM throughput vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json)
-    [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_ttft_vs_concurrency.png" alt="Multinode vLLM TTFT vs concurrency" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json)
-    Data: [multinode structured result](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [multinode CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv)
+vLLM (`openai/gpt-oss-120b`, TP=4, ISL/OSL=1024/1024) shows throughput scaling with a clear latency knee.
+
+| Concurrency | Output throughput | Mean TTFT |
+| ---: | ---: | ---: |
+| `32` | `6907.77 tok/s` | `184.53 ms` |
+| `256` | `24876.11 tok/s` | `780.76 ms` |
+| `512` | `26879.58 tok/s` | `5478.71 ms` |
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png" alt="Single-node vLLM throughput vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="Single-node vLLM TTFT vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_tpot_vs_concurrency.png" alt="Single-node vLLM TPOT vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_tpot_vs_concurrency.png)
+
+Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [serve sweep JSONL](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.jsonl)
+
+Multinode serving path status (new harness path, TP=8 across `node1,node2`): run `2026-02-09_gb200_fullflags_all_0117` with `isl=512`, `osl=256`, `concurrency=16`, and `num_prompts=64`. Outcome is passing (`status=ok`) after enforcing one image digest across both nodes.
+
+| Multinode metric | Value |
+| --- | --- |
+| Request throughput | `8.24 req/s` |
+| Output throughput | `2110.43 tok/s` |
+| Total throughput | `6331.29 tok/s` |
+| p99 TTFT | `938.02 ms` |
+
+Structured outputs: [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv)
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png" alt="Multinode vLLM throughput vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_total_tok_s_vs_concurrency.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_ttft_vs_concurrency.png" alt="Multinode vLLM TTFT vs concurrency" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_vllm_serve_ttft_vs_concurrency.png)
+
+Data: [multinode structured result](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.json), [multinode CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_multinode_serve.csv)
 
 ## Node Parity Snapshot (node1 vs node2)
-- Structured summary: [node_parity_summary][node_parity_summary]
-- Dashboard plot (benchmark arcs + parity):
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png" alt="Cluster story dashboard" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json)
-  Data: [node parity summary JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json)
-- Current parity table (same workload, same clock-lock policy):
+Structured summary: [node_parity_summary][node_parity_summary]
+Dashboard plot (benchmark arcs + parity):
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png" alt="Cluster story dashboard" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png)
 
-| Metric | node1 | node2 | node2/node1 | Notes | Visual/Data |
-| --- | ---: | ---: | ---: | --- | --- |
-| GEMM mean (BF16, avg TFLOPS across 4 GPUs) | `1537.67` | `1531.31` | `0.996x` | tightly matched | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_node1_gemm_gpu_sanity.csv"><img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_gemm_gpu_sanity.png" alt="GEMM parity chart" width="240"/></a><br/>[node1 csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_gemm_gpu_sanity.csv) |
-| GEMM min (BF16, TFLOPS) | `1495.56` | `1499.96` | `1.003x` | no persistent straggler in clean run | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv"><img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_gemm_gpu_sanity.png" alt="GEMM parity chart" width="240"/></a><br/>[node2 csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv) |
-| NUMA local memcpy BW (GB/s, peak probed node) | `134.50` | `136.03` | `1.011x` | essentially parity | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_node2_numa_mem_bw.json"><img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_numa_mem_bw.png" alt="Node2 NUMA memory bandwidth" width="240"/></a><br/>[node1 json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_numa_mem_bw.json), [node2 json](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_numa_mem_bw.json) |
-| fio seq read (MB/s) | `706.93` | `1444.42` | `2.043x` | both-node fio now collected for this run package | <a href="results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json"><img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_fio.png" alt="Node2 fio throughput" width="240"/></a><br/>[node1 fio](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json), [node2 fio](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json) |
+Data: [node parity summary JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json)
+Current parity table (same workload, same clock-lock policy):
+
+| Metric | node1 | node2 | node2/node1 | Notes |
+| --- | ---: | ---: | ---: | --- |
+| GEMM mean (BF16, avg TFLOPS across 4 GPUs) | `1537.67` | `1531.31` | `0.996x` | tightly matched |
+| GEMM min (BF16, TFLOPS) | `1495.56` | `1499.96` | `1.003x` | no persistent straggler in clean run |
+| NUMA local memcpy BW (GB/s, peak probed node) | `134.50` | `136.03` | `1.011x` | essentially parity |
+| fio seq read (MB/s) | `706.93` | `1444.42` | `2.043x` | both-node fio now collected for this run package |
+
+### Node Parity Visual Evidence
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_gemm_gpu_sanity.png" alt="GEMM parity chart" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_gemm_gpu_sanity.png)
+
+Data: [node1 GEMM CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_gemm_gpu_sanity.csv), [node2 GEMM CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_numa_mem_bw.png" alt="Node2 NUMA memory bandwidth" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_numa_mem_bw.png)
+
+Data: [node1 NUMA JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_numa_mem_bw.json), [node2 NUMA JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_numa_mem_bw.json)
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_fio.png" alt="Node1 fio throughput" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_fio.png)
+
+Data: [node1 fio JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json)
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_fio.png" alt="Node2 fio throughput" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_fio.png)
+
+Data: [node2 fio JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json)
 
 ## NVLink/NVSwitch Topology Snapshot
-- Dedicated topology summaries are now bundled per node:
-  - [node1_nvlink_topology_json][node1_nvlink_topology_json]
-  - [node2_nvlink_topology_json][node2_nvlink_topology_json]
-- Dedicated topology figures (click image for per-node topology JSON):
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png" alt="Node1 NVLink topology" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png" alt="Node2 NVLink topology" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json)
-  Data: [node1 topology png](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png), [node2 topology png](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png)
-- Both nodes show a full 4-GPU `NV18` mesh (`6/6` GPU pairs on each node), which is consistent with the high intra-node collective behavior seen in Benchmark A.
+Dedicated topology summaries are bundled per node: [node1_nvlink_topology_json][node1_nvlink_topology_json], [node2_nvlink_topology_json][node2_nvlink_topology_json].
+Both nodes show a full 4-GPU `NV18` mesh (`6/6` GPU pairs on each node), consistent with the strong intra-node collective behavior from Benchmark A.
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png" alt="Node1 NVLink topology" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png)
+
+Data: [node1 topology JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.json), [node1 topology image](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvlink_topology.png)
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png" alt="Node2 NVLink topology" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png)
+
+Data: [node2 topology JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.json), [node2 topology image](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvlink_topology.png)
 
 ## Dedicated nvbandwidth Snapshot
-- Dedicated strict-lock `nvbandwidth` bundle now ships with this run package:
-  - [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json)
-  - [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json)
-  - [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv)
-  - [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv)
-- Key results (quick mode):
-  - node1 H2D/D2H SUM: `844.77` / `773.39 GB/s`; D2D bidirectional write/read total SUM: `18500.33` / `17925.73 GB/s`.
-  - node2 H2D/D2H SUM: `844.84` / `773.33 GB/s`; D2D bidirectional write/read total SUM: `18498.54` / `17935.95 GB/s`.
-- Visuals:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png" alt="Node1 nvbandwidth sums" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png" alt="Node2 nvbandwidth sums" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv)
-  Data: [node1 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv), [node2 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv)
+Dedicated strict-lock `nvbandwidth` bundle ships with this run package.
+Bundle artifacts: [node1 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json), [node2 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json), [node1 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv), [node2 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv).
+
+| Node | H2D SUM (GB/s) | D2H SUM (GB/s) | D2D write total SUM (GB/s) | D2D read total SUM (GB/s) |
+| --- | ---: | ---: | ---: | ---: |
+| node1 | `844.77` | `773.39` | `18500.33` | `17925.73` |
+| node2 | `844.84` | `773.33` | `18498.54` | `17935.95` |
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png" alt="Node1 nvbandwidth sums" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png)
+
+Data: [node1 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth.json), [node1 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.csv), [node1 sums image](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_nvbandwidth_sums.png)
+
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png" alt="Node2 nvbandwidth sums" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png)
+
+Data: [node2 nvbandwidth JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth.json), [node2 sums CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.csv), [node2 sums image](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_nvbandwidth_sums.png)
 
 ## GB200-Focused Extensions (Enabled in this run)
-- All-reduce stability (`2 GiB`, 200 iters): mean busbw `809.65 GB/s`, CV `1.687%`, jitter assessment `good`.
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.png" alt="All-reduce stability" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.json)
-  Data: [all-reduce stability JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.json)
-- All-reduce latency composition (`4 GiB` target): one large collective (`818.15 GB/s`) vs many small chunks (`122.21 GB/s`) gives a `6.69x` bandwidth ratio.
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.png" alt="All-reduce latency composition" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.json)
-  Data: [all-reduce latency composition JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.json)
-- Control-plane collective overhead: `all_reduce_tensor` is fastest (`0.1867 ms` mean) vs `all_gather_tensor` (`0.2984 ms`) and `all_gather_object` (`1.5705 ms`).
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.png" alt="Control-plane collective overhead" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.json)
-  Data: [allgather control-plane JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.json)
-- NCCL algorithm comparison: NVLS (`839.33 GB/s`) and `auto` (`839.09 GB/s`) significantly outperform Ring (`698.28`) and Tree (`547.22`).
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png" alt="NCCL algorithm comparison with NVLS" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json)
-  Data: [NCCL algorithm comparison JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json)
-- Grace-Blackwell C2C memcpy path (`node1`): pinned transfer peaks at `124.88/124.52 Gbps` (H2D/D2H), with 4-byte pinned latency `~2.01/1.87 us`.
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy_bw.png" alt="C2C memcpy bandwidth" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy_lat.png" alt="C2C memcpy latency" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy.json)
-  Data: [C2C memcpy JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy.json)
-- Train-step sanity (BF16/FSDP): single-node `102,718 tok/s` vs multi-node `206,398 tok/s` with similar step time (`~0.159 s`).
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_single_node_torchrun_train_step.png" alt="Single-node train-step throughput" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_single_node_torchrun_train_step.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_torchrun_train_step.png" alt="Multinode train-step throughput" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_multinode_torchrun_train_step.json)
-  Data: [single-node train-step JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_single_node_torchrun_train_step.json), [multinode train-step JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_multinode_torchrun_train_step.json)
-- FP4 smoke skew guard passed: max pairwise median DeepGEMM gap `0.96%` (`node1` vs `node2`), below `5.0%` threshold.
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_cluster_perf_grouped_gemm_tflops.png" alt="Node1 grouped GEMM TFLOPS" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_cluster_perf_grouped_gemm_summary.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_cluster_perf_grouped_gemm_tflops.png" alt="Node2 grouped GEMM TFLOPS" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_cluster_perf_grouped_gemm_summary.json)
-  Data: [FP4 skew guard JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_fp4_smoke_skew_guard.json), [node1 grouped GEMM summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_cluster_perf_grouped_gemm_summary.json), [node2 grouped GEMM summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_cluster_perf_grouped_gemm_summary.json)
-- MAMF straggler check (all 8 GPUs, concurrent quick mode): peak BF16 matmul spans `1568.04` to `1672.77 TFLOPS` (`~6.26%` spread).
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_mamf_straggler.png" alt="MAMF straggler spread across GPUs" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_gpu0_mamf_summary.json)
-  Data: [node1 GPU0 MAMF summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_gpu0_mamf_summary.json), [node2 GPU3 MAMF summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gpu3_mamf_summary.json)
+### All-reduce stability
+All-reduce stability (`2 GiB`, 200 iters): mean busbw `809.65 GB/s`, CV `1.687%`, jitter assessment `good`.
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.png" alt="All-reduce stability" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.png)
+
+Data: [all-reduce stability JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.json)
+
+### All-reduce latency composition
+All-reduce latency composition (`4 GiB` target): one large collective (`818.15 GB/s`) vs many small chunks (`122.21 GB/s`) gives a `6.69x` bandwidth ratio.
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.png" alt="All-reduce latency composition" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.png)
+
+Data: [all-reduce latency composition JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.json)
+
+### Control-plane collective overhead
+`all_reduce_tensor` is fastest (`0.1867 ms` mean) vs `all_gather_tensor` (`0.2984 ms`) and `all_gather_object` (`1.5705 ms`).
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.png" alt="Control-plane collective overhead" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.png)
+
+Data: [allgather control-plane JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.json)
+
+### NCCL algorithm comparison
+NVLS (`839.33 GB/s`) and `auto` (`839.09 GB/s`) significantly outperform Ring (`698.28`) and Tree (`547.22`).
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png" alt="NCCL algorithm comparison with NVLS" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png)
+
+Data: [NCCL algorithm comparison JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json)
+
+### Grace-Blackwell C2C memcpy path
+Pinned transfer peaks at `124.88/124.52 Gbps` (H2D/D2H), with 4-byte pinned latency `~2.01/1.87 us`.
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy_bw.png" alt="C2C memcpy bandwidth" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy_bw.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy_lat.png" alt="C2C memcpy latency" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy_lat.png)
+
+Data: [C2C memcpy JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_c2c_memcpy.json)
+
+### Train-step sanity (BF16/FSDP)
+Single-node `102,718 tok/s` vs multi-node `206,398 tok/s` with similar step time (`~0.159 s`).
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_single_node_torchrun_train_step.png" alt="Single-node train-step throughput" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_single_node_torchrun_train_step.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_torchrun_train_step.png" alt="Multinode train-step throughput" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_multinode_torchrun_train_step.png)
+
+Data: [single-node train-step JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_single_node_torchrun_train_step.json), [multinode train-step JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_multinode_torchrun_train_step.json)
+
+### FP4 smoke skew guard
+Max pairwise median DeepGEMM gap `0.96%` (`node1` vs `node2`), below `5.0%` threshold.
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_cluster_perf_grouped_gemm_tflops.png" alt="Node1 grouped GEMM TFLOPS" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_cluster_perf_grouped_gemm_tflops.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_cluster_perf_grouped_gemm_tflops.png" alt="Node2 grouped GEMM TFLOPS" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_cluster_perf_grouped_gemm_tflops.png)
+
+Data: [FP4 skew guard JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_fp4_smoke_skew_guard.json), [node1 grouped GEMM summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_cluster_perf_grouped_gemm_summary.json), [node2 grouped GEMM summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_cluster_perf_grouped_gemm_summary.json)
+
+### MAMF straggler check (all 8 GPUs, concurrent quick mode)
+Peak BF16 matmul spans `1568.04` to `1672.77 TFLOPS` (`~6.26%` spread).
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_mamf_straggler.png" alt="MAMF straggler spread across GPUs" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_mamf_straggler.png)
+
+Data: [node1 GPU0 MAMF summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_gpu0_mamf_summary.json), [node2 GPU3 MAMF summary](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gpu3_mamf_summary.json)
 
 ## Weird / New / Interesting Findings
 
@@ -181,8 +315,9 @@ Last updated: 2026-02-09.
   - Low-band historical run: [results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json)
   - High-band historical run: [results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json](results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json)
 - Visualization:
-  [<img src="docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png" alt="NCCL low-band vs normal-band regime overlay" width="920"/>](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json)
-  Data: [low-band summary](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json), [high-band summary](results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json)
+[<img src="docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png" alt="NCCL low-band vs normal-band regime overlay" width="920"/>](docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png)
+
+Data: [low-band summary](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json), [high-band summary](results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json)
 - Action: Keep per-GPU clock telemetry + preflight + repeatability checks in standard validation.
 
 ### 2) WEIRD (historical incident, mitigated): service-health outage broke NCCL NVLS init and container startup
@@ -192,9 +327,10 @@ Last updated: 2026-02-09.
   - NCCL failure excerpt: [results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt](results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt)
   - vLLM container failure log: [results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt](results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt)
 - Visualization:
-  [<img src="docs/figures/2026-02-08_nvls_on_off_allreduce_busbw.png" alt="NVLS on vs off impact on all-reduce bandwidth" width="920"/>](results/structured/2026-02-08_031531_health_suite_extended_nvls0_node1node2_cluster_health_suite_summary.json)
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot around incident" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json)
-  Data: [NVLS-off run summary](results/structured/2026-02-08_031531_health_suite_extended_nvls0_node1node2_cluster_health_suite_summary.json), [NCCL failure excerpt](results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt), [vLLM failure log](results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt)
+[<img src="docs/figures/2026-02-08_nvls_on_off_allreduce_busbw.png" alt="NVLS on vs off impact on all-reduce bandwidth" width="920"/>](docs/figures/2026-02-08_nvls_on_off_allreduce_busbw.png)
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot around incident" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [NVLS-off run summary](results/structured/2026-02-08_031531_health_suite_extended_nvls0_node1node2_cluster_health_suite_summary.json), [NCCL failure excerpt](results/structured/2026-02-08_025442_cloud_eval_full_health_suite_extended_node1node2_nccl_all_reduce_perf.error_excerpt.txt), [vLLM failure log](results/structured/2026-02-08_025442_cloud_eval_full_node1_vllm_serve_sweep_sweep_log.txt)
 - Action: keep strict preflight mandatory before any benchmark and health-suite run.
 
 ### 3) NOTABLE: DCGM is now hard-required with before/after evidence
@@ -204,8 +340,9 @@ Last updated: 2026-02-09.
   - Historical before/after incident check: [results/structured/2026-02-08_test_preflight_dcgm_before_after_node1node2_preflight_services.json](results/structured/2026-02-08_test_preflight_dcgm_before_after_node1node2_preflight_services.json)
   - Latest clean baseline preflight: [preflight_latest][preflight_latest]
 - Visualization:
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="DCGM and service state snapshot" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json)
-  Data: [historical before/after preflight JSON](results/structured/2026-02-08_test_preflight_dcgm_before_after_node1node2_preflight_services.json), [latest preflight JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json)
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="DCGM and service state snapshot" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [historical before/after preflight JSON](results/structured/2026-02-08_test_preflight_dcgm_before_after_node1node2_preflight_services.json), [latest preflight JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_preflight_services.json)
 - Action: keep provider restart policy decision explicit; current unit policy remains `Restart=on-abort`.
 
 ### 4) NOTABLE: OOB TCP is much slower than IB and should remain bootstrap-only
@@ -215,8 +352,9 @@ Last updated: 2026-02-09.
   - OOB throughput: [results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json)
   - Health summary: [latest_health][latest_health]
 - Visualization:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.png" alt="OOB TCP throughput chart" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json)
-  Data: [iperf3 OOB JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json), [health summary JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.png" alt="OOB TCP throughput chart" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.png)
+
+Data: [iperf3 OOB JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_iperf3_oob_tcp.json), [health summary JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_health_suite_extended_node1node2_cluster_health_suite_summary.json)
 - Action: keep explicit OOB/socket/NCCL HCA pinning in all multi-node recipes.
 
 ### 5) NOTABLE: inference latency knee is strong and actionable
@@ -226,9 +364,10 @@ Last updated: 2026-02-09.
   - Sweep CSV: [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
   - Sweep summary: [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_concurrency_sweep_summary.txt](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_concurrency_sweep_summary.txt)
 - Visualization:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="Single-node vLLM TTFT knee" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png" alt="Single-node vLLM throughput curve" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv)
-  Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [serve sweep summary txt](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_concurrency_sweep_summary.txt)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png" alt="Single-node vLLM TTFT knee" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_ttft_vs_concurrency.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png" alt="Single-node vLLM throughput curve" width="920"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_total_tok_s_vs_concurrency.png)
+
+Data: [serve sweep CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_serve_sweep.csv), [serve sweep summary txt](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_vllm_concurrency_sweep_summary.txt)
 - Action: publish concurrency guardrails for low-latency vs max-throughput modes.
 
 ### 6) WEIRD (transient, diagnosed): one-off `node2_gpu2` GEMM collapse did not persist
@@ -239,8 +378,9 @@ Last updated: 2026-02-09.
   - Immediate rerun: [results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv)
   - Clean baseline confirmation: [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
 - Visualization:
-  [<img src="docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png" alt="Transient node2 GPU2 GEMM anomaly" width="920"/>](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv)
-  Data: [anomalous CSV](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [rerun CSV](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv), [clean baseline CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
+[<img src="docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png" alt="Transient node2 GPU2 GEMM anomaly" width="920"/>](docs/figures/2026-02-08_node2_gpu2_transient_gemm_tflops.png)
+
+Data: [anomalous CSV](results/structured/2026-02-08_ssh_key_full_suite_r2_node2_gemm_gpu_sanity.csv), [rerun CSV](results/structured/2026-02-08_node2_gpu2_diag_pre_reset_node2_gemm_gpu_sanity.csv), [clean baseline CSV](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv)
 - Action: rerun isolated with locked clocks first; reset only if persistent.
 
 ### 7) NOTABLE: local scratch capacity exists but is unmounted by default
@@ -251,10 +391,11 @@ Last updated: 2026-02-09.
   - Node2 storage: [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_storage.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_storage.json)
   - fio baseline: [results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json), [results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json)
 - Visualization:
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_fio.png" alt="Node1 fio baseline chart" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json)
-  [<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_fio.png" alt="Node2 fio baseline chart" width="460"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json)
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator storage and service snapshot" width="920"/>](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_storage.json)
-  Data: [node1 storage JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_storage.json), [node2 storage JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_storage.json), [node1 fio JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json), [node2 fio JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_fio.png" alt="Node1 fio baseline chart" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node1_fio.png)
+[<img src="docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_fio.png" alt="Node2 fio baseline chart" width="460"/>](docs/figures/2026-02-09_gb200_fullflags_all_0117_node2_fio.png)
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator storage and service snapshot" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [node1 storage JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_storage.json), [node2 storage JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_storage.json), [node1 fio JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node1_fio.json), [node2 fio JSON](results/structured/2026-02-09_gb200_fullflags_all_0117_node2_fio.json)
 - Action: publish and automate a provider-approved `/scratch` policy.
 
 ### 8) NOTABLE: SHARP user-space present, but collective integration path is not operational
@@ -264,8 +405,9 @@ Last updated: 2026-02-09.
   - SHARP check summary: [results/structured/2026-02-08_082000_ib_sharp_check_v3_ib_sharp_check.json](results/structured/2026-02-08_082000_ib_sharp_check_v3_ib_sharp_check.json)
   - CollNet failure excerpt: [results/structured/2026-02-08_082000_ib_sharp_check_v3_nccl_collnet_all_reduce_after_start_error_excerpt.txt](results/structured/2026-02-08_082000_ib_sharp_check_v3_nccl_collnet_all_reduce_after_start_error_excerpt.txt)
 - Visualization:
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot for SHARP triage" width="920"/>](results/structured/2026-02-08_082000_ib_sharp_check_v3_ib_sharp_check.json)
-  Data: [SHARP check summary JSON](results/structured/2026-02-08_082000_ib_sharp_check_v3_ib_sharp_check.json), [CollNet failure excerpt](results/structured/2026-02-08_082000_ib_sharp_check_v3_nccl_collnet_all_reduce_after_start_error_excerpt.txt)
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot for SHARP triage" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [SHARP check summary JSON](results/structured/2026-02-08_082000_ib_sharp_check_v3_ib_sharp_check.json), [CollNet failure excerpt](results/structured/2026-02-08_082000_ib_sharp_check_v3_nccl_collnet_all_reduce_after_start_error_excerpt.txt)
 - Action: provider should document intended SHARP path (MPI HCOLL and/or NCCL net plugin) and health criteria.
 
 ### 9) WEIRD (operational reliability): orphan launchers can invalidate benchmark runs
@@ -275,8 +417,9 @@ Last updated: 2026-02-09.
   - Launcher scripts evidence: [results/structured/2026-02-08_interference_launcher_scripts.txt](results/structured/2026-02-08_interference_launcher_scripts.txt)
   - Runtime/process snapshots: [results/structured/2026-02-08_interference_runtime_excerpts.txt](results/structured/2026-02-08_interference_runtime_excerpts.txt), [results/structured/2026-02-08_interference_process_snapshot.txt](results/structured/2026-02-08_interference_process_snapshot.txt)
 - Visualization:
-  [<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot for launch overlap incident" width="920"/>](results/structured/2026-02-08_interference_process_snapshot.txt)
-  Data: [launcher scripts evidence](results/structured/2026-02-08_interference_launcher_scripts.txt), [runtime excerpts](results/structured/2026-02-08_interference_runtime_excerpts.txt), [process snapshot](results/structured/2026-02-08_interference_process_snapshot.txt)
+[<img src="docs/figures/2026-02-08_operator_state_snapshot.png" alt="Operator state snapshot for launch overlap incident" width="920"/>](docs/figures/2026-02-08_operator_state_snapshot.png)
+
+Data: [launcher scripts evidence](results/structured/2026-02-08_interference_launcher_scripts.txt), [runtime excerpts](results/structured/2026-02-08_interference_runtime_excerpts.txt), [process snapshot](results/structured/2026-02-08_interference_process_snapshot.txt)
 - Action: enforce single queue runner + overlap detection as a hard policy.
 
 ## Implications For Small AI Teams
@@ -306,13 +449,15 @@ Last updated: 2026-02-09.
 
 ## Capability Demonstration (Causal Debugging Workflow)
 - Symptom detection: historical all-reduce entered a low-band regime (`~529.64 GB/s`) versus normal (`~840.55 GB/s`) under otherwise similar settings. Evidence: [results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json), [results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json](results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json), [docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png](docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png).
-  [<img src="docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png" alt="Capability demo: NCCL bimodal regime overlay" width="920"/>](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json)
-  Data: [low-band summary](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json), [high-band summary](results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json)
+[<img src="docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png" alt="Capability demo: NCCL bimodal regime overlay" width="920"/>](docs/figures/2026-02-07_nccl_allreduce_bimodal_overlay.png)
+
+Data: [low-band summary](results/structured/2026-02-07_224500_nccl_16g_baseline_ppr4_bindnone_node1node2_cluster_health_suite_summary.json), [high-band summary](results/structured/2026-02-07_140642_cluster_health_suite_node1node2_cluster_health_suite_summary.json)
 - Isolation: per-GPU and subset analysis identified physical `node1` GPU0 as the dominant bottleneck when included in collectives (historical investigation notes).
 - Falsification: interface pinning, launch/mapping variants, and lock-vs-no-lock checks did not explain the full regime spread (historical investigation notes).
 - Recovery path: targeted GPU reset and immediate revalidation restored normal compute/collective behavior in historical validation; this was treated as a fixable device/driver state, not a permanent capacity limit (historical investigation notes).
 - Operator outcome: the reproducible workflow is detect -> isolate -> rerun locked -> escalate with targeted reset only if persistent; avoid blind node-wide resets.
 
+<a id="cluster-perf-suite-patchset"></a>
 ## <cluster_perf_suite> Patchset
 This case study produced a local patchset and harness extensions that demonstrate practical systems-debugging capability and operator-focused product improvement.
 
@@ -467,11 +612,13 @@ python3 analysis/plot_nvbandwidth_sums.py \
   --title "nvbandwidth SUM metrics: 2026-02-09_gb200_fullflags_all_0117 node2"
 ```
 
+<a id="disable-fp4-if-needed"></a>
 ## `--disable-fp4` if needed
 - FP4 checks are enabled by default in the suite.
 - Use for portability run to avoid requiring external FP4 suite/image dependencies.
 - Suggestion: Use FP4-enabled runs as an explicit second pass when the dependency chain is available.
 
+<a id="local-patch-prerequisite"></a>
 ## Local Patch Prerequisite (for FP4-Enabled Repro)
 FP4 grouped-GEMM reproducibility on GB200 requires the local patch:
 `code/cluster_perf_patches/deepgemm_gb200_grouped_gemm_ue8m0.patch`.

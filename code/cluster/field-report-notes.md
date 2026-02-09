@@ -2,16 +2,24 @@
 
 Last updated: 2026-02-09.
 
+## Table of Contents
+1. [Scope](#scope)
+2. [Evidence Matrix](#evidence-matrix)
+3. [Coherence Notes](#coherence-notes)
+4. [Repro Entry Point](#repro-entry-point)
+
 This file is the validated evidence ledger for the GB200 cluster case study.
 It is intentionally scoped to claims that are backed by both structured data and visualizations.
 The narrative report for stakeholders is in [field-report.md](field-report.md).
 
 ## Scope
-- In scope nodes: `node1`, `node2` (4x GB200 per node, 8 GPUs total)
-- Excluded nodes: none
-- Canonical baseline run: `2026-02-09_gb200_fullflags_all_0117`
-- Canonical reproducibility package: [results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json](results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json)
-- Canonical sanitized metadata summary (references node1/node2 meta): [results/structured/2026-02-09_gb200_fullflags_all_0117_cluster_meta.json](results/structured/2026-02-09_gb200_fullflags_all_0117_cluster_meta.json)
+| Item | Value |
+| --- | --- |
+| In-scope nodes | `node1`, `node2` (4x GB200 per node, 8 GPUs total) |
+| Excluded nodes | none |
+| Canonical baseline run | `2026-02-09_gb200_fullflags_all_0117` |
+| Canonical reproducibility package | [results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json](results/structured/2026-02-09_gb200_fullflags_all_0117_manifest.json) |
+| Canonical sanitized metadata summary | [results/structured/2026-02-09_gb200_fullflags_all_0117_cluster_meta.json](results/structured/2026-02-09_gb200_fullflags_all_0117_cluster_meta.json) |
 
 ## Evidence Matrix
 
@@ -42,9 +50,9 @@ The narrative report for stakeholders is in [field-report.md](field-report.md).
 | Orphan launchers can invalidate runs via hidden overlap/interference. | [results/structured/2026-02-08_interference_launcher_scripts.txt](results/structured/2026-02-08_interference_launcher_scripts.txt), [results/structured/2026-02-08_interference_runtime_excerpts.txt](results/structured/2026-02-08_interference_runtime_excerpts.txt), [results/structured/2026-02-08_interference_process_snapshot.txt](results/structured/2026-02-08_interference_process_snapshot.txt) | [docs/figures/2026-02-08_operator_state_snapshot.png](docs/figures/2026-02-08_operator_state_snapshot.png) | Backed |
 
 ## Coherence Notes
-- This notes file intentionally uses the same canonical run IDs and claim language as [field-report.md](field-report.md).
-- `README.md` and `docs/advanced-runbook.md` are procedural references; this file and `field-report.md` are the evidence-bearing write-ups.
-- Stale 2026-02-06 markdown links were removed because those artifacts are no longer present in this repo.
+This notes file intentionally uses the same canonical run IDs and claim language as [field-report.md](field-report.md).
+`README.md` and `docs/advanced-runbook.md` are procedural references; this file and `field-report.md` are the evidence-bearing write-ups.
+Stale 2026-02-06 markdown links were removed because those artifacts are no longer present in this repo.
 
 ## Repro Entry Point
 Use the same full-flags invocation captured in [field-report.md](field-report.md#repro-steps) and in [docs/advanced-runbook.md](docs/advanced-runbook.md).

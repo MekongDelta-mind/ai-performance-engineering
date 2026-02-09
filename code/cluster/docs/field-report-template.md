@@ -2,11 +2,36 @@
 
 Last updated: YYYY-MM-DD
 
-Rules:
-- Do not link to `results/raw/` (raw is gitignored and for debugging only).
-- Link only to `results/structured/` and `docs/figures/`.
-- GPU benchmark runs are valid only if clock locking succeeded (include the clock-lock artifact in the run).
-- For stakeholder delivery, include GitHub handoff metadata (repo URL, commit/tag, collaborator invite status).
+## Table of Contents
+1. [TL;DR](#tldr)
+2. [Scope + Artifacts](#scope--artifacts)
+3. [Cluster Story (First Contact)](#cluster-story-first-contact)
+4. [Normal vs Typical Cluster (Operator Reality)](#normal-vs-typical-cluster-operator-reality)
+5. [Weird / New / Interesting](#weird--new--interesting)
+6. [Capability Demonstration (Causal Debugging Workflow)](#capability-demonstration-causal-debugging-workflow)
+7. [Benchmark A (Networking Story): NCCL `all_reduce_perf`](#benchmark-a-networking-story-nccl-all_reduce_perf)
+8. [Benchmark B (Inference Story): vLLM Online Serving](#benchmark-b-inference-story-vllm-online-serving)
+9. [Supporting: nvbandwidth Bundle (Optional, Recommended For GB200)](#supporting-nvbandwidth-bundle-optional-recommended-for-gb200)
+10. [Supporting: Compute Sanity (BF16 GEMM)](#supporting-compute-sanity-bf16-gemm)
+11. [Supporting: Storage (fio)](#supporting-storage-fio)
+12. [Supporting: System Health Suite (Optional)](#supporting-system-health-suite-optional)
+13. [Supporting: GPUDirect RDMA (Optional, Recommended On GB200 Clusters)](#supporting-gpudirect-rdma-optional-recommended-on-gb200-clusters)
+14. [Supporting: Grace/GB200 Memory Topology Probes (Optional)](#supporting-gracegb200-memory-topology-probes-optional)
+15. [Supporting: End-To-End Train Step (Optional)](#supporting-end-to-end-train-step-optional)
+16. [Supporting: Checkpoint I/O (Optional)](#supporting-checkpoint-io-optional)
+17. [Implications For Small AI Teams](#implications-for-small-ai-teams)
+18. [Clustermax Extension Outcomes](#clustermax-extension-outcomes)
+19. [Repository Handoff (GitHub)](#repository-handoff-github)
+20. [Repro Steps](#repro-steps)
+21. [Appendix](#appendix)
+22. [Activity Log](#activity-log)
+
+| Rule | Requirement |
+| --- | --- |
+| Artifact paths | Do not link to `results/raw/` (raw is gitignored and for debugging only). Link only to `results/structured/` and `docs/figures/`. |
+| Benchmark validity | GPU benchmark runs are valid only if clock locking succeeded; include clock-lock artifact links in the report. |
+| Stakeholder handoff | Include GitHub handoff metadata (repo URL, commit/tag, collaborator invite status). |
+| Visual formatting | Use full-size inline visuals under the narrative, keep evidence data links directly below visuals, avoid tiny image thumbnails inside table columns, and link images to image files (not data files). |
 
 ## TL;DR
 - Hardware summary (nodes, GPUs/node, CPU, RAM, OS)

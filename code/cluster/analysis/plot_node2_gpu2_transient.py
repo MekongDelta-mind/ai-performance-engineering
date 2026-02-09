@@ -27,7 +27,7 @@ RUNS = [
     ),
     (
         "clean_suite",
-        ROOT / "results/structured/2026-02-08_ssh_key_full_suite_clean_node2_gemm_gpu_sanity.csv",
+        ROOT / "results/structured/2026-02-08_ssh_key_full_suite_clean_final6_node2_gemm_gpu_sanity.csv",
         "clean suite",
     ),
 ]
@@ -46,13 +46,25 @@ def _load(csv_path: Path) -> dict[str, float]:
     return out
 
 
+def _resolve_path(path: Path, key: str) -> Path:
+    if path.exists():
+        return path
+    if key == "clean_suite":
+        # Fallback to latest clean baseline if the older clean-suite naming is absent.
+        fallback = ROOT / "results/structured/2026-02-09_gb200_fullflags_all_0117_node2_gemm_gpu_sanity.csv"
+        if fallback.exists():
+            return fallback
+    raise FileNotFoundError(f"Required input missing for {key}: {path}")
+
+
 def main() -> None:
     apply_plot_style()
     labels = ["node2_gpu0", "node2_gpu1", "node2_gpu2", "node2_gpu3"]
     loaded = []
     for key, path, pretty in RUNS:
-        vals = _load(path)
-        loaded.append((key, pretty, path, vals))
+        resolved = _resolve_path(path, key)
+        vals = _load(resolved)
+        loaded.append((key, pretty, resolved, vals))
 
     payload = {"sources": {}, "avg_tflops": {}, "node2_gpu2": {}, "drop_and_recovery": {}}
     for key, pretty, path, vals in loaded:

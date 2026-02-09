@@ -1,0 +1,39 @@
+{
+  "gpus": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "label": "after",
+  "matrix": [
+    [
+      null,
+      775.24,
+      775.25,
+      775.22
+    ],
+    [
+      775.12,
+      null,
+      775.76,
+      775.75
+    ],
+    [
+      777.39,
+      777.38,
+      null,
+      777.52
+    ],
+    [
+      777.39,
+      777.5,
+      777.68,
+      null
+    ]
+  ],
+  "run_id": "2026-02-09_gb200_fullflags_all_0117",
+  "size_bytes": 1073741824,
+  "source_csv": "results/raw/2026-02-06_node1_nvlink_p2p_sweep.csv",
+  "units": "GB/s"
+}

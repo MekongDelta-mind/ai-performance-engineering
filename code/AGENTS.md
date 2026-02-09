@@ -79,6 +79,13 @@
 - Required sections: TL;DR, cluster story, weird/new findings, benchmark A, benchmark B, implications for small AI teams, repro steps, appendix.
 - Where helpful, compare against public benchmarks for context (e.g., MLPerf), without referencing the source of the challenge.
 
+#### Stakeholder Markdown Presentation (CRITICAL)
+- For all `field-report*.md` files, include a Table of Contents near the top.
+- Keep visuals large and readable in stakeholder-facing markdown; do not use tiny thumbnail images inside table columns.
+- Do not add a dedicated "Visual" table column; place visuals under the narrative section and keep evidence/data links directly below each visual.
+- Image click-through must open the image artifact itself (`docs/figures/...`), not a JSON/CSV/TXT data file.
+- Avoid nested bullet-heavy formatting in visual sections; prefer clean paragraphs, concise tables, and explicit `Data:` lines below images.
+
 #### Quality Bar (CRITICAL)
 - Taste in what to measure, reproducibility, rigor (multiple runs + warmups + noise notes), systems intuition, communication clarity, and practical empathy.
 

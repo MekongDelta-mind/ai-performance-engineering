@@ -1,0 +1,8 @@
+{
+  "nvls_on_summary": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_032814_cloud_eval_full_fixed_health_suite_extended_node1node2_cluster_health_suite_summary.json",
+  "nvls_off_summary": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_031531_health_suite_extended_nvls0_node1node2_cluster_health_suite_summary.json",
+  "size_bytes": 17179869184,
+  "nvls_on_busbw_gbps": 839.39,
+  "nvls_off_busbw_gbps": 699.63,
+  "drop_percent": 16.65
+}

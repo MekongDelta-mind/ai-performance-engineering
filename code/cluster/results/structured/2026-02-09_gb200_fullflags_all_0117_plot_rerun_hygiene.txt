@@ -1,0 +1,107 @@
+=== plot_nccl_node1
+PASS plot_nccl_node1
+=== plot_nccl_2nodes
+PASS plot_nccl_2nodes
+=== plot_vllm_serve_sweep
+PASS plot_vllm_serve_sweep
+=== plot_vllm_multinode_sweep
+PASS plot_vllm_multinode_sweep
+=== plot_iperf3
+PASS plot_iperf3
+=== plot_gemm_bar
+PASS plot_gemm_bar
+=== plot_fio_node1
+PASS plot_fio_node1
+=== plot_fio_node2
+PASS plot_fio_node2
+=== plot_mamf
+Saved: docs/figures/2026-02-09_gb200_fullflags_all_0117_mamf_straggler.png
+PASS plot_mamf
+=== plot_allreduce_stability
+Saved: docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_stability.png
+PASS plot_allreduce_stability
+=== plot_allreduce_latency_comp
+Saved: docs/figures/2026-02-09_gb200_fullflags_all_0117_allreduce_latency_comp.png
+PASS plot_allreduce_latency_comp
+=== plot_allgather_control_plane
+Saved: docs/figures/2026-02-09_gb200_fullflags_all_0117_allgather_control_plane.png
+PASS plot_allgather_control_plane
+=== plot_nccl_algo_comparison
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+WARNING: No results in results/structured/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.json, skipping
+Saved: docs/figures/2026-02-09_gb200_fullflags_all_0117_nccl_algo_comparison.png
+PASS plot_nccl_algo_comparison
+=== plot_c2c_memcpy
+PASS plot_c2c_memcpy
+=== plot_numa_node1
+PASS plot_numa_node1
+=== plot_numa_node2
+PASS plot_numa_node2
+=== plot_torchrun_single
+PASS plot_torchrun_single
+=== plot_torchrun_multi
+PASS plot_torchrun_multi
+=== plot_nvlink_node1
+PASS plot_nvlink_node1
+=== plot_nvlink_node2
+PASS plot_nvlink_node2
+=== plot_nvbw_node1
+PASS plot_nvbw_node1
+=== plot_nvbw_node2
+PASS plot_nvbw_node2
+=== plot_cluster_dashboard
+Wrote dashboard figure: /home/ubuntu/ai-performance-engineering/code/cluster/docs/figures/2026-02-09_gb200_fullflags_all_0117_cluster_story_dashboard.png
+Wrote parity summary: /home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-09_gb200_fullflags_all_0117_node_parity_summary.json
+PASS plot_cluster_dashboard
+=== plot_gemm_generic
+PASS plot_gemm_generic
+=== plot_vllm_generic
+PASS plot_vllm_generic
+=== plot_nccl_overlay
+PASS plot_nccl_overlay
+=== plot_cluster_health_variance
+ERROR: could not parse repeat indices from run_id fields
+FAIL plot_cluster_health_variance
+=== plot_node2_gpu2_transient
+Traceback (most recent call last):
+  File "/home/ubuntu/ai-performance-engineering/code/cluster/analysis/plot_node2_gpu2_transient.py", line 120, in <module>
+    main()
+  File "/home/ubuntu/ai-performance-engineering/code/cluster/analysis/plot_node2_gpu2_transient.py", line 54, in main
+    vals = _load(path)
+           ^^^^^^^^^^^
+  File "/home/ubuntu/ai-performance-engineering/code/cluster/analysis/plot_node2_gpu2_transient.py", line 41, in _load
+    with csv_path.open() as f:
+         ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_ssh_key_full_suite_clean_node2_gemm_gpu_sanity.csv'
+FAIL plot_node2_gpu2_transient
+=== plot_nvls_on_off_impact
+Wrote: /home/ubuntu/ai-performance-engineering/code/cluster/docs/figures/2026-02-08_nvls_on_off_allreduce_busbw.png
+Wrote: /home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_nvls_on_off_allreduce_busbw.json
+PASS plot_nvls_on_off_impact
+=== plot_operator_state_snapshot
+Traceback (most recent call last):
+  File "/home/ubuntu/ai-performance-engineering/code/cluster/analysis/plot_operator_state_snapshot.py", line 307, in <module>
+    build()
+  File "/home/ubuntu/ai-performance-engineering/code/cluster/analysis/plot_operator_state_snapshot.py", line 169, in build
+    numa = {n: parse_numa_types(NUMACTL_EVIDENCE[n]) for n in nodes}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ai-performance-engineering/code/cluster/analysis/plot_operator_state_snapshot.py", line 63, in parse_numa_types
+    for line in numactl_path.read_text().splitlines():
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1029, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-08_numactl_numa_evidence_node1.txt'
+FAIL plot_operator_state_snapshot
+SKIP plot_gpu_telemetry: no telemetry CSV artifacts present
+SKIP plot_grouped_gemm_torch_fp16_vs_fp8: no grouped_gemm_torch_fp16_vs_fp8 summary JSON present
+SKIP plot_p2p_bandwidth_matrix_before_after: no before/after p2p JSON pair present
+SKIP plot_scratch_nvme_readonly: no scratch_nvme_readonly summary JSON present
+SUMMARY pass=27 fail=3 skip=4

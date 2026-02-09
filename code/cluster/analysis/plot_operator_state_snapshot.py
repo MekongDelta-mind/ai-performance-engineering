@@ -41,6 +41,27 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def command_stdout(meta_path: Path, key: str) -> str:
+    meta = load_json(meta_path)
+    commands = meta.get("commands") or {}
+    payload = commands.get(key) or {}
+    out = payload.get("stdout")
+    if isinstance(out, str):
+        return out
+    return ""
+
+
+def command_or_fallback(meta_path: Path, key: str, fallback_path: Path) -> str:
+    text = command_stdout(meta_path, key)
+    if text.strip():
+        return text
+    if fallback_path.exists():
+        return fallback_path.read_text()
+    raise FileNotFoundError(
+        f"Missing command output and fallback for {key}: meta={meta_path}, fallback={fallback_path}"
+    )
+
+
 def parse_service_states(meta_path: Path) -> dict[str, str]:
     meta = load_json(meta_path)
     commands = meta["commands"]
@@ -57,10 +78,10 @@ def parse_service_states(meta_path: Path) -> dict[str, str]:
     return out
 
 
-def parse_numa_types(numactl_path: Path) -> dict[str, int]:
+def parse_numa_types(numactl_text: str) -> dict[str, int]:
     cpus: dict[int, str] = {}
     sizes: dict[int, int] = {}
-    for line in numactl_path.read_text().splitlines():
+    for line in numactl_text.splitlines():
         m_cpu = re.match(r"node\\s+(\\d+)\\s+cpus:\\s*(.*)$", line)
         if m_cpu:
             cpus[int(m_cpu.group(1))] = m_cpu.group(2).strip()
@@ -89,8 +110,7 @@ def parse_numa_types(numactl_path: Path) -> dict[str, int]:
     }
 
 
-def parse_ib_links(ibstat_path: Path) -> dict[str, int]:
-    text = ibstat_path.read_text()
+def parse_ib_links(text: str) -> dict[str, int]:
     blocks = re.split(r"(?=CA 'mlx5_\\d+')", text)
     active_ib = 0
     down_eth = 0
@@ -166,16 +186,22 @@ def build() -> None:
     apply_plot_style()
     nodes = ["node1", "node2"]
     services = {n: parse_service_states(NODE_META[n]) for n in nodes}
-    numa = {n: parse_numa_types(NUMACTL_EVIDENCE[n]) for n in nodes}
-    ib = {n: parse_ib_links(IBSTAT_EVIDENCE[n]) for n in nodes}
+    numa = {
+        n: parse_numa_types(command_or_fallback(NODE_META[n], "numactl", NUMACTL_EVIDENCE[n]))
+        for n in nodes
+    }
+    ib = {
+        n: parse_ib_links(command_or_fallback(NODE_META[n], "ibstat", IBSTAT_EVIDENCE[n]))
+        for n in nodes
+    }
     storage = {n: parse_storage(STORAGE_META[n]) for n in nodes}
     sharp = parse_sharp(SHARP_JSON)
 
     output = {
         "sources": {
             "meta": {n: str(p) for n, p in NODE_META.items()},
-            "numactl_evidence": {n: str(p) for n, p in NUMACTL_EVIDENCE.items()},
-            "ibstat_evidence": {n: str(p) for n, p in IBSTAT_EVIDENCE.items()},
+            "numactl_evidence": {n: f"{NODE_META[n]}::commands.numactl (fallback: {NUMACTL_EVIDENCE[n]})" for n in nodes},
+            "ibstat_evidence": {n: f"{NODE_META[n]}::commands.ibstat (fallback: {IBSTAT_EVIDENCE[n]})" for n in nodes},
             "storage": {n: str(p) for n, p in STORAGE_META.items()},
             "sharp": str(SHARP_JSON),
         },

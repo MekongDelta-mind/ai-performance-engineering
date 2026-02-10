@@ -1,0 +1,268 @@
+{
+  "barrier_iters": 5,
+  "created_at_utc": "2026-02-10T06:35:21Z",
+  "failures": [],
+  "payload_bytes": 8388608,
+  "ranks": [
+    {
+      "barrier_ms": [
+        0.20013,
+        0.13677,
+        0.10925,
+        0.11709,
+        0.108961
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 0,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 0
+      },
+      "hostname": "node1",
+      "local_rank": 0,
+      "payload_probe": {
+        "algbw_gbps": 0.032654,
+        "busbw_gbps": 0.057145,
+        "payload_bytes": 8388608,
+        "time_ms": 256.893081
+      },
+      "rank": 0,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.16141,
+        0.132098,
+        0.118306,
+        0.112609,
+        0.110657
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 1,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 1
+      },
+      "hostname": "node1",
+      "local_rank": 1,
+      "payload_probe": {
+        "algbw_gbps": 0.032648,
+        "busbw_gbps": 0.057134,
+        "payload_bytes": 8388608,
+        "time_ms": 256.940314
+      },
+      "rank": 1,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.243107,
+        0.133506,
+        0.113666,
+        0.111361,
+        0.109729
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 2,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 2
+      },
+      "hostname": "node1",
+      "local_rank": 2,
+      "payload_probe": {
+        "algbw_gbps": 0.032654,
+        "busbw_gbps": 0.057145,
+        "payload_bytes": 8388608,
+        "time_ms": 256.891801
+      },
+      "rank": 2,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.248739,
+        0.133762,
+        0.112898,
+        0.113377,
+        0.110081
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 3,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 3
+      },
+      "hostname": "node1",
+      "local_rank": 3,
+      "payload_probe": {
+        "algbw_gbps": 0.032654,
+        "busbw_gbps": 0.057145,
+        "payload_bytes": 8388608,
+        "time_ms": 256.892473
+      },
+      "rank": 3,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.200384,
+        0.130145,
+        0.118272,
+        0.116448,
+        0.11184
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 0,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 0
+      },
+      "hostname": "node2",
+      "local_rank": 0,
+      "payload_probe": {
+        "algbw_gbps": 0.032655,
+        "busbw_gbps": 0.057147,
+        "payload_bytes": 8388608,
+        "time_ms": 256.884011
+      },
+      "rank": 4,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.222369,
+        0.133857,
+        0.111872,
+        0.116448,
+        0.110592
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 1,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 1
+      },
+      "hostname": "node2",
+      "local_rank": 1,
+      "payload_probe": {
+        "algbw_gbps": 0.032655,
+        "busbw_gbps": 0.057146,
+        "payload_bytes": 8388608,
+        "time_ms": 256.888715
+      },
+      "rank": 5,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.217601,
+        0.132737,
+        0.114752,
+        0.112352,
+        0.109184
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 2,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 2
+      },
+      "hostname": "node2",
+      "local_rank": 2,
+      "payload_probe": {
+        "algbw_gbps": 0.032655,
+        "busbw_gbps": 0.057146,
+        "payload_bytes": 8388608,
+        "time_ms": 256.886699
+      },
+      "rank": 6,
+      "status": "ok",
+      "world_size": 8
+    },
+    {
+      "barrier_ms": [
+        0.229601,
+        0.132705,
+        0.114112,
+        0.113984,
+        0.110464
+      ],
+      "checks": {
+        "scalar_allreduce_expected": 36.0,
+        "scalar_allreduce_observed": 36.0,
+        "scalar_allreduce_ok": true
+      },
+      "gpu": {
+        "compute_capability": "10.0",
+        "logical_index": 3,
+        "memory_gb": 184.0,
+        "name": "NVIDIA GB200",
+        "physical_index": 3
+      },
+      "hostname": "node2",
+      "local_rank": 3,
+      "payload_probe": {
+        "algbw_gbps": 0.032655,
+        "busbw_gbps": 0.057146,
+        "payload_bytes": 8388608,
+        "time_ms": 256.886379
+      },
+      "rank": 7,
+      "status": "ok",
+      "world_size": 8
+    }
+  ],
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon",
+  "status": "ok",
+  "test": "torchrun_connectivity_probe",
+  "world_size": 8
+}

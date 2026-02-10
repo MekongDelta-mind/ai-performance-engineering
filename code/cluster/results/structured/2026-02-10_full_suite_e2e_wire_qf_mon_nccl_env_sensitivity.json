@@ -1,0 +1,95 @@
+{
+  "baseline_peak_busbw_gbps": 417.57,
+  "baseline_profile": "baseline_auto",
+  "best_peak_busbw_gbps": 417.57,
+  "best_profile": "baseline_auto",
+  "failure_count": 0,
+  "gpus_per_node": 4,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "profiles": [
+    {
+      "env": {
+        "NCCL_CROSS_NIC": null,
+        "NCCL_IB_QPS_PER_CONNECTION": null,
+        "NCCL_MAX_CTAS": null,
+        "NCCL_MIN_CTAS": null
+      },
+      "output_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_nccl_env_baseline_auto_nccl.json",
+      "peak_busbw_gbps": 417.57,
+      "profile": "baseline_auto",
+      "speedup_vs_baseline": 1.0,
+      "status": "ok"
+    },
+    {
+      "env": {
+        "NCCL_CROSS_NIC": "0",
+        "NCCL_IB_QPS_PER_CONNECTION": null,
+        "NCCL_MAX_CTAS": null,
+        "NCCL_MIN_CTAS": null
+      },
+      "output_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_nccl_env_cross_nic_0_nccl.json",
+      "peak_busbw_gbps": 415.85,
+      "profile": "cross_nic_0",
+      "speedup_vs_baseline": 0.995881,
+      "status": "ok"
+    },
+    {
+      "env": {
+        "NCCL_CROSS_NIC": "1",
+        "NCCL_IB_QPS_PER_CONNECTION": null,
+        "NCCL_MAX_CTAS": null,
+        "NCCL_MIN_CTAS": null
+      },
+      "output_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_nccl_env_cross_nic_1_nccl.json",
+      "peak_busbw_gbps": 416.99,
+      "profile": "cross_nic_1",
+      "speedup_vs_baseline": 0.998611,
+      "status": "ok"
+    },
+    {
+      "env": {
+        "NCCL_CROSS_NIC": "2",
+        "NCCL_IB_QPS_PER_CONNECTION": null,
+        "NCCL_MAX_CTAS": null,
+        "NCCL_MIN_CTAS": null
+      },
+      "output_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_nccl_env_cross_nic_2_nccl.json",
+      "peak_busbw_gbps": 415.56,
+      "profile": "cross_nic_2",
+      "speedup_vs_baseline": 0.995186,
+      "status": "ok"
+    },
+    {
+      "env": {
+        "NCCL_CROSS_NIC": null,
+        "NCCL_IB_QPS_PER_CONNECTION": "4",
+        "NCCL_MAX_CTAS": null,
+        "NCCL_MIN_CTAS": null
+      },
+      "output_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_nccl_env_qps_4_nccl.json",
+      "peak_busbw_gbps": 416.13,
+      "profile": "qps_4",
+      "speedup_vs_baseline": 0.996551,
+      "status": "ok"
+    },
+    {
+      "env": {
+        "NCCL_CROSS_NIC": null,
+        "NCCL_IB_QPS_PER_CONNECTION": null,
+        "NCCL_MAX_CTAS": "16",
+        "NCCL_MIN_CTAS": "16"
+      },
+      "output_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_nccl_env_ctas_16_16_nccl.json",
+      "peak_busbw_gbps": 417.22,
+      "profile": "ctas_16_16",
+      "speedup_vs_baseline": 0.999162,
+      "status": "ok"
+    }
+  ],
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon",
+  "status": "ok",
+  "test": "nccl_env_sensitivity"
+}

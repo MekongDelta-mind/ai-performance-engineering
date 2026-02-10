@@ -1,0 +1,98 @@
+[
+  {
+    "name": "bootstrap_nodes",
+    "start_time": "2026-02-10T06:22:18+00:00",
+    "end_time": "2026-02-10T06:23:14+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/bootstrap_nodes.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/bootstrap_cluster_nodes.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --host-parity-image cfregly/cluster_perf_orig_parity:latest --torch-index-url https://pypi.ngc.nvidia.com --torch-version 2.10.0a0+a36e1d39eb.nv26.01.42222806 --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "preflight_services",
+    "start_time": "2026-02-10T06:23:14+00:00",
+    "end_time": "2026-02-10T06:23:18+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/preflight_services.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/preflight_cluster_services.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "discovery",
+    "start_time": "2026-02-10T06:23:18+00:00",
+    "end_time": "2026-02-10T06:23:30+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/discovery.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/collect_discovery_and_tcp_sysctl.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "quick_friction_all_nodes",
+    "start_time": "2026-02-10T06:23:30+00:00",
+    "end_time": "2026-02-10T06:33:52+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/quick_friction_all_nodes.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/run_quick_friction_all_nodes.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --checks uv_torch_install\\,pip_torch_install\\,ngc_pull\\,torch_import\\,hf_download\\,ip_owner\\,speedtest --timeout-sec 900 --torch-version 2.5.1 --torch-index-url https://download.pytorch.org/whl/cu124 --ngc-image nvcr.io/nvidia/pytorch:24.05-py3 --hf-model openai-community/gpt2 --hf-local-dir-base /tmp --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "monitoring_expectations_all_nodes",
+    "start_time": "2026-02-10T06:33:52+00:00",
+    "end_time": "2026-02-10T06:35:09+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/monitoring_expectations_all_nodes.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/collect_monitoring_expectations_all_nodes.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --checks kubectl_pods\\,kubectl_top_nodes\\,kubectl_top_pods\\,nvidia_dmon\\,nvidia_nvlink\\,dcgmi_discovery\\,dcgmi_dmon\\,dmesg_tail --sample-count 20 --dmesg-lines 400 --timeout-sec 180 --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "hang_triage_bundle",
+    "start_time": "2026-02-10T06:35:09+00:00",
+    "end_time": "2026-02-10T06:35:10+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/hang_triage_bundle.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/collect_hang_triage_bundle.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "connectivity_probe",
+    "start_time": "2026-02-10T06:35:10+00:00",
+    "end_time": "2026-02-10T06:35:23+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/connectivity_probe.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/run_torchrun_connectivity_probe.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --ssh-user ubuntu --gpus-per-node 4 --master-port 29504 --barrier-iters 5 --payload-bytes 8388608 --timeout-sec 120 --ssh-key /home/ubuntu/.ssh/ssh_key.pem --oob-if enP22p3s0f3 --nccl-ib-hca mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5"
+  },
+  {
+    "name": "nccl_single_node",
+    "start_time": "2026-02-10T06:35:23+00:00",
+    "end_time": "2026-02-10T06:35:35+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/nccl_single_node.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/run_nccl_all_reduce.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon_node1 --hosts localhost --label node1"
+  },
+  {
+    "name": "nccl_multi_node",
+    "start_time": "2026-02-10T06:35:35+00:00",
+    "end_time": "2026-02-10T06:35:51+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/nccl_multi_node.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/run_nccl_all_reduce.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon_2nodes --hosts node1\\,node2 --label node1node2 --oob-if enP22p3s0f3 --socket-ifname enP22p3s0f3 --ssh-key /home/ubuntu/.ssh/ssh_key.pem --nccl-ib-hca mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5"
+  },
+  {
+    "name": "nccl_env_sensitivity",
+    "start_time": "2026-02-10T06:35:51+00:00",
+    "end_time": "2026-02-10T06:37:22+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/nccl_env_sensitivity.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/run_nccl_env_sensitivity.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --hosts node1\\,node2 --gpus-per-node 4 --min-bytes 1M --max-bytes 64M --warmup 5 --iters 20 --ssh-key /home/ubuntu/.ssh/ssh_key.pem --oob-if enP22p3s0f3 --socket-ifname enP22p3s0f3 --nccl-ib-hca mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5"
+  },
+  {
+    "name": "health_suite_extended",
+    "start_time": "2026-02-10T06:37:22+00:00",
+    "end_time": "2026-02-10T06:43:06+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/health_suite_extended.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/run_cluster_health_suite.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon_health_suite_extended --hosts node1\\,node2 --ssh-user ubuntu --ssh-key /home/ubuntu/.ssh/ssh_key.pem --oob-if enP22p3s0f3 --nccl-ib-hca mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5 --gdr --gdr-gpu 0 --gdr-mem-types 0 --gdr-use-dmabuf --extended"
+  },
+  {
+    "name": "vllm_serve_sweep",
+    "start_time": "2026-02-10T06:43:06+00:00",
+    "end_time": "2026-02-10T06:56:33+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite/vllm_serve_sweep.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/repro/run_vllm_serve_sweep_container.sh --run-id 2026-02-10_full_suite_e2e_wire_qf_mon --label node1 --model openai/gpt-oss-120b --isl 1024 --osl 1024 --concurrency-range 32\\ 64\\ 128\\ 256\\ 512 --port 8888"
+  }
+]

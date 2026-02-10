@@ -1,0 +1,180 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 4,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 2062
+      },
+      "global_rank": 5,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 6,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 7,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 3
+    }
+  ],
+  "measure_iters": 20,
+  "results": [
+    {
+      "algbw_gbps": 21.175247876491326,
+      "busbw_gbps": 37.056683783859825,
+      "dtype": "float32",
+      "size_bytes": 1048576,
+      "time_s": 4.951894807163626e-05
+    },
+    {
+      "algbw_gbps": 114.01895100317073,
+      "busbw_gbps": 199.53316425554877,
+      "dtype": "float32",
+      "size_bytes": 8388608,
+      "time_s": 7.357205031439662e-05
+    },
+    {
+      "algbw_gbps": 237.8842648728945,
+      "busbw_gbps": 416.29746352756536,
+      "dtype": "float32",
+      "size_bytes": 67108864,
+      "time_s": 0.00028210720047354697
+    },
+    {
+      "algbw_gbps": 410.94952550103113,
+      "busbw_gbps": 719.1616696268045,
+      "dtype": "float32",
+      "size_bytes": 1073741824,
+      "time_s": 0.0026128313998924567
+    }
+  ],
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon_health_suite_extended",
+  "sizes_bytes": [
+    1048576,
+    8388608,
+    67108864,
+    1073741824
+  ],
+  "warmup_iters": 5,
+  "world_size": 8
+}

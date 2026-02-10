@@ -6,7 +6,7 @@ This repository now uses explicit stack profiles for FP4/grouped-GEMM paths. The
 
 Canonical profile:
 
-- `new_container` (digest-pinned `cfregly/cluster_perf` image)
+- `old_container` (digest-pinned parity image)
 
 ## Profile Matrix
 
@@ -39,22 +39,22 @@ Existing report artifact names are unchanged.
 
 ## Example Commands
 
-Canonical decoupled container path:
-
-```bash
-scripts/run_cluster_perf_grouped_gemm.sh \
-  --runtime container \
-  --stack-profile new_container \
-  --run-id <run_id> \
-  --label <label>
-```
-
-Legacy comparison path:
+Canonical parity container path:
 
 ```bash
 scripts/run_cluster_perf_grouped_gemm.sh \
   --runtime container \
   --stack-profile old_container \
+  --run-id <run_id> \
+  --label <label>
+```
+
+Secondary compatibility path:
+
+```bash
+scripts/run_cluster_perf_grouped_gemm.sh \
+  --runtime container \
+  --stack-profile new_container \
   --run-id <run_id> \
   --label <label>
 ```

@@ -486,7 +486,7 @@ image by default. Override source image with `--bootstrap-host-parity-image`.
 If host bootstrap cannot satisfy prerequisites, switch to container runtime:
 ```bash
 scripts/repro/build_cluster_perf_image.sh --profile open --tag cfregly/cluster_perf:latest
-scripts/run_fp4_checks_all_nodes.sh ... --runtime container --stack-profile new_container
+scripts/run_fp4_checks_all_nodes.sh ... --runtime container --stack-profile old_container
 ```
 Orig-parity open container profile (legacy version matching without `jordannanos` dependency):
 ```bash
@@ -574,5 +574,5 @@ cluster/
 - vLLM serving sweep (`scripts/repro/run_vllm_serve_sweep_container.sh`) currently depends on Docker + NVIDIA container runtime and `nvidia-persistenced`.
 - vLLM multi-node serving (`scripts/repro/run_vllm_serve_multinode_container.sh`) depends on the same container runtime plus Ray startup across both nodes and synchronized image/runtime contents.
 - NVLink/NVSwitch topology artifact generation (`analysis/plot_nvlink_topology.py`) depends on valid `nvidia-smi topo -m` capture under `results/structured/<run_id>_<label>_meta.json`.
-- FP4 grouped GEMM checks (`scripts/run_cluster_perf_grouped_gemm.sh`, `scripts/run_fp4_checks_all_nodes.sh`, FP4 path in `scripts/run_cluster_eval_suite.sh`) use an in-repo benchmark target (`scripts/benchmarks/grouped_gemm_bench.py`) with host-native runtime by default; container runtime is optional via `--runtime container --stack-profile new_container` (digest-pinned). See `docs/cluster-perf-stack-profiles.md`.
+- FP4 grouped GEMM checks (`scripts/run_cluster_perf_grouped_gemm.sh`, `scripts/run_fp4_checks_all_nodes.sh`, FP4 path in `scripts/run_cluster_eval_suite.sh`) use an in-repo benchmark target (`scripts/benchmarks/grouped_gemm_bench.py`) with host-native runtime by default; container runtime is optional via `--runtime container --stack-profile old_container` (digest-pinned parity stack). See `docs/cluster-perf-stack-profiles.md`.
 - DeepGEMM smoke (`analysis/smoke_deepgemm_fp8_fp4.py`) requires importable `deep_gemm` in the selected runtime environment.

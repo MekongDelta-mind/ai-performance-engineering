@@ -1,9 +1,9 @@
 {
   "version": "2026-02-09",
-  "canonical_profile": "new_container",
+  "canonical_profile": "old_container",
   "profiles": {
     "old_container": {
-      "description": "Legacy reference stack used by earlier report runs.",
+      "description": "Canonical parity container stack used for default container runs.",
       "allowed_runtimes": [
         "container"
       ],
@@ -41,7 +41,7 @@
       }
     },
     "new_container": {
-      "description": "Open container stack for decoupled rollout.",
+      "description": "Secondary container stack for explicit compatibility testing.",
       "allowed_runtimes": [
         "container"
       ],

@@ -5,45 +5,163 @@ Tests basic PyTorch operations and CUDA availability.
 """
 
 import os
+import site
 import sys
+from pathlib import Path
+from typing import Iterable, List, Set
 
-# CRITICAL: PyTorch was compiled against cuDNN 9.15.1, but bundles cuDNN 9.13.0
-# We MUST use system cuDNN 9.15.1 (installed via apt) instead of PyTorch's bundled 9.13.0
-# Filter out PyTorch's bundled cuDNN path and ensure system cuDNN 9.15.1 is found first
-PYTORCH_CUDNN_LIB = "/usr/local/lib/python3.12/dist-packages/nvidia/cudnn/lib"
-SYSTEM_CUDNN_LIB = "/usr/lib/aarch64-linux-gnu"  # System cuDNN 9.15.1 location
+DEFAULT_RUNTIME_POLICY = "auto"
+_RUNTIME_POLICY = os.environ.get("AISP_CUDNN_RUNTIME_POLICY", DEFAULT_RUNTIME_POLICY).strip().lower()
+if _RUNTIME_POLICY not in {"auto", "torch", "system"}:
+    _RUNTIME_POLICY = DEFAULT_RUNTIME_POLICY
 
-current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
-filtered_paths = []
 
-if current_ld_path:
-    for path in current_ld_path.split(":"):
-        if path:
-            # Remove PyTorch's bundled cuDNN path (contains 9.13.0)
-            if PYTORCH_CUDNN_LIB in path:
-                continue
-            # Keep other paths
-            filtered_paths.append(path)
+def _split_paths(value: str) -> List[str]:
+    return [entry for entry in value.split(":") if entry]
 
-# Build LD_LIBRARY_PATH: System cuDNN 9.15.1 FIRST, then CUDA libs, then other paths
-CUDA_LIB_DIR = "/usr/local/cuda-13.0/lib64"
-cuda_stubs = f"{CUDA_LIB_DIR}/stubs" if os.path.isdir(f"{CUDA_LIB_DIR}/stubs") else ""
 
-new_ld_parts = []
-# Add system cuDNN 9.15.1 FIRST (matches PyTorch's compile-time version)
-if os.path.isdir(SYSTEM_CUDNN_LIB):
-    new_ld_parts.append(SYSTEM_CUDNN_LIB)
-# Add CUDA libs
-if os.path.isdir(CUDA_LIB_DIR):
-    new_ld_parts.append(CUDA_LIB_DIR)
-if cuda_stubs:
-    new_ld_parts.append(cuda_stubs)
-# Add other filtered paths (but NOT PyTorch's bundled cuDNN)
-if filtered_paths:
-    new_ld_parts.extend(filtered_paths)
+def _append_if_valid(path: str, ordered: List[str], seen: Set[str]) -> None:
+    if not path or path in seen or not os.path.isdir(path):
+        return
+    ordered.append(path)
+    seen.add(path)
 
-new_ld_path = ":".join(new_ld_parts)
-os.environ["LD_LIBRARY_PATH"] = new_ld_path
+
+def _looks_like_torch_lib(path: str) -> bool:
+    normalized = path.rstrip("/")
+    return normalized.endswith("/torch/lib") or "/site-packages/torch/lib" in normalized
+
+
+def _candidate_torch_site_roots() -> Iterable[Path]:
+    roots: List[Path] = []
+    py_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+
+    roots.append(Path(sys.prefix) / "lib" / py_version / "site-packages")
+    roots.append(Path("/usr/local/lib") / py_version / "dist-packages")
+
+    venv = os.environ.get("VIRTUAL_ENV")
+    if venv:
+        roots.append(Path(venv) / "lib" / py_version / "site-packages")
+
+    try:
+        roots.extend(Path(p) for p in site.getsitepackages())
+    except Exception:
+        pass
+
+    try:
+        roots.append(Path(site.getusersitepackages()))
+    except Exception:
+        pass
+
+    seen: Set[Path] = set()
+    for root in roots:
+        if root in seen:
+            continue
+        seen.add(root)
+        yield root
+
+
+def _discover_torch_lib_dirs() -> List[str]:
+    dirs: List[str] = []
+    seen: Set[str] = set()
+    for root in _candidate_torch_site_roots():
+        candidate = root / "torch" / "lib"
+        candidate_str = str(candidate)
+        if candidate_str in seen or not candidate.is_dir():
+            continue
+        seen.add(candidate_str)
+        dirs.append(candidate_str)
+    return dirs
+
+
+def _discover_system_cudnn_dirs() -> List[str]:
+    candidates = [
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/aarch64-linux-gnu",
+        "/usr/lib64",
+        "/usr/lib",
+    ]
+    found: List[str] = []
+    seen: Set[str] = set()
+    for directory in candidates:
+        if directory in seen or not os.path.isdir(directory):
+            continue
+        if list(Path(directory).glob("libcudnn*.so*")):
+            found.append(directory)
+            seen.add(directory)
+    return found
+
+
+def _discover_cuda_lib_dirs() -> List[str]:
+    cuda_homes = [
+        os.environ.get("CUDA_HOME", ""),
+        "/usr/local/cuda",
+        "/usr/local/cuda-13.1",
+        "/usr/local/cuda-13.0",
+    ]
+    ordered: List[str] = []
+    seen: Set[str] = set()
+    for home in cuda_homes:
+        if not home:
+            continue
+        _append_if_valid(os.path.join(home, "lib64"), ordered, seen)
+        _append_if_valid(os.path.join(home, "lib64", "stubs"), ordered, seen)
+    return ordered
+
+
+def _configure_ld_library_path() -> tuple[str, bool]:
+    current_raw = os.environ.get("LD_LIBRARY_PATH", "")
+    current_paths = _split_paths(current_raw)
+    torch_lib_dirs = _discover_torch_lib_dirs()
+    system_cudnn_dirs = _discover_system_cudnn_dirs()
+    cuda_lib_dirs = _discover_cuda_lib_dirs()
+
+    ordered: List[str] = []
+    seen: Set[str] = set()
+
+    using_torch_runtime = False
+    if _RUNTIME_POLICY in {"auto", "torch"}:
+        existing_torch_paths = [path for path in current_paths if _looks_like_torch_lib(path)]
+        if existing_torch_paths:
+            for path in existing_torch_paths:
+                _append_if_valid(path, ordered, seen)
+        else:
+            for path in torch_lib_dirs:
+                _append_if_valid(path, ordered, seen)
+        using_torch_runtime = any(_looks_like_torch_lib(path) for path in ordered)
+
+    if _RUNTIME_POLICY == "system":
+        for path in system_cudnn_dirs:
+            _append_if_valid(path, ordered, seen)
+
+    if _RUNTIME_POLICY == "system" or not using_torch_runtime:
+        for path in cuda_lib_dirs:
+            _append_if_valid(path, ordered, seen)
+
+    for path in current_paths:
+        if _RUNTIME_POLICY == "system" and _looks_like_torch_lib(path):
+            continue
+        _append_if_valid(path, ordered, seen)
+
+    new_ld_path = ":".join(ordered)
+    os.environ["LD_LIBRARY_PATH"] = new_ld_path
+    return new_ld_path, new_ld_path != current_raw
+
+
+_EFFECTIVE_LD_LIBRARY_PATH, _LD_LIBRARY_PATH_CHANGED = _configure_ld_library_path()
+
+
+def _maybe_reexec_for_runtime_loader() -> None:
+    if not _LD_LIBRARY_PATH_CHANGED:
+        return
+    if os.environ.get("_AISP_VERIFY_PYTORCH_REEXEC") == "1":
+        return
+    reexec_env = dict(os.environ)
+    reexec_env["_AISP_VERIFY_PYTORCH_REEXEC"] = "1"
+    os.execvpe(sys.executable, [sys.executable, *sys.argv], reexec_env)
+
+
+_maybe_reexec_for_runtime_loader()
 
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
 
@@ -82,7 +200,10 @@ def check_cuda_availability(torch):
         except RuntimeError as e:
             if "version incompatibility" in str(e):
                 print(f"   ERROR: cuDNN version incompatibility: {e}")
-                print("   Fix: Ensure PyTorch's bundled cuDNN is in LD_LIBRARY_PATH before system cuDNN")
+                print(
+                    "   Fix: adjust AISP_CUDNN_RUNTIME_POLICY (auto/torch/system) "
+                    "and ensure LD_LIBRARY_PATH points at a matching runtime."
+                )
                 raise RuntimeError(f"cuDNN version incompatibility: {e}") from e
             raise
         print(f"   Number of GPUs: {torch.cuda.device_count()}")
@@ -224,6 +345,8 @@ def main():
     print("\n" + "="*80)
     print("  PyTorch Installation Verification Suite")
     print("="*80)
+    print(f"Runtime cuDNN policy: {_RUNTIME_POLICY}")
+    print(f"Effective LD_LIBRARY_PATH: {_EFFECTIVE_LD_LIBRARY_PATH}")
     
     results = {}
     

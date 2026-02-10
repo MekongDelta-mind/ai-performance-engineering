@@ -36,7 +36,7 @@ ENV_DEFAULTS: Dict[str, str] = {
     "CUDA_DEVICE_MAX_CONNECTIONS": "32",
     "TORCH_COMPILE_DEBUG": "0",
     # "TORCH_LOGS": "",  # Disabled - remove verbose dynamo logging to reduce noise
-    "CUDA_HOME": "/usr/local/cuda-13.0",
+    "CUDA_HOME": "/usr/local/cuda",
 }
 
 CUDA_PATH_SUFFIXES: Tuple[str, ...] = ("bin",)

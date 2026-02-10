@@ -1,0 +1,65 @@
+{
+  "bytes": 1073741824,
+  "cpu_node": 0,
+  "iters": 10,
+  "label": "node1",
+  "results": [
+    {
+      "bw_gbps": 137.468895,
+      "bytes": 1073741824,
+      "elapsed_s": 0.078108,
+      "iters": 10,
+      "node": 0,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 66.074586,
+      "bytes": 1073741824,
+      "elapsed_s": 0.162505,
+      "iters": 10,
+      "node": 1,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 60.918706,
+      "bytes": 1073741824,
+      "elapsed_s": 0.176258,
+      "iters": 10,
+      "node": 2,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 35.385277,
+      "bytes": 1073741824,
+      "elapsed_s": 0.303443,
+      "iters": 10,
+      "node": 10,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 32.707387,
+      "bytes": 1073741824,
+      "elapsed_s": 0.328287,
+      "iters": 10,
+      "node": 18,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 32.718862,
+      "bytes": 1073741824,
+      "elapsed_s": 0.328172,
+      "iters": 10,
+      "node": 26,
+      "threads": 16,
+      "warmup": 2
+    }
+  ],
+  "run_id": "2026-02-09_fresh_full_suite_e2e_green_rootfix",
+  "threads": 16,
+  "warmup": 2
+}

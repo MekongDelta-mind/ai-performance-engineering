@@ -1,0 +1,423 @@
+{
+  "app_clocks": [
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 5,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 7,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 4,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 1,
+      "local_rank": 1,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 1
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 3,
+      "local_rank": 3,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 3
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 0,
+      "local_rank": 0,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 0
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 1950
+      },
+      "global_rank": 2,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node1",
+      "physical_gpu": 2
+    },
+    {
+      "clocks": {
+        "applications_mem_mhz": 3996,
+        "applications_sm_mhz": 2062,
+        "current_mem_mhz": 3996,
+        "current_sm_mhz": 120
+      },
+      "global_rank": 6,
+      "local_rank": 2,
+      "lock": {
+        "locked": true,
+        "theoretical_mem_gbps": 7928.064,
+        "theoretical_tflops_fp16": 641.892352
+      },
+      "node": "node2",
+      "physical_gpu": 2
+    }
+  ],
+  "command": "mpirun --hostfile /home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-09_fresh_full_suite_e2e_green_rootfix_nccl_algo_comparison_hosts.txt --map-by ppr:4:node --bind-to none --mca routed direct --mca plm_rsh_args -i\\ /home/ubuntu/.ssh/ssh_key.pem\\ -o\\ BatchMode=yes\\ -o\\ IdentitiesOnly=yes\\ -o\\ IdentityAgent=none\\ -o\\ StrictHostKeyChecking=accept-new\\ -o\\ ServerAliveInterval=5\\ -o\\ ServerAliveCountMax=3\\ -o\\ ConnectTimeout=8\\ -o\\ ConnectionAttempts=3 --mca oob_tcp_if_include enP22p3s0f3 --mca btl_tcp_if_include enP22p3s0f3 -np 8 -x NCCL_DEBUG=WARN -x PATH=/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0/codex-arg0HwihEW:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/home/ubuntu/.cursor-server/bin/linux-arm64/f3f5cec40024283013878b50c4f9be4002e0b580/bin/remote-cli:/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/mellanox/doca/tools/:/opt/mellanox/doca/tools/:/home/ubuntu/.cursor-server/extensions/openai.chatgpt-0.4.71-universal/bin/linux-aarch64:/opt/mellanox/doca/tools/ -x LD_LIBRARY_PATH= -x REQUIRE_CLOCK_LOCK=1 -x NCCL_ALGO=TREE -x NCCL_SOCKET_IFNAME=enP22p3s0f3 -x NCCL_IB_HCA=mlx5_0\\,mlx5_1\\,mlx5_4\\,mlx5_5 /home/ubuntu/ai-performance-engineering/code/cluster/env/venv/bin/python /home/ubuntu/ai-performance-engineering/code/cluster/scripts/nccl_lock_wrapper.py -- /home/ubuntu/ai-performance-engineering/code/cluster/tools/nccl-tests/build/all_reduce_perf -b 1K -e 16G -f 2 -g 1 -w 5 -n 20 ",
+  "gpus_per_node": 4,
+  "hosts": [
+    "node1",
+    "node2"
+  ],
+  "log_summary": {
+    "collnet": {
+      "lines": [],
+      "seen": false
+    },
+    "errors": {
+      "lines": [],
+      "nvls_init_failure": false
+    },
+    "mnnvl": {
+      "mnnvl": null,
+      "nNodes": null
+    },
+    "nvls": {
+      "channels": null,
+      "comm_lines": 0
+    },
+    "sharp": {
+      "lines": [],
+      "seen": false
+    }
+  },
+  "raw_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-09_fresh_full_suite_e2e_green_rootfix_nccl_algo_tree.log",
+  "results": [
+    {
+      "algbw_gbps": 0.04,
+      "busbw_gbps": 0.06,
+      "count": 256,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1024,
+      "time_us": 28.83
+    },
+    {
+      "algbw_gbps": 0.07,
+      "busbw_gbps": 0.12,
+      "count": 512,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2048,
+      "time_us": 28.99
+    },
+    {
+      "algbw_gbps": 0.14,
+      "busbw_gbps": 0.24,
+      "count": 1024,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4096,
+      "time_us": 29.75
+    },
+    {
+      "algbw_gbps": 0.27,
+      "busbw_gbps": 0.47,
+      "count": 2048,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8192,
+      "time_us": 30.38
+    },
+    {
+      "algbw_gbps": 0.55,
+      "busbw_gbps": 0.96,
+      "count": 4096,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 16384,
+      "time_us": 29.85
+    },
+    {
+      "algbw_gbps": 1.1,
+      "busbw_gbps": 1.92,
+      "count": 8192,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 32768,
+      "time_us": 29.91
+    },
+    {
+      "algbw_gbps": 2.18,
+      "busbw_gbps": 3.82,
+      "count": 16384,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 65536,
+      "time_us": 30.04
+    },
+    {
+      "algbw_gbps": 4.16,
+      "busbw_gbps": 7.29,
+      "count": 32768,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 131072,
+      "time_us": 31.48
+    },
+    {
+      "algbw_gbps": 7.82,
+      "busbw_gbps": 13.68,
+      "count": 65536,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 262144,
+      "time_us": 33.52
+    },
+    {
+      "algbw_gbps": 14.32,
+      "busbw_gbps": 25.06,
+      "count": 131072,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 524288,
+      "time_us": 36.61
+    },
+    {
+      "algbw_gbps": 21.95,
+      "busbw_gbps": 38.42,
+      "count": 262144,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1048576,
+      "time_us": 47.76
+    },
+    {
+      "algbw_gbps": 38.04,
+      "busbw_gbps": 66.57,
+      "count": 524288,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2097152,
+      "time_us": 55.13
+    },
+    {
+      "algbw_gbps": 60.0,
+      "busbw_gbps": 105.0,
+      "count": 1048576,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4194304,
+      "time_us": 69.91
+    },
+    {
+      "algbw_gbps": 98.31,
+      "busbw_gbps": 172.04,
+      "count": 2097152,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8388608,
+      "time_us": 85.33
+    },
+    {
+      "algbw_gbps": 142.97,
+      "busbw_gbps": 250.2,
+      "count": 4194304,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 16777216,
+      "time_us": 117.35
+    },
+    {
+      "algbw_gbps": 174.27,
+      "busbw_gbps": 304.98,
+      "count": 8388608,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 33554432,
+      "time_us": 192.54
+    },
+    {
+      "algbw_gbps": 109.07,
+      "busbw_gbps": 190.87,
+      "count": 16777216,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 67108864,
+      "time_us": 615.3
+    },
+    {
+      "algbw_gbps": 162.05,
+      "busbw_gbps": 283.59,
+      "count": 33554432,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 134217728,
+      "time_us": 828.25
+    },
+    {
+      "algbw_gbps": 215.26,
+      "busbw_gbps": 376.71,
+      "count": 67108864,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 268435456,
+      "time_us": 1247.01
+    },
+    {
+      "algbw_gbps": 254.23,
+      "busbw_gbps": 444.9,
+      "count": 134217728,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 536870912,
+      "time_us": 2111.78
+    },
+    {
+      "algbw_gbps": 281.11,
+      "busbw_gbps": 491.94,
+      "count": 268435456,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 1073741824,
+      "time_us": 3819.66
+    },
+    {
+      "algbw_gbps": 295.83,
+      "busbw_gbps": 517.71,
+      "count": 536870912,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 2147483648,
+      "time_us": 7259.14
+    },
+    {
+      "algbw_gbps": 304.9,
+      "busbw_gbps": 533.58,
+      "count": 1073741824,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 4294967296,
+      "time_us": 14086.3
+    },
+    {
+      "algbw_gbps": 310.23,
+      "busbw_gbps": 542.9,
+      "count": 2147483648,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 8589934592,
+      "time_us": 27689.0
+    },
+    {
+      "algbw_gbps": 312.6,
+      "busbw_gbps": 547.05,
+      "count": 4294967296,
+      "dtype": "float",
+      "redop": "sum",
+      "root": -1,
+      "size_bytes": 17179869184,
+      "time_us": 54957.8
+    }
+  ],
+  "run_id": "2026-02-09_fresh_full_suite_e2e_green_rootfix",
+  "total_ranks": 8
+}

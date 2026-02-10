@@ -1,2 +1,0 @@
-model,tp,isl,osl,concurrency,num_prompts,request_throughput,output_throughput,total_token_throughput,mean_ttft_ms,median_ttft_ms,p99_ttft_ms,mean_tpot_ms,median_tpot_ms,p99_tpot_ms,gpu_util_mean_pct,gpu_util_p95_pct,mem_used_mean_mb,mem_used_max_mb,completed,failed,status,leader_label,worker_label,leader_app_sm_mhz,leader_app_mem_mhz,worker_app_sm_mhz,worker_app_mem_mhz,failure_reason
-openai/gpt-oss-120b,8,1024,1024,64,640,,,,,,,,,,,,,,,,failed,node1,node2,2062,3996,2062,3996,ERROR: vLLM server exited before becoming healthy.

@@ -1,0 +1,7 @@
+run_id,label,cpu_node,node,bytes,iters,threads,warmup,elapsed_s,bw_gbps,rc,error
+2026-02-09_fresh_full_suite_e2e_green_rootfix,node2,0,0,1073741824,10,16,2,0.079003,135.911458,0,
+2026-02-09_fresh_full_suite_e2e_green_rootfix,node2,0,1,1073741824,10,16,2,0.162669,66.007596,0,
+2026-02-09_fresh_full_suite_e2e_green_rootfix,node2,0,2,1073741824,10,16,2,0.301835,35.573761,0,
+2026-02-09_fresh_full_suite_e2e_green_rootfix,node2,0,10,1073741824,10,16,2,0.30175,35.583789,0,
+2026-02-09_fresh_full_suite_e2e_green_rootfix,node2,0,18,1073741824,10,16,2,0.32612,32.924793,0,
+2026-02-09_fresh_full_suite_e2e_green_rootfix,node2,0,26,1073741824,10,16,2,0.328328,32.703288,0,

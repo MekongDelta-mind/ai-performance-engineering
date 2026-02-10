@@ -25,6 +25,9 @@
 - For GPUDirect RDMA specifically: probe requested `--gdr-mem-types` up front and fail preflight if unsupported (for example `cuda_mem_type=1` with no ODP MR / dmabuf support). Do not downgrade requested coverage mid-run.
 - Validate required artifacts by semantic status (`status=ok`, lock metadata, non-empty metrics), not only by file existence.
 - Do not manually inject signals/interruptions into benchmark or serving processes during canonical runs; treat any such run as invalid and rerun fresh.
+- For multinode vLLM: treat worker `rc=137` after forced teardown as a bug in run lifecycle handling; stop workers cleanly and only report success when leader + worker states are both semantically clean.
+- For nvbandwidth host-runtime failures like `cudaErrorUnsupportedPtxVersion`: fix the host user-mode compatibility chain (for example explicit CUDA compat libs) instead of switching canonical collection to a different runtime mode.
+- When logs show `CUDA Memory type is not supported with no odp MR or with dmabuf`, treat it as an environment capability gap that must be preflight-detected and reported, not a warning to continue through.
 
 ### Canonical Run Hygiene (CRITICAL)
 - After producing a new canonical run, clean up superseded intermediate run artifacts so reports only point to the canonical package.

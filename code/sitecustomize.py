@@ -7,6 +7,7 @@ behavior when FastAPI is installed.
 from __future__ import annotations
 
 import asyncio
+import importlib.machinery
 import types
 import sys
 import urllib.parse
@@ -15,6 +16,11 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 
 def _install_fastapi_stub() -> None:
+    def _set_module_spec(name: str, module: types.ModuleType, *, is_package: bool) -> None:
+        module.__spec__ = importlib.machinery.ModuleSpec(name=name, loader=None, is_package=is_package)
+        if is_package:
+            module.__path__ = []  # type: ignore[attr-defined]
+
     class Request:
         def __init__(
             self,
@@ -140,17 +146,23 @@ def _install_fastapi_stub() -> None:
     fastapi_module.FastAPI = FastAPI
     fastapi_module.Request = Request
     fastapi_module.__dict__["__all__"] = ["FastAPI", "Request"]
+    _set_module_spec("fastapi", fastapi_module, is_package=True)
 
     middleware_module = types.ModuleType("fastapi.middleware")
+    _set_module_spec("fastapi.middleware", middleware_module, is_package=True)
+
     cors_module = types.ModuleType("fastapi.middleware.cors")
     cors_module.CORSMiddleware = CORSMiddleware
+    _set_module_spec("fastapi.middleware.cors", cors_module, is_package=False)
 
     responses_module = types.ModuleType("fastapi.responses")
     responses_module.JSONResponse = JSONResponse
     responses_module.StreamingResponse = StreamingResponse
+    _set_module_spec("fastapi.responses", responses_module, is_package=False)
 
     testclient_module = types.ModuleType("fastapi.testclient")
     testclient_module.TestClient = TestClient
+    _set_module_spec("fastapi.testclient", testclient_module, is_package=False)
 
     sys.modules.setdefault("fastapi", fastapi_module)
     sys.modules.setdefault("fastapi.middleware", middleware_module)

@@ -35,6 +35,10 @@ ENV_DEFAULTS: Dict[str, str] = {
     "NCCL_P2P_DISABLE": "0",
     "NCCL_SHM_DISABLE": "0",
     "CUDA_DEVICE_MAX_CONNECTIONS": "32",
+    # Hugging Face network calls can be slow/transient on some clusters.
+    # Raise defaults to reduce flaky dataset/model fetch failures.
+    "HF_HUB_DOWNLOAD_TIMEOUT": "120",
+    "HF_HUB_ETAG_TIMEOUT": "60",
     "TORCH_COMPILE_DEBUG": "0",
     # "TORCH_LOGS": "",  # Disabled - remove verbose dynamo logging to reduce noise
     "CUDA_HOME": "/usr/local/cuda",
@@ -95,6 +99,8 @@ REPORTED_ENV_KEYS: Tuple[str, ...] = (
     "NCCL_P2P_DISABLE",
     "NCCL_SHM_DISABLE",
     "CUDA_DEVICE_MAX_CONNECTIONS",
+    "HF_HUB_DOWNLOAD_TIMEOUT",
+    "HF_HUB_ETAG_TIMEOUT",
     "PYTORCH_ALLOC_CONF",
     "TORCH_COMPILE_DEBUG",
     "TORCH_LOGS",

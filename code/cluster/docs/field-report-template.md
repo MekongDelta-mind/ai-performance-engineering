@@ -15,13 +15,18 @@ Last updated: YYYY-MM-DD
 10. [Supporting: Compute Sanity (BF16 GEMM)](#supporting-compute-sanity-bf16-gemm)
 11. [Supporting: Storage (fio)](#supporting-storage-fio)
 12. [Supporting: Health / GDR / NUMA / Train Step / Checkpoint](#supporting-health--gdr--numa--train-step--checkpoint)
-13. [Implications For Small AI Teams](#implications-for-small-ai-teams)
-14. [FP4 Extension Outcomes](#fp4-extension-outcomes)
-15. [Reproducibility Package](#reproducibility-package)
-16. [Repository Handoff (GitHub)](#repository-handoff-github)
-17. [Repro Steps](#repro-steps)
-18. [Appendix](#appendix)
-19. [Activity Log](#activity-log)
+13. [Required Issues (Explicit)](#required-issues-explicit)
+14. [Root Cause + Fix Mapping](#root-cause--fix-mapping)
+15. [Report Completeness Delta](#report-completeness-delta)
+16. [Gaps, Risks, and Smell Checks](#gaps-risks-and-smell-checks)
+17. [Canonical Cleanup + Artifact Hygiene](#canonical-cleanup--artifact-hygiene)
+18. [Implications For Small AI Teams](#implications-for-small-ai-teams)
+19. [FP4 Extension Outcomes](#fp4-extension-outcomes)
+20. [Reproducibility Package](#reproducibility-package)
+21. [Repository Handoff (GitHub)](#repository-handoff-github)
+22. [Repro Steps](#repro-steps)
+23. [Appendix](#appendix)
+24. [Activity Log](#activity-log)
 
 | Rule | Requirement |
 | --- | --- |
@@ -32,6 +37,17 @@ Last updated: YYYY-MM-DD
 | Evidence formatting | Put `Evidence data:` immediately below visuals, one link per line (`<br/>`), no comma-chained lists. |
 | Table preference | Use tables for dense sections (scope, findings, handoff, reproducibility, activity log). |
 | Chart quality gate | Any curve chart should have at least 3 unique x-values; if fewer, label as `canary/sparse` and state why. |
+
+## Section Retention Gate (CRITICAL)
+| Gate | Requirement |
+| --- | --- |
+| Mandatory sections | Do not remove or collapse required sections. Keep all ToC entries listed in this template. |
+| Required issue ledger | Include the `Required Issues (Explicit)` section with the 5 required issue lines verbatim, each with current status + evidence links. |
+| Report parity | Include `Report Completeness Delta` section comparing prior report revision vs current report so section/visual loss is visible. |
+| Risk transparency | Include `Gaps, Risks, and Smell Checks` even when suite is green. |
+| Cleanup disclosure | Include `Canonical Cleanup + Artifact Hygiene` showing what superseded artifacts were removed and what canonical set was preserved. |
+| Synchronization | `field-report.md` and `field-report-notes.md` must use the same canonical RUN_ID and issue status framing. |
+| Pre-ship section check | Run: `rg -n '^## ' cluster/field-report.md` and verify every mandatory header is present before sign-off. |
 
 ## TL;DR
 | Item | Value |
@@ -216,6 +232,43 @@ Evidence data:
 | C2C/NUMA probes | `scripts/run_c2c_memcpy_bench.sh ...`<br/>`scripts/run_numa_mem_bw_all_nodes.sh ...` | `results/structured/<RUN_ID>_<label>_c2c_memcpy.json`<br/>`results/structured/<RUN_ID>_<label>_numa_mem_bw.json` |
 | Train step | `scripts/run_torchrun_transformer_train_step.sh ...` | `results/structured/<RUN_ID>_<label>_torchrun_train_step.json` |
 | Checkpoint I/O | `scripts/run_checkpoint_io_all_nodes.sh ...` | `results/structured/<RUN_ID>_<label>_checkpoint_io.json` |
+
+## Required Issues (Explicit)
+| Required issue (verbatim) | Current status | Evidence |
+| --- | --- | --- |
+| Missing node2 fio artifact in canonical package (node2_fio.json absent). | <resolved/open + short note> | <artifact links> |
+| No multinode vLLM artifact in canonical package. | <resolved/open + short note> | <artifact links> |
+| No nvbandwidth bundle in canonical package. | <resolved/open + short note> | <artifact links> |
+| Health suite had GDR requested, but effective GDR was false due non-CUDA IB local checks. | <resolved/open + short note> | <artifact links> |
+| Tail latency knee is severe at high concurrency (throughput up, TTFT/p99 TTFT much worse). | <resolved/open + short note> | <artifact links> |
+
+## Root Cause + Fix Mapping
+| Issue | Root cause | Fix shipped | Current canonical result |
+| --- | --- | --- | --- |
+| <issue> | <root cause> | <what changed> | <status/metric> |
+
+## Report Completeness Delta
+| Area | Prior revision | Current revision |
+| --- | --- | --- |
+| Canonical run alignment | <prior> | <current> |
+| Benchmark coverage depth | <prior> | <current> |
+| Visual coverage | <prior figure count> | <current figure count> |
+| Required issue handling | <prior> | <current> |
+| Suite status clarity | <prior> | <current> |
+
+## Gaps, Risks, and Smell Checks
+| Severity | Finding | Why it matters | Evidence |
+| --- | --- | --- | --- |
+| High | <finding> | <impact> | <links> |
+| Medium | <finding> | <impact> | <links> |
+| Low | <finding> | <impact> | <links> |
+
+## Canonical Cleanup + Artifact Hygiene
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Canonical RUN_ID preserved | <yes/no> | <manifest link> |
+| Superseded intermediate runs removed | <yes/no + counts> | <cleanup evidence> |
+| Report links point only to canonical artifacts | <yes/no> | <link-check command output summary> |
 
 ## Implications For Small AI Teams
 | Focus area | Practical implication |

@@ -1,13 +1,9 @@
 {
   "categories": {
     "control_plane": {
-      "checks": [
-        "kubectl_pods",
-        "kubectl_top_nodes",
-        "kubectl_top_pods"
-      ],
+      "checks": [],
       "ok_checks": [],
-      "status": "error"
+      "status": "not_applicable"
     },
     "gpu_telemetry": {
       "checks": [
@@ -36,53 +32,20 @@
   },
   "checks": [
     {
-      "command": "/usr/local/bin/kubectl get pods -A -o wide",
-      "details": {},
-      "duration_sec": 0.028074,
-      "exit_code": 1,
-      "name": "kubectl_pods",
-      "status": "error",
-      "stderr_excerpt": "E0210 22:33:40.684848 1947335 memcache.go:265] \"Unhandled Error\" err=\"couldn't get current server API group list: Get \\\"http://localhost:8080/api?timeout=32s\\\": dial tcp 127.0.0.1:8080: connect: connection refused\"\nE0210 22:33:40.685025 1947335 memcache.go:265] \"Unhandled Error\" err=\"couldn't get current server API group list: Get \\\"http://localhost:8080/api?timeout=32s\\\": dial tcp 127.0.0.1:8080: connect: connection refused\"\nE0210 22:33:40.686332 1947335 memcache.go:265] \"Unhandled Error\" err=\"couldn't get current server API group list: Get \\\"http://localhost:8080/api?timeout=32s\\\": dial tcp 127.0.0.1:8080: connect: connection refused\"\nE0210 22:33:40.686483 1947335 memcache.go:265] \"Unhandled Error\" err=\"couldn't get current server API group list: Get \\\"http://localhost:8080/api?timeout=32s\\\": dial tcp 127.0.0.1:8080: connect: connection refused\"\nE0210 22:33:40.687759 1947335 memcache.go:265] \"Unhandled Error\" err=\"couldn't get current server API group list: Get \\\"http://localhost:8080/api?timeout=32s\\\": dial tcp 127.0.0.1:8080: connect: connection refused\"\nThe connection to the server localhost:8080 was refused - did you specify the right host or port?\n",
-      "stdout_excerpt": "",
-      "timed_out": false
-    },
-    {
-      "command": "/usr/local/bin/kubectl top nodes",
-      "details": {},
-      "duration_sec": 0.023956,
-      "exit_code": 1,
-      "name": "kubectl_top_nodes",
-      "status": "error",
-      "stderr_excerpt": "The connection to the server localhost:8080 was refused - did you specify the right host or port?\n",
-      "stdout_excerpt": "",
-      "timed_out": false
-    },
-    {
-      "command": "/usr/local/bin/kubectl top pods -A",
-      "details": {},
-      "duration_sec": 0.023836,
-      "exit_code": 1,
-      "name": "kubectl_top_pods",
-      "status": "error",
-      "stderr_excerpt": "The connection to the server localhost:8080 was refused - did you specify the right host or port?\n",
-      "stdout_excerpt": "",
-      "timed_out": false
-    },
-    {
       "command": "/usr/bin/nvidia-smi dmon -s pucm -d 1 -c 20",
       "details": {},
-      "duration_sec": 19.218228,
+      "duration_sec": 19.21409,
       "exit_code": 0,
       "name": "nvidia_dmon",
       "status": "ok",
       "stderr_excerpt": "",
-      "stdout_excerpt": "# gpu    pwr  gtemp  mtemp     sm    mem    enc    dec    jpg    ofa   mclk   pclk     fb   bar1   ccpm \n# Idx      W      C      C      %      %      %      %      %      %    MHz    MHz     MB     MB     MB \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n# gpu    pwr  gtemp  mtemp     sm    mem    enc    dec    jpg    ofa   mclk   pclk     fb   bar1   ccpm \n# Idx      W      C      C      %      %      %      %      %      %    MHz    MHz     MB     MB     MB \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      5      0      0 \n",
+      "stdout_excerpt": "# gpu    pwr  gtemp  mtemp     sm    mem    enc    dec    jpg    ofa   mclk   pclk     fb   bar1   ccpm \n# Idx      W      C      C      %      %      %      %      %      %    MHz    MHz     MB     MB     MB \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     45      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     45      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     45      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     45      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     45      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n# gpu    pwr  gtemp  mtemp     sm    mem    enc    dec    jpg    ofa   mclk   pclk     fb   bar1   ccpm \n# Idx      W      C      C      %      %      %      %      %      %    MHz    MHz     MB     MB     MB \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    161     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     45      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    165     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n    0    169     45     44      0      0      0      0      0      0   3996    120      0      0      0 \n    1    164     45     45      0      0      0      0      0      0   3996    120      0      0      0 \n    2    160     46     44      0      0      0      0      0      0   3996    120      1      0      0 \n    3    168     45     46      0      0      0      0      0      0   3996    120      3      0      0 \n",
       "timed_out": false
     },
     {
       "command": "/usr/bin/nvidia-smi nvlink -s",
       "details": {},
-      "duration_sec": 0.114433,
+      "duration_sec": 0.114283,
       "exit_code": 0,
       "name": "nvidia_nvlink",
       "status": "ok",
@@ -93,7 +56,7 @@
     {
       "command": "/usr/bin/dcgmi discovery -l",
       "details": {},
-      "duration_sec": 0.012907,
+      "duration_sec": 0.012495,
       "exit_code": 0,
       "name": "dcgmi_discovery",
       "status": "ok",
@@ -104,7 +67,7 @@
     {
       "command": "/usr/bin/dcgmi dmon -e 1002,1003,1004 -c 20",
       "details": {},
-      "duration_sec": 19.011834,
+      "duration_sec": 19.011755,
       "exit_code": 0,
       "name": "dcgmi_dmon",
       "status": "ok",
@@ -117,7 +80,7 @@
       "details": {
         "path": "sudo"
       },
-      "duration_sec": 0.020835,
+      "duration_sec": 0.020501,
       "exit_code": 0,
       "name": "dmesg_tail",
       "status": "ok",
@@ -128,18 +91,33 @@
   ],
   "config": {
     "dmesg_lines": 400,
+    "k8s_mode": "auto",
     "sample_count": 20,
     "timeout_sec": 180
   },
-  "failed_checks": [
-    "kubectl_pods",
-    "kubectl_top_nodes",
-    "kubectl_top_pods"
+  "effective_checks": [
+    "nvidia_dmon",
+    "nvidia_nvlink",
+    "dcgmi_discovery",
+    "dcgmi_dmon",
+    "dmesg_tail"
   ],
+  "failed_checks": [],
   "host": "node2",
-  "missing_categories": [
-    "control_plane"
-  ],
+  "k8s": {
+    "control_plane_enabled": false,
+    "detected": false,
+    "kubeconfig_candidates": [
+      "/home/ubuntu/.kube/config",
+      "/etc/kubernetes/admin.conf",
+      "/etc/rancher/k3s/k3s.yaml",
+      "/var/snap/microk8s/current/credentials/client.config"
+    ],
+    "kubeconfig_present": false,
+    "mode": "auto",
+    "reasons": []
+  },
+  "missing_categories": [],
   "run_id": "2026-02-10_ops_tooling_postfix",
   "selected_checks": [
     "kubectl_pods",
@@ -151,9 +129,14 @@
     "dcgmi_dmon",
     "dmesg_tail"
   ],
-  "status": "degraded",
+  "skipped_checks": [
+    "kubectl_pods",
+    "kubectl_top_nodes",
+    "kubectl_top_pods"
+  ],
+  "status": "ok",
   "test": "monitoring_expectations",
-  "timestamp_utc": "2026-02-10T22:34:19Z",
+  "timestamp_utc": "2026-02-11T00:12:05Z",
   "tool_paths": {
     "dcgmi": "/usr/bin/dcgmi",
     "kubectl": "/usr/local/bin/kubectl",

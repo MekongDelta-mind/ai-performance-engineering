@@ -76,6 +76,7 @@ Options:
   --skip-monitoring-expectations     Skip monitoring expectations snapshot
   --monitoring-expectations-strict   Fail suite if any monitoring snapshot host result is non-ok
   --monitoring-checks <csv>          Monitoring checks (default: kubectl_pods,kubectl_top_nodes,kubectl_top_pods,nvidia_dmon,nvidia_nvlink,dcgmi_discovery,dcgmi_dmon,dmesg_tail)
+  --monitoring-k8s-mode <mode>       Control-plane expectations mode: auto|expect|skip (default: auto)
   --monitoring-sample-count <n>      Sample count for dmon checks (default: 20)
   --monitoring-dmesg-lines <n>       dmesg tail lines to capture (default: 400)
   --monitoring-timeout-sec <n>       Per-check timeout for monitoring checks (default: 180)
@@ -261,6 +262,7 @@ QUICK_FRICTION_HF_LOCAL_DIR_BASE="/tmp"
 RUN_MONITORING_EXPECTATIONS=1
 MONITORING_EXPECTATIONS_STRICT=0
 MONITORING_CHECKS="kubectl_pods,kubectl_top_nodes,kubectl_top_pods,nvidia_dmon,nvidia_nvlink,dcgmi_discovery,dcgmi_dmon,dmesg_tail"
+MONITORING_K8S_MODE="auto"
 MONITORING_SAMPLE_COUNT="20"
 MONITORING_DMESG_LINES="400"
 MONITORING_TIMEOUT_SEC="180"
@@ -418,6 +420,7 @@ while [[ $# -gt 0 ]]; do
     --skip-monitoring-expectations) RUN_MONITORING_EXPECTATIONS=0; shift ;;
     --monitoring-expectations-strict) MONITORING_EXPECTATIONS_STRICT=1; shift ;;
     --monitoring-checks) MONITORING_CHECKS="$2"; shift 2 ;;
+    --monitoring-k8s-mode) MONITORING_K8S_MODE="$2"; shift 2 ;;
     --monitoring-sample-count) MONITORING_SAMPLE_COUNT="$2"; shift 2 ;;
     --monitoring-dmesg-lines) MONITORING_DMESG_LINES="$2"; shift 2 ;;
     --monitoring-timeout-sec) MONITORING_TIMEOUT_SEC="$2"; shift 2 ;;
@@ -669,6 +672,10 @@ if ! [[ "$MONITORING_SAMPLE_COUNT" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "$MONITORING_DMESG_LINES" =~ ^[1-9][0-9]*$ ]]; then
   echo "ERROR: --monitoring-dmesg-lines must be a positive integer (got: ${MONITORING_DMESG_LINES})" >&2
+  exit 2
+fi
+if ! [[ "$MONITORING_K8S_MODE" =~ ^(auto|expect|skip)$ ]]; then
+  echo "ERROR: --monitoring-k8s-mode must be one of: auto, expect, skip (got: ${MONITORING_K8S_MODE})" >&2
   exit 2
 fi
 if ! [[ "$MONITORING_TIMEOUT_SEC" =~ ^[1-9][0-9]*$ ]]; then
@@ -1167,7 +1174,7 @@ echo "PRIMARY_LABEL: ${PRIMARY_LABEL}"
 echo "connectivity_probe: master_port=${CONNECTIVITY_PROBE_MASTER_PORT} barrier_iters=${CONNECTIVITY_PROBE_BARRIER_ITERS} payload_bytes=${CONNECTIVITY_PROBE_PAYLOAD_BYTES} timeout_sec=${CONNECTIVITY_PROBE_TIMEOUT_SEC}"
 echo "nccl_env_sensitivity: min=${NCCL_ENV_MIN_BYTES} max=${NCCL_ENV_MAX_BYTES} warmup=${NCCL_ENV_WARMUP} iters=${NCCL_ENV_ITERS}"
 echo "quick_friction: enabled=${RUN_QUICK_FRICTION} strict=${QUICK_FRICTION_STRICT} checks='${QUICK_FRICTION_CHECKS}' timeout_sec=${QUICK_FRICTION_TIMEOUT_SEC} torch=${QUICK_FRICTION_TORCH_VERSION} hf_model=${QUICK_FRICTION_HF_MODEL}"
-echo "monitoring_expectations: enabled=${RUN_MONITORING_EXPECTATIONS} strict=${MONITORING_EXPECTATIONS_STRICT} checks='${MONITORING_CHECKS}' sample_count=${MONITORING_SAMPLE_COUNT} dmesg_lines=${MONITORING_DMESG_LINES} timeout_sec=${MONITORING_TIMEOUT_SEC}"
+echo "monitoring_expectations: enabled=${RUN_MONITORING_EXPECTATIONS} strict=${MONITORING_EXPECTATIONS_STRICT} k8s_mode=${MONITORING_K8S_MODE} checks='${MONITORING_CHECKS}' sample_count=${MONITORING_SAMPLE_COUNT} dmesg_lines=${MONITORING_DMESG_LINES} timeout_sec=${MONITORING_TIMEOUT_SEC}"
 if [[ "${#HOST_ARR[@]}" -gt 1 ]]; then
   echo "OOB_IF: ${OOB_IF:-<unset>}"
   echo "NCCL_SOCKET_IFNAME: ${SOCKET_IFNAME:-<unset>}"
@@ -1283,16 +1290,17 @@ if [[ "$RUN_QUICK_FRICTION" -eq 1 ]]; then
   run_step "quick_friction_all_nodes" "${ROOT_DIR}/scripts/run_quick_friction_all_nodes.sh" "${quick_friction_args[@]}"
 fi
 
-if [[ "$RUN_MONITORING_EXPECTATIONS" -eq 1 ]]; then
-  monitoring_args=(
-    --run-id "$RUN_ID"
-    --hosts "$HOSTS"
-    --ssh-user "$SSH_USER"
-    --checks "$MONITORING_CHECKS"
-    --sample-count "$MONITORING_SAMPLE_COUNT"
-    --dmesg-lines "$MONITORING_DMESG_LINES"
-    --timeout-sec "$MONITORING_TIMEOUT_SEC"
-  )
+	if [[ "$RUN_MONITORING_EXPECTATIONS" -eq 1 ]]; then
+	  monitoring_args=(
+	    --run-id "$RUN_ID"
+	    --hosts "$HOSTS"
+	    --ssh-user "$SSH_USER"
+	    --checks "$MONITORING_CHECKS"
+	    --k8s-mode "$MONITORING_K8S_MODE"
+	    --sample-count "$MONITORING_SAMPLE_COUNT"
+	    --dmesg-lines "$MONITORING_DMESG_LINES"
+	    --timeout-sec "$MONITORING_TIMEOUT_SEC"
+	  )
   if [[ -n "$LABELS" ]]; then
     monitoring_args+=(--labels "$LABELS")
   fi
@@ -2059,6 +2067,20 @@ run_step "plot_cluster_story_dashboard" python3 "${ROOT_DIR}/analysis/plot_clust
   --node-labels "${dashboard_node_labels_csv}" \
   --fig-out "${ROOT_DIR}/docs/figures/${RUN_ID}_cluster_story_dashboard.png" \
   --summary-out "${ROOT_DIR}/results/structured/${RUN_ID}_node_parity_summary.json"
+
+if [[ "$RUN_QUICK_FRICTION" -eq 1 || "$RUN_MONITORING_EXPECTATIONS" -eq 1 ]]; then
+  operator_labels=()
+  for idx in "${!HOST_ARR[@]}"; do
+    operator_labels+=("$(label_for_index "$idx")")
+  done
+  operator_node_labels_csv="$(IFS=','; echo "${operator_labels[*]}")"
+  run_step "plot_operator_checks_dashboard" python3 "${ROOT_DIR}/analysis/plot_operator_checks_dashboard.py" \
+    --run-id "${RUN_ID}" \
+    --structured-dir "${ROOT_DIR}/results/structured" \
+    --node-labels "${operator_node_labels_csv}" \
+    --fig-out "${ROOT_DIR}/docs/figures/${RUN_ID}_operator_checks_dashboard.png" \
+    --summary-out "${ROOT_DIR}/results/structured/${RUN_ID}_operator_checks_dashboard.json"
+fi
 
 run_step "validate_required_artifacts" validate_required_artifacts
 

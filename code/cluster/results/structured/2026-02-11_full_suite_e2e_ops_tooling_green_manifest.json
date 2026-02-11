@@ -1,0 +1,77 @@
+{
+  "files": [
+    "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_bootstrap_nodes/node1.log",
+    "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_bootstrap_nodes/node2.log",
+    "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/bootstrap_nodes.log",
+    "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/discovery.log",
+    "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/preflight_services.log",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_dcgmi_discovery_node1.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_dcgmi_discovery_node2.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_imex_ctl_N.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_bootstrap_status.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_container_runtime.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_meta.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_software_versions.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_storage.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_tcp_sysctl.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_tcp_sysctl.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_bootstrap_status.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_container_runtime.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_meta.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_software_versions.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_storage.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_tcp_sysctl.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_tcp_sysctl.txt",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_preflight_services.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_suite_steps.json",
+    "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_tcp_sysctl_diff.json"
+  ],
+  "manifest_version": 1,
+  "nodes": [
+    {
+      "host": "node1",
+      "label": "node1"
+    },
+    {
+      "host": "node2",
+      "label": "node2"
+    }
+  ],
+  "run_id": "2026-02-11_full_suite_e2e_ops_tooling_green",
+  "summary": {
+    "artifact_counts": {
+      "json": 13,
+      "log": 5,
+      "txt": 7
+    },
+    "file_count": 25,
+    "sha256": {
+      "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_bootstrap_nodes/node1.log": "b402e3da5c178c041cf0c05c22d4a8830d3b974932d95369a18a2e9128f10cd3",
+      "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_bootstrap_nodes/node2.log": "6a52ceaf7c71108c6ccf7b9fe1794b012ef28827f85a2a1648a18c43dedbf5be",
+      "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/bootstrap_nodes.log": "5fb19213bb19b5f9202d82c106ba2f8d3524bd223ce03557eb564bb4d88771a6",
+      "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/discovery.log": "24f0b5e209dbc99a201dd1ccbe800cec84eeb5beff1a5e514f1934dd61062e65",
+      "results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/preflight_services.log": "52a540c2b9170b634f5cefc0e4caa6329a4b21e27314dafaed1e0332ebcd86b7",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_dcgmi_discovery_node1.txt": "4d774405bd64269c58e12915bfa0694f6811695f41493f8c67e09db6e569773e",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_dcgmi_discovery_node2.txt": "c24d3f7fdbfb3b01101e93d584fa8301e24937840f02a45e99ec6de729fc937e",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_imex_ctl_N.txt": "ac60f507f352a32fb4d06cc3229aa2821c0bdacbcc09c613bd9bd95c39b3f075",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_bootstrap_status.json": "5997698f424b89a3258541f9c56f34f33b235816b3d9489171597165fcc418b6",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_container_runtime.txt": "70c969727e2467f6d30c44592a06fb328617114b78a2232264938ebafc9b529c",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_meta.json": "ca6a997655fdd84e857666b435a8214f6687c13290b670ac26b08c2b19160b0a",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_software_versions.json": "59512a5dde281bdc047432c989f74885b7780428cfeaf9d5f6cdd571f8ccce4f",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_storage.json": "8fb741ef71651fb581fe61b669a07fe87026c34517c7d1b23812e86bf72a6d00",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_tcp_sysctl.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node1_tcp_sysctl.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_bootstrap_status.json": "bd3d007e4eb2a15e45ede213ee4179e8ce30a0e1ba35ccc3fbc311e4ff7780e5",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_container_runtime.txt": "70c969727e2467f6d30c44592a06fb328617114b78a2232264938ebafc9b529c",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_meta.json": "eb22548895a487ed65ae82fe8adda7e947db5cf48b3803ea0bb34541cc01d8b6",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_software_versions.json": "693d245922caced15948f20f99dd0cc680c59e1fbd8891f0ed5d8cb5672e9b7a",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_storage.json": "20ef1b4848ecdd771515cbadd3ee539851ace2cb7393cd4d26a66eb0dc0c94b1",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_tcp_sysctl.json": "ba7e6567ec3bc008602bdb39d726b75b686194fe44443de766a4ba7915b87dde",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_node2_tcp_sysctl.txt": "28fa230bfbfe54ff1fc373ef891e72a3c946204d1ebbfb7d499588794a05f552",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_preflight_services.json": "c06c59f88530ded0560e89ac5df5c18f85800e3200bc7ab0dc5e83d14e840fdf",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_suite_steps.json": "1cb65609a9ca2c700c177dce5326660d6d74cf69796bc88ab23fc3d3ec636de4",
+      "results/structured/2026-02-11_full_suite_e2e_ops_tooling_green_tcp_sysctl_diff.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  },
+  "timestamp_utc": "2026-02-11T00:28:23.389787+00:00"
+}

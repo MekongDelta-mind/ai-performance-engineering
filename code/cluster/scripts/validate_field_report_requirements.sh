@@ -239,6 +239,7 @@ done
 
 visual_sections=(
   "## Required Reliability Gates (Canonical Run)"
+  "## Operator Friction + Monitoring Expectations (New Checks)"
   "## Benchmark A (Networking Story)"
   "## Benchmark B (Inference Story)"
   "## Weird / New / Interesting (with Normal Baseline)"
@@ -275,13 +276,17 @@ require_contains "$REPORT" "## Repro Steps" "repro steps section present"
 require_contains "$REPORT" "## Reproducibility Package" "reproducibility package section present"
 require_contains "$REPORT" "_quick_friction.json" "quick friction artifact links present in report"
 require_contains "$REPORT" "_monitoring_expectations.json" "monitoring expectations artifact links present in report"
+require_contains "$REPORT" "_operator_checks_dashboard.png" "operator checks dashboard visual referenced in report"
+require_contains "$REPORT" "_operator_checks_dashboard.json" "operator checks dashboard summary referenced in report"
 require_contains "$NOTES" "_quick_friction.json" "quick friction artifact links present in notes"
 require_contains "$NOTES" "_monitoring_expectations.json" "monitoring expectations artifact links present in notes"
 require_contains "$TEMPLATE" "## Operator Friction + Monitoring Expectations (Required)" "template includes required operator section"
 require_contains "$TEMPLATE" "Quick friction check (required)" "template marks quick friction as required"
 require_contains "$TEMPLATE" "Monitoring expectations alignment (required)" "template marks monitoring expectations as required"
+require_contains "$TEMPLATE" "operator_checks_dashboard" "template references operator dashboard artifact"
 require_contains "$RUNBOOK" "### 4f) Quick Friction Checks (Required For Canonical Runs)" "runbook marks quick friction as required for canonical runs"
 require_contains "$RUNBOOK" "### 4g) Monitoring Expectations Snapshot (Required For Canonical Runs)" "runbook marks monitoring expectations as required for canonical runs"
+require_contains "$RUNBOOK" "operator_checks_dashboard" "runbook references operator dashboard artifact"
 
 forbid_contains "$REPORT" "## Normal vs Weird Log" "legacy split header absent: ## Normal vs Weird Log"
 forbid_contains "$REPORT" "## Weird / New / Interesting Findings" "legacy split header absent: ## Weird / New / Interesting Findings"
@@ -290,6 +295,58 @@ if ! rg -n 'results/structured/.*\.(json|csv|jsonl|txt)' "$REPORT" >/dev/null 2>
   fail "no structured artifact links found in report"
 else
   pass "structured artifact links present"
+fi
+
+# Validate local markdown links (report+notes+template+runbook) point to existing artifacts.
+link_check_out="$(python3 - "$REPORT" "$NOTES" "$TEMPLATE" "$RUNBOOK" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+files = [Path(p) for p in sys.argv[1:]]
+
+def is_placeholder(target: str) -> bool:
+    return any(x in target for x in ("<RUN_ID>", "<run_id>", "<hosts>", "<label>", "${", "{RUN_ID}", "<"))
+
+def iter_links(text: str):
+    # Markdown: [text](target)
+    for m in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", text):
+        yield m.group(1).strip()
+    # HTML: href="..." and src="..."
+    for m in re.finditer(r'(?:href|src)=\"([^\"]+)\"', text):
+        yield m.group(1).strip()
+
+missing = []
+for path in files:
+    base = path.parent
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for raw in iter_links(text):
+        if not raw or raw.startswith("#") or "://" in raw or raw.startswith("mailto:"):
+            continue
+        # Strip anchors and any optional markdown title.
+        target = raw.split()[0].split("#", 1)[0]
+        if not target or is_placeholder(target):
+            continue
+        tpath = Path(target)
+        resolved = tpath if tpath.is_absolute() else (base / tpath)
+        if not resolved.exists():
+            missing.append((str(path), target, str(resolved)))
+
+if missing:
+    for doc, target, resolved in missing:
+        print(f"MISSING_LINK {doc} target={target} resolved={resolved}")
+    sys.exit(2)
+
+print("LINKS ok")
+PY
+)" || link_rc=$?
+link_rc="${link_rc:-0}"
+if [[ "$link_rc" -eq 0 ]]; then
+  pass "local link check passed (${link_check_out})"
+else
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && fail "local link missing: ${line}"
+  done <<< "$link_check_out"
 fi
 
 # Canonical run id sync between report and notes.

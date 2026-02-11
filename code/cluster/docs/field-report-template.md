@@ -49,7 +49,7 @@ Last updated: YYYY-MM-DD
 | Table preference | Use tables for all high-value sections; narrative is additive and should not replace tables. |
 | Chart quality gate | Any curve chart should have at least 3 unique x-values; if fewer, label as `canary/sparse` and state why. |
 | Required-gate smoke evidence | Include one post-change smoke run proving semantic `ok` for `hang_triage_bundle`, `torchrun_connectivity_probe`, and `nccl_env_sensitivity` (with artifacts + env-sensitivity visual). |
-| Required operator checks evidence | Include `quick_friction` and `monitoring_expectations` artifacts for every in-scope host and summarize degraded/missing-tool diagnostics explicitly. |
+| Required operator checks evidence | Include `quick_friction` and `monitoring_expectations` artifacts for every in-scope host and summarize degraded/missing-tool diagnostics explicitly. Note: `monitoring_expectations` `control_plane` may be `not_applicable` when Kubernetes is not detected/configured; use `--k8s-mode expect` to require K8s control-plane evidence. |
 
 ## Section Retention Gate (CRITICAL)
 | Gate | Requirement |

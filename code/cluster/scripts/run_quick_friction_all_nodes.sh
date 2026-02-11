@@ -171,9 +171,13 @@ uv_bin = shutil.which("uv")
 docker_bin = shutil.which("docker")
 repo_root = Path(os.getcwd())
 venv_hf = repo_root / "env" / "venv" / "bin" / "huggingface-cli"
-hf_bin = shutil.which("huggingface-cli")
-if not hf_bin and venv_hf.exists():
-    hf_bin = str(venv_hf)
+venv_hf_new = repo_root / "env" / "venv" / "bin" / "hf"
+hf_bin = shutil.which("hf")
+hfcli_bin = shutil.which("huggingface-cli")
+if not hf_bin and venv_hf_new.exists():
+    hf_bin = str(venv_hf_new)
+if not hfcli_bin and venv_hf.exists():
+    hfcli_bin = str(venv_hf)
 curl_bin = shutil.which("curl")
 whois_bin = shutil.which("whois")
 speedtest_bin = shutil.which("speedtest-cli") or shutil.which("speedtest")
@@ -352,17 +356,19 @@ if "torch_import" in checks_selected:
     check_map["torch_import"] = rec
 
 if "hf_download" in checks_selected:
-    if not hf_bin:
-        rec = _missing_tool("hf_download", "huggingface-cli", "huggingface-cli is not available")
+    if not hf_bin and not hfcli_bin:
+        rec = _missing_tool("hf_download", "hf/huggingface-cli", "hf (preferred) or huggingface-cli is not available")
     else:
         hf_dir = Path(hf_local_dir_base) / f"{run_id}_{hostname}_hf_download"
+        hf_download_bin = hf_bin or hfcli_bin
         rec = _run(
             "hf_download",
-            [hf_bin, "download", hf_model, "--local-dir", str(hf_dir)],
+            [hf_download_bin, "download", hf_model, "--local-dir", str(hf_dir)],
             timeout_sec,
         )
         rec["details"]["model_id"] = hf_model
         rec["details"]["local_dir"] = str(hf_dir)
+        rec["details"]["binary"] = hf_download_bin
         shutil.rmtree(hf_dir, ignore_errors=True)
     records.append(rec)
     check_map["hf_download"] = rec
@@ -436,7 +442,8 @@ payload = {
         "python3": python_bin,
         "uv": uv_bin,
         "docker": docker_bin,
-        "huggingface_cli": hf_bin,
+        "hf": hf_bin,
+        "huggingface_cli": hfcli_bin,
         "curl": curl_bin,
         "whois": whois_bin,
         "speedtest": speedtest_bin,

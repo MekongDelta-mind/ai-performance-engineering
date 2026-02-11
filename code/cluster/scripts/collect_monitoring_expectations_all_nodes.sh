@@ -21,6 +21,10 @@ Options:
   --ssh-key <path>       SSH key (default: $SSH_KEY)
   --remote-root <path>   Repo root on remote hosts (default: this repo root)
   --checks <csv>         Checks to run (default: all)
+  --k8s-mode <mode>      Control-plane expectations mode:
+                          auto   (default): run kubectl checks only when Kubernetes is detected/configured
+                          expect: require kubectl checks (fail if missing/misconfigured)
+                          skip:  never run kubectl checks (mark control_plane as not_applicable)
   --sample-count <n>     Sample count for dmon checks (default: 20)
   --dmesg-lines <n>      dmesg tail lines to capture (default: 400)
   --timeout-sec <n>      Per-check timeout seconds (default: 180)
@@ -36,6 +40,7 @@ SSH_USER="ubuntu"
 SSH_KEY="${SSH_KEY:-}"
 REMOTE_ROOT="${REMOTE_ROOT:-$ROOT_DIR}"
 CHECKS="kubectl_pods,kubectl_top_nodes,kubectl_top_pods,nvidia_dmon,nvidia_nvlink,dcgmi_discovery,dcgmi_dmon,dmesg_tail"
+K8S_MODE="auto"
 SAMPLE_COUNT="20"
 DMESG_LINES="400"
 TIMEOUT_SEC="180"
@@ -50,6 +55,7 @@ while [[ $# -gt 0 ]]; do
     --ssh-key) SSH_KEY="$2"; shift 2 ;;
     --remote-root) REMOTE_ROOT="$2"; shift 2 ;;
     --checks) CHECKS="$2"; shift 2 ;;
+    --k8s-mode) K8S_MODE="$2"; shift 2 ;;
     --sample-count) SAMPLE_COUNT="$2"; shift 2 ;;
     --dmesg-lines) DMESG_LINES="$2"; shift 2 ;;
     --timeout-sec) TIMEOUT_SEC="$2"; shift 2 ;;
@@ -74,6 +80,10 @@ if ! [[ "$DMESG_LINES" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "$TIMEOUT_SEC" =~ ^[1-9][0-9]*$ ]]; then
   echo "ERROR: --timeout-sec must be a positive integer (got: ${TIMEOUT_SEC})" >&2
+  exit 2
+fi
+if ! [[ "$K8S_MODE" =~ ^(auto|expect|skip)$ ]]; then
+  echo "ERROR: --k8s-mode must be one of: auto, expect, skip (got: ${K8S_MODE})" >&2
   exit 2
 fi
 
@@ -143,6 +153,9 @@ checks_csv = sys.argv[2]
 sample_count = int(sys.argv[3])
 dmesg_lines = int(sys.argv[4])
 timeout_sec = int(sys.argv[5])
+k8s_mode = sys.argv[6] if len(sys.argv) > 6 else "auto"
+if k8s_mode not in {"auto", "expect", "skip"}:
+    raise SystemExit(f"unsupported k8s_mode: {k8s_mode}")
 
 allowed = {
     "kubectl_pods",
@@ -163,6 +176,71 @@ hostname = socket.gethostname()
 kubectl_bin = shutil.which("kubectl")
 nvidia_smi_bin = shutil.which("nvidia-smi")
 dcgmi_bin = shutil.which("dcgmi")
+
+def _detect_k8s():
+    reasons = []
+    kubeconfig_candidates = []
+    kubeconfig_env = (os.environ.get("KUBECONFIG") or "").strip()
+    if kubeconfig_env:
+        for entry in kubeconfig_env.split(os.pathsep):
+            entry = entry.strip()
+            if entry:
+                kubeconfig_candidates.append(entry)
+    kubeconfig_candidates.append(os.path.expanduser("~/.kube/config"))
+    # Common admin config locations.
+    kubeconfig_candidates.extend(
+        [
+            "/etc/kubernetes/admin.conf",
+            "/etc/rancher/k3s/k3s.yaml",
+            "/var/snap/microk8s/current/credentials/client.config",
+        ]
+    )
+
+    kubeconfig_present = any(os.path.isfile(p) for p in kubeconfig_candidates)
+    if kubeconfig_present:
+        reasons.append("kubeconfig")
+
+    kubelet_present = bool(shutil.which("kubelet")) or bool(shutil.which("k3s")) or bool(shutil.which("microk8s"))
+    if kubelet_present:
+        reasons.append("kubelet_or_flavor_bin")
+
+    dirs_present = any(
+        os.path.isdir(p)
+        for p in (
+            "/var/lib/kubelet",
+            "/etc/kubernetes",
+            "/etc/rancher/k3s",
+            "/var/snap/microk8s",
+        )
+    )
+    if dirs_present:
+        reasons.append("k8s_dirs")
+
+    detected = kubeconfig_present or kubelet_present or dirs_present
+    return {
+        "detected": bool(detected),
+        "reasons": reasons,
+        "kubeconfig_present": bool(kubeconfig_present),
+        "kubeconfig_candidates": kubeconfig_candidates,
+    }
+
+
+k8s = _detect_k8s()
+control_plane_enabled = False
+if k8s_mode == "skip":
+    control_plane_enabled = False
+elif k8s_mode == "expect":
+    control_plane_enabled = True
+else:
+    control_plane_enabled = bool(k8s.get("detected"))
+
+effective_checks = list(checks_selected)
+skipped_checks = []
+if not control_plane_enabled:
+    for name in ("kubectl_pods", "kubectl_top_nodes", "kubectl_top_pods"):
+        if name in effective_checks:
+            effective_checks.remove(name)
+            skipped_checks.append(name)
 
 
 def _tail(text: str, limit: int = 10000) -> str:
@@ -228,7 +306,7 @@ def _run(name: str, cmd, per_check_timeout: int):
 records = []
 check_map = {}
 
-if "kubectl_pods" in checks_selected:
+if "kubectl_pods" in effective_checks:
     if not kubectl_bin:
         rec = _missing_tool("kubectl_pods", "kubectl", "kubectl is not available")
     else:
@@ -236,7 +314,7 @@ if "kubectl_pods" in checks_selected:
     records.append(rec)
     check_map["kubectl_pods"] = rec
 
-if "kubectl_top_nodes" in checks_selected:
+if "kubectl_top_nodes" in effective_checks:
     if not kubectl_bin:
         rec = _missing_tool("kubectl_top_nodes", "kubectl", "kubectl is not available")
     else:
@@ -244,7 +322,7 @@ if "kubectl_top_nodes" in checks_selected:
     records.append(rec)
     check_map["kubectl_top_nodes"] = rec
 
-if "kubectl_top_pods" in checks_selected:
+if "kubectl_top_pods" in effective_checks:
     if not kubectl_bin:
         rec = _missing_tool("kubectl_top_pods", "kubectl", "kubectl is not available")
     else:
@@ -252,7 +330,7 @@ if "kubectl_top_pods" in checks_selected:
     records.append(rec)
     check_map["kubectl_top_pods"] = rec
 
-if "nvidia_dmon" in checks_selected:
+if "nvidia_dmon" in effective_checks:
     if not nvidia_smi_bin:
         rec = _missing_tool("nvidia_dmon", "nvidia-smi", "nvidia-smi is not available")
     else:
@@ -265,7 +343,7 @@ if "nvidia_dmon" in checks_selected:
     records.append(rec)
     check_map["nvidia_dmon"] = rec
 
-if "nvidia_nvlink" in checks_selected:
+if "nvidia_nvlink" in effective_checks:
     if not nvidia_smi_bin:
         rec = _missing_tool("nvidia_nvlink", "nvidia-smi", "nvidia-smi is not available")
     else:
@@ -273,7 +351,7 @@ if "nvidia_nvlink" in checks_selected:
     records.append(rec)
     check_map["nvidia_nvlink"] = rec
 
-if "dcgmi_discovery" in checks_selected:
+if "dcgmi_discovery" in effective_checks:
     if not dcgmi_bin:
         rec = _missing_tool("dcgmi_discovery", "dcgmi", "dcgmi is not available")
     else:
@@ -281,7 +359,7 @@ if "dcgmi_discovery" in checks_selected:
     records.append(rec)
     check_map["dcgmi_discovery"] = rec
 
-if "dcgmi_dmon" in checks_selected:
+if "dcgmi_dmon" in effective_checks:
     if not dcgmi_bin:
         rec = _missing_tool("dcgmi_dmon", "dcgmi", "dcgmi is not available")
     else:
@@ -294,7 +372,7 @@ if "dcgmi_dmon" in checks_selected:
     records.append(rec)
     check_map["dcgmi_dmon"] = rec
 
-if "dmesg_tail" in checks_selected:
+if "dmesg_tail" in effective_checks:
     dmesg_cmd_sudo = ["bash", "-lc", f"set -o pipefail; sudo -n dmesg -T | tail -n {dmesg_lines}"]
     dmesg_cmd_user = ["bash", "-lc", f"set -o pipefail; dmesg -T | tail -n {dmesg_lines}"]
     rec = _run("dmesg_tail", dmesg_cmd_sudo, min(timeout_sec, 120))
@@ -320,9 +398,12 @@ category_checks = {
 categories = {}
 requested_ok_values = []
 for category, names in category_checks.items():
-    requested = [n for n in names if n in checks_selected]
+    requested = [n for n in names if n in effective_checks]
     if not requested:
-        categories[category] = {"status": "not_requested", "checks": []}
+        status = "not_requested"
+        if category == "control_plane" and skipped_checks:
+            status = "not_applicable"
+        categories[category] = {"status": status, "checks": [], "ok_checks": []}
         continue
     ok_checks = [n for n in requested if (check_map.get(n) or {}).get("status") == "ok"]
     category_ok = len(ok_checks) > 0
@@ -352,14 +433,22 @@ payload = {
     "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     "status": overall_status,
     "selected_checks": checks_selected,
+    "effective_checks": effective_checks,
+    "skipped_checks": skipped_checks,
     "failed_checks": failed_checks,
     "missing_categories": missing_categories,
     "categories": categories,
     "checks": records,
+    "k8s": {
+        **k8s,
+        "mode": k8s_mode,
+        "control_plane_enabled": bool(control_plane_enabled),
+    },
     "config": {
         "sample_count": sample_count,
         "dmesg_lines": dmesg_lines,
         "timeout_sec": timeout_sec,
+        "k8s_mode": k8s_mode,
     },
     "tool_paths": {
         "kubectl": kubectl_bin,
@@ -371,7 +460,7 @@ payload = {
 print(json.dumps(payload))
 PY
 
-  remote_cmd="cd $(printf '%q' "${REMOTE_ROOT}") && python3 -c $(printf '%q' "${PY_PAYLOAD}") $(printf '%q' "${RUN_ID}") $(printf '%q' "${CHECKS}") $(printf '%q' "${SAMPLE_COUNT}") $(printf '%q' "${DMESG_LINES}") $(printf '%q' "${TIMEOUT_SEC}")"
+  remote_cmd="cd $(printf '%q' "${REMOTE_ROOT}") && python3 -c $(printf '%q' "${PY_PAYLOAD}") $(printf '%q' "${RUN_ID}") $(printf '%q' "${CHECKS}") $(printf '%q' "${SAMPLE_COUNT}") $(printf '%q' "${DMESG_LINES}") $(printf '%q' "${TIMEOUT_SEC}") $(printf '%q' "${K8S_MODE}")"
 
   echo "Collecting monitoring expectations: host=${host} label=${label}"
   if is_local_host "$host"; then

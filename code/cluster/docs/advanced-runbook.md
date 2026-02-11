@@ -377,10 +377,16 @@ scripts/collect_monitoring_expectations_all_nodes.sh \
   --hosts node1,node2 \
   --labels node1,node2 \
   --ssh-key ~/.ssh/ssh_key.pem \
+  --k8s-mode auto \
   --checks kubectl_pods,kubectl_top_nodes,kubectl_top_pods,nvidia_dmon,nvidia_nvlink,dcgmi_discovery,dcgmi_dmon,dmesg_tail \
   --sample-count 20 \
   --dmesg-lines 400
 ```
+K8s mode semantics:
+- `auto` (default): run the `kubectl_*` control-plane checks only when Kubernetes is detected/configured on the host; otherwise mark `control_plane` as `not_applicable`.
+- `expect`: require the `kubectl_*` checks (fail if missing/misconfigured).
+- `skip`: never run the `kubectl_*` checks (always mark `control_plane` as `not_applicable`).
+
 Artifacts:
 - `results/structured/<run_id>_<label>_monitoring_expectations.json`
 - `results/raw/<run_id>_<label>_monitoring_expectations.log`

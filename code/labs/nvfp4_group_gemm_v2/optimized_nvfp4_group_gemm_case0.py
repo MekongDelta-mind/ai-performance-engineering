@@ -20,16 +20,20 @@ os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_KPACK_TILE", "64")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_UNROLL_N", "2")
 
 # Compile-time kernel knobs (require rebuild under a unique AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME).
-os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_USE_UTCCP_64X128B", "1")
-os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_UTCCP_64X128B_SCHEDULE", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_WS_UNROLL2_MMA", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_EPILOGUE_LD_X32", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_MAXRREGCOUNT", "68")
 
-# Cluster launch is a net win even without multicast; keep multicast opt-in for now.
-os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CLUSTER_DIM_X", "2")
+# Runtime tuning knobs.
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CTA_ORDER", "tm_major")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CLUSTER_DIM_X", "1")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_ENABLE_TMA_MULTICAST", "0")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_TMA_L2_PROMOTION", "3")
 
 os.environ.setdefault(
     "AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME",
-    "nvfp4_group_gemm_v2_tcgen05_opt_unroll2_utccp64_s1",
+    "nvfp4_group_gemm_v2_tcgen05_opt_unroll2_ws_l2p3_rreg68",
 )
 
 from core.harness.benchmark_harness import BaseBenchmark

@@ -1833,10 +1833,17 @@ __global__ void nvfp4_group_gemm_v2_tcgen05_kernel(
   for (int u = 0; u < UnrollN; ++u) {
 #pragma unroll
     for (int seg = 0; seg < 4; ++seg) {
-      // Interleave MN tiles for SFB when UnrollN>1:
-      //   addr(u,seg) = base + seg*(4*NumMN) + u*4.
-      const uint32_t col_add = static_cast<uint32_t>(seg) * (SF_COLS_PER_KBLOCK_PER_MN * SFB_NUM_MN) +
-                               static_cast<uint32_t>(u) * SF_COLS_PER_KBLOCK_PER_MN;
+      // SFB TMEM layout for UnrollN>1:
+      // - Default (mode=0): interleave MN tiles by K64 segment (CUTLASS-like cta_group::1 path).
+      // - cta_group::2 mode=1: keep each MN tile contiguous (u-major) to test 2SM-specific mapping.
+      uint32_t col_add = static_cast<uint32_t>(seg) * (SF_COLS_PER_KBLOCK_PER_MN * SFB_NUM_MN) +
+                         static_cast<uint32_t>(u) * SF_COLS_PER_KBLOCK_PER_MN;
+      if constexpr (CtaGroup == 2 && UnrollN == 2) {
+        if (cta2_sfb_slot_mode == 1) {
+          col_add = static_cast<uint32_t>(u) * SF_COLS_PER_TILE_PER_MN +
+                    static_cast<uint32_t>(seg) * SF_COLS_PER_KBLOCK_PER_MN;
+        }
+      }
       tmem_sfb_ptrs[u * 4 + seg] = tcgen05::tmem_addr_add(tmem_sfb_base, /*dp_add=*/0u, /*col_add=*/col_add);
     }
   }

@@ -13,8 +13,16 @@ if str(repo_root) not in sys.path:
 import torch
 import torch.nn as nn
 
-from torchao.float8.config import Float8LinearConfig, Float8LinearRecipeName
-from torchao.float8.float8_linear_utils import convert_to_float8_training
+try:
+    from torchao.float8.config import Float8LinearConfig, Float8LinearRecipeName
+    from torchao.float8.float8_linear_utils import convert_to_float8_training
+except Exception as exc:  # pragma: no cover
+    Float8LinearConfig = None  # type: ignore[assignment]
+    Float8LinearRecipeName = None  # type: ignore[assignment]
+    convert_to_float8_training = None  # type: ignore[assignment]
+    TORCHAO_IMPORT_ERROR = exc
+else:
+    TORCHAO_IMPORT_ERROR = None
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import (
@@ -76,6 +84,10 @@ class OptimizedFP8Benchmark(VerificationPayloadMixin, BaseBenchmark):
         )
 
     def setup(self) -> None:
+        if TORCHAO_IMPORT_ERROR is not None:
+            raise RuntimeError(
+                f"SKIPPED: torchao is required for {self.__class__.__name__}: {TORCHAO_IMPORT_ERROR}"
+            )
         torch.manual_seed(42)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(42)

@@ -1,0 +1,212 @@
+{
+  "test": "allreduce_latency_comp",
+  "world_size": 8,
+  "payload_target_gib": 4.0,
+  "payload_target_bytes": 4294967296,
+  "chunks": 1000,
+  "effective_chunks": 1000,
+  "remainder_elements": 824,
+  "hostname": "node1",
+  "app_clocks": [
+    {
+      "rank": 0,
+      "hostname": "node1",
+      "logical_device": 0,
+      "physical_device": 0,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 1,
+      "hostname": "node1",
+      "logical_device": 1,
+      "physical_device": 1,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 2,
+      "hostname": "node1",
+      "logical_device": 2,
+      "physical_device": 2,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 3,
+      "hostname": "node1",
+      "logical_device": 3,
+      "physical_device": 3,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 4,
+      "hostname": "node2",
+      "logical_device": 0,
+      "physical_device": 0,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 5,
+      "hostname": "node2",
+      "logical_device": 1,
+      "physical_device": 1,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 6,
+      "hostname": "node2",
+      "logical_device": 2,
+      "physical_device": 2,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    },
+    {
+      "rank": 7,
+      "hostname": "node2",
+      "logical_device": 3,
+      "physical_device": 3,
+      "gpu_name": "NVIDIA GB200",
+      "app_sm_mhz": 2062,
+      "app_mem_mhz": 3996,
+      "cur_sm_mhz": 1950,
+      "cur_mem_mhz": 3996
+    }
+  ],
+  "cases": {
+    "one_large": {
+      "payload_bytes_total": 4294967296,
+      "iters": 5,
+      "warmup": 1,
+      "duration_ms": {
+        "mean": 9.0717,
+        "median": 9.0477,
+        "min": 9.0251,
+        "max": 9.1755,
+        "std": 0.0598,
+        "cv_pct": 0.6591,
+        "samples": [
+          9.1755,
+          9.0477,
+          9.0659,
+          9.0251,
+          9.0444
+        ]
+      },
+      "busbw_gbps": {
+        "mean": 828.5948,
+        "median": 830.0799,
+        "min": 822.0941,
+        "max": 832.1945,
+        "std": 3.8826,
+        "cv_pct": 0.4686,
+        "samples": [
+          822.0941,
+          830.0799,
+          828.335,
+          832.1945,
+          830.2703
+        ]
+      },
+      "algbw_gbps": {
+        "mean": 473.4827,
+        "median": 474.3314,
+        "min": 469.7681,
+        "max": 475.5397,
+        "samples": [
+          469.7681,
+          474.3314,
+          473.3343,
+          475.5397,
+          474.4402
+        ]
+      }
+    },
+    "many_small": {
+      "payload_bytes_total": 4294967296,
+      "iters": 5,
+      "warmup": 1,
+      "duration_ms": {
+        "mean": 62.022,
+        "median": 62.1921,
+        "min": 56.2412,
+        "max": 66.8288,
+        "std": 4.3241,
+        "cv_pct": 6.9719,
+        "samples": [
+          56.2412,
+          62.1921,
+          59.4309,
+          66.8288,
+          65.417
+        ]
+      },
+      "busbw_gbps": {
+        "mean": 121.5502,
+        "median": 120.8167,
+        "min": 112.5478,
+        "max": 132.9749,
+        "std": 8.3742,
+        "cv_pct": 6.8895,
+        "samples": [
+          132.9749,
+          120.8167,
+          126.4927,
+          112.5478,
+          114.9188
+        ]
+      },
+      "algbw_gbps": {
+        "mean": 69.4572,
+        "median": 69.0381,
+        "min": 64.313,
+        "max": 75.9857,
+        "samples": [
+          75.9857,
+          69.0381,
+          72.2815,
+          64.313,
+          65.6679
+        ]
+      }
+    }
+  },
+  "comparison": {
+    "duration_ratio_small_over_large": 6.836866,
+    "bandwidth_ratio_large_over_small": 6.816894,
+    "one_large_busbw_gbps_mean": 828.5948,
+    "many_small_busbw_gbps_mean": 121.5502,
+    "one_large_duration_ms_mean": 9.0717,
+    "many_small_duration_ms_mean": 62.022
+  },
+  "software": {
+    "torch_version": "2.10.0a0+a36e1d39eb.nv26.01.42222806",
+    "cuda_version": "13.1",
+    "nccl_version": "2.29.2",
+    "clock_lock_required": true
+  }
+}

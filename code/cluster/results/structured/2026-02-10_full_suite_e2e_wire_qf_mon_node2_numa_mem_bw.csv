@@ -1,0 +1,7 @@
+run_id,label,cpu_node,node,bytes,iters,threads,warmup,elapsed_s,bw_gbps,rc,error
+2026-02-10_full_suite_e2e_wire_qf_mon,node2,0,0,1073741824,10,16,2,0.079039,135.849809,0,
+2026-02-10_full_suite_e2e_wire_qf_mon,node2,0,1,1073741824,10,16,2,0.163749,65.572523,0,
+2026-02-10_full_suite_e2e_wire_qf_mon,node2,0,2,1073741824,10,16,2,0.301573,35.604732,0,
+2026-02-10_full_suite_e2e_wire_qf_mon,node2,0,10,1073741824,10,16,2,0.302536,35.491349,0,
+2026-02-10_full_suite_e2e_wire_qf_mon,node2,0,18,1073741824,10,16,2,0.326933,32.842905,0,
+2026-02-10_full_suite_e2e_wire_qf_mon,node2,0,26,1073741824,10,16,2,0.327639,32.772136,0,

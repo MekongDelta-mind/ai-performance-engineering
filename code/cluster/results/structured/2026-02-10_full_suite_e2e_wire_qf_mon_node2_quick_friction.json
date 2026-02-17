@@ -1,0 +1,137 @@
+{
+  "checks": [
+    {
+      "command": "/home/ubuntu/.local/bin/uv pip install --python /tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/uv_env/bin/python torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124",
+      "details": {
+        "venv_create_sec": 2.043679,
+        "venv_python": "/tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/uv_env/bin/python"
+      },
+      "duration_sec": 23.281014,
+      "exit_code": 0,
+      "name": "uv_torch_install",
+      "status": "ok",
+      "stderr_excerpt": "Using Python 3.12.3 environment at: /tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/uv_env\nResolved 10 packages in 2.59s\nDownloading sympy (5.9MiB)\nDownloading torch (2.2GiB)\nDownloading networkx (2.0MiB)\n Downloaded networkx\n Downloaded sympy\n Downloaded torch\nPrepared 10 packages in 20.48s\nInstalled 10 packages in 157ms\n + filelock==3.20.0\n + fsspec==2025.12.0\n + jinja2==3.1.6\n + markupsafe==2.1.5\n + mpmath==1.3.0\n + networkx==3.6.1\n + setuptools==70.2.0\n + sympy==1.13.1\n + torch==2.5.1\n + typing-extensions==4.15.0\n",
+      "stdout_excerpt": "",
+      "timed_out": false
+    },
+    {
+      "command": "/tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/pip_env/bin/pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124",
+      "details": {
+        "venv_create_sec": 2.021637,
+        "venv_python": "/tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/pip_env/bin/python"
+      },
+      "duration_sec": 59.106616,
+      "exit_code": 0,
+      "name": "pip_torch_install",
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stdout_excerpt": "Looking in indexes: https://download.pytorch.org/whl/cu124\nCollecting torch==2.5.1\n  Downloading https://download.pytorch.org/whl/cu124/torch-2.5.1-cp312-cp312-linux_aarch64.whl (2359.8 MB)\n     \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 2.4/2.4 GB 2.3 MB/s eta 0:00:00\nCollecting filelock (from torch==2.5.1)\n  Using cached filelock-3.20.0-py3-none-any.whl.metadata (2.1 kB)\nCollecting typing-extensions>=4.8.0 (from torch==2.5.1)\n  Using cached https://download.pytorch.org/whl/typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)\nCollecting networkx (from torch==2.5.1)\n  Using cached networkx-3.6.1-py3-none-any.whl.metadata (6.8 kB)\nCollecting jinja2 (from torch==2.5.1)\n  Using cached https://download.pytorch.org/whl/jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)\nCollecting fsspec (from torch==2.5.1)\n  Using cached fsspec-2025.12.0-py3-none-any.whl.metadata (10 kB)\nCollecting setuptools (from torch==2.5.1)\n  Downloading https://download.pytorch.org/whl/setuptools-70.2.0-py3-none-any.whl.metadata (5.8 kB)\nCollecting sympy==1.13.1 (from torch==2.5.1)\n  Downloading sympy-1.13.1-py3-none-any.whl.metadata (12 kB)\nCollecting mpmath<1.4,>=1.1.0 (from sympy==1.13.1->torch==2.5.1)\n  Using cached mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)\nCollecting MarkupSafe>=2.0 (from jinja2->torch==2.5.1)\n  Using cached https://download.pytorch.org/whl/MarkupSafe-2.1.5-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (29 kB)\nDownloading sympy-1.13.1-py3-none-any.whl (6.2 MB)\n   \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 6.2/6.2 MB 29.8 MB/s eta 0:00:00\nUsing cached https://download.pytorch.org/whl/typing_extensions-4.15.0-py3-none-any.whl (44 kB)\nUsing cached filelock-3.20.0-py3-none-any.whl (16 kB)\nUsing cached fsspec-2025.12.0-py3-none-any.whl (201 kB)\nUsing cached https://download.pytorch.org/whl/jinja2-3.1.6-py3-none-any.whl (134 kB)\nUsing cached networkx-3.6.1-py3-none-any.whl (2.1 MB)\nDownloading https://download.pytorch.org/whl/setuptools-70.2.0-py3-none-any.whl (930 kB)\n   \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 930.8/930.8 kB 7.4 MB/s eta 0:00:00\nUsing cached mpmath-1.3.0-py3-none-any.whl (536 kB)\nInstalling collected packages: mpmath, typing-extensions, sympy, setuptools, networkx, MarkupSafe, fsspec, filelock, jinja2, torch\nSuccessfully installed MarkupSafe-2.1.5 filelock-3.20.0 fsspec-2025.12.0 jinja2-3.1.6 mpmath-1.3.0 networkx-3.6.1 setuptools-70.2.0 sympy-1.13.1 torch-2.5.1 typing-extensions-4.15.0\n",
+      "timed_out": false
+    },
+    {
+      "command": "/usr/bin/docker pull nvcr.io/nvidia/pytorch:24.05-py3",
+      "details": {},
+      "duration_sec": 219.043161,
+      "exit_code": 0,
+      "name": "ngc_pull",
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stdout_excerpt": "24.05-py3: Pulling from nvidia/pytorch\n3a3550334d01: Pulling fs layer\n4f4fb700ef54: Pulling fs layer\n77b573f8b963: Pulling fs layer\n480d5289bd74: Pulling fs layer\n4d395e95719f: Pulling fs layer\n5c09835654c1: Pulling fs layer\n53b4fab6ad7f: Pulling fs layer\nf3fe7f33fc2c: Pulling fs layer\n593bd31ee915: Pulling fs layer\n8446426a6690: Pulling fs layer\nc06677dcdcfa: Pulling fs layer\nafdaad740e9e: Pulling fs layer\n19e351454a1c: Pulling fs layer\nb31eec21bf1b: Pulling fs layer\nfd731260969d: Pulling fs layer\n76fa5548ee99: Pulling fs layer\n94dc9b1cb4c3: Pulling fs layer\nef8879b78976: Pulling fs layer\na85f2e5c9d16: Pulling fs layer\n10534a2947dd: Pulling fs layer\n414ef9b3ceb2: Pulling fs layer\nfa1b11db1a30: Pulling fs layer\ne5a01684e30c: Pulling fs layer\nca9a9b601f58: Pulling fs layer\ne0706f94fa49: Pulling fs layer\n5fb8a857ad4d: Pulling fs layer\nd3a968280d25: Pulling fs layer\nf0adbc38508b: Pulling fs layer\n42cf09540331: Pulling fs layer\n610f64d3673c: Pulling fs layer\n00ffd31df19f: Pulling fs layer\n70a122d96589: Pulling fs layer\n4f4fb700ef54: Pulling fs layer\n149313604b74: Pulling fs layer\ncd2e5ed6a193: Pulling fs layer\nc5d061f7ac10: Pulling fs layer\n51d1cc3a3b94: Pulling fs layer\n2e0071d54b34: Pulling fs layer\n411790b25c0a: Pulling fs layer\na406f5c7d44b: Pulling fs layer\ncc16642bcf64: Pulling fs layer\n8627a2aff0f1: Pulling fs layer\n5b4d050f3e76: Pulling fs layer\n5f1fddd7f2fa: Pulling fs layer\nd22acfc80818: Pulling fs layer\n71ec725681fc: Pulling fs layer\nab370f107483: Pulling fs layer\n517a76247a3a: Pulling fs layer\n1990e301718b: Pulling fs layer\nee7ccf1b04ad: Pulling fs layer\ndfdc325b2c58: Pulling fs layer\n4f4fb700ef54: Already exists\n77b573f8b963: Download complete\nb31eec21bf1b: Download complete\nafdaad740e9e: Download complete\nfa1b11db1a30: Download complete\na85f2e5c9d16: Download complete\n53b4fab6ad7f: Download complete\nf0adbc38508b: Download complete\n4d395e95719f: Download complete\n5c09835654c1: Download complete\nfd731260969d: Download complete\n149313604b74: Download complete\nc5d061f7ac10: Download complete\n51d1cc3a3b94: Download complete\n10534a2947dd: Download complete\n00ffd31df19f: Download complete\n19e351454a1c: Download complete\n5fb8a857ad4d: Download complete\n5f1fddd7f2fa: Download complete\n480d5289bd74: Download complete\n1990e301718b: Download complete\ne5a01684e30c: Download complete\nee7ccf1b04ad: Download complete\n414ef9b3ceb2: Download complete\nef8879b78976: Download complete\n70a122d96589: Download complete\n71ec725681fc: Download complete\nef8879b78976: Pull complete\nf3fe7f33fc2c: Download complete\n593bd31ee915: Download complete\nab370f107483: Download complete\nd22acfc80818: Download complete\n8446426a6690: Download complete\ne0706f94fa49: Download complete\n411790b25c0a: Download complete\n94dc9b1cb4c3: Download complete\ndfdc325b2c58: Download complete\n3a3550334d01: Download complete\n3a3550334d01: Pull complete\n42cf09540331: Download complete\n2e0071d54b34: Download complete\n4f4fb700ef54: Pull complete\nc06677dcdcfa: Download complete\n8627a2aff0f1: Download complete\n77b573f8b963: Pull complete\n480d5289bd74: Pull complete\ncd2e5ed6a193: Download complete\na406f5c7d44b: Download complete\ncc16642bcf64: Download complete\n517a76247a3a: Download complete\nd3a968280d25: Download complete\n610f64d3673c: Download complete\nca9a9b601f58: Download complete\n5b4d050f3e76: Download complete\n76fa5548ee99: Download complete\n5b4d050f3e76: Pull complete\n51d1cc3a3b94: Pull complete\nb31eec21bf1b: Pull complete\n5c09835654c1: Pull complete\n10534a2947dd: Pull complete\n414ef9b3ceb2: Pull complete\n53b4fab6ad7f: Pull complete\n94dc9b1cb4c3: Pull complete\nd3a968280d25: Pull complete\n2e0071d54b34: Pull complete\nfd731260969d: Pull complete\ne0706f94fa49: Pull complete\n19e351454a1c: Pull complete\ne5a01684e30c: Pull complete\n4d395e95719f: Pull complete\n517a76247a3a: Pull complete\n8627a2aff0f1: Pull complete\nee7ccf1b04ad: Pull complete\n411790b25c0a: Pull complete\n149313604b74: Pull complete\ndfdc325b2c58: Pull complete\nd22acfc80818: Pull complete\n76fa5548ee99: Pull complete\nafdaad740e9e: Pull complete\n610f64d3673c: Pull complete\nc06677dcdcfa: Pull complete\ncd2e5ed6a193: Pull complete\nc5d061f7ac10: Pull complete\na406f5c7d44b: Pull complete\n00ffd31df19f: Pull complete\nfa1b11db1a30: Pull complete\nca9a9b601f58: Pull complete\n5f1fddd7f2fa: Pull complete\n1990e301718b: Pull complete\n71ec725681fc: Pull complete\nab370f107483: Pull complete\nf3fe7f33fc2c: Pull complete\n5fb8a857ad4d: Pull complete\nf0adbc38508b: Pull complete\n8446426a6690: Pull complete\n593bd31ee915: Pull complete\ncc16642bcf64: Pull complete\na85f2e5c9d16: Pull complete\n70a122d96589: Pull complete\n42cf09540331: Pull complete\nDigest: sha256:d4030fc006cce2e56497fa07d003c5996de0eb7bde3610599fedbe7e7d03adea\nStatus: Downloaded newer image for nvcr.io/nvidia/pytorch:24.05-py3\nnvcr.io/nvidia/pytorch:24.05-py3\n",
+      "timed_out": false
+    },
+    {
+      "command": "/tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/pip_env/bin/python -c 'import torch; print(torch.__version__)'",
+      "details": {
+        "python_executable": "/tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/pip_env/bin/python"
+      },
+      "duration_sec": 0.948488,
+      "exit_code": 0,
+      "name": "torch_import",
+      "status": "ok",
+      "stderr_excerpt": "/tmp/quick_friction_2026-02-10_full_suite_e2e_wire_qf_mon_node2_9z3p4lmc/pip_env/lib/python3.12/site-packages/torch/_subclasses/functional_tensor.py:295: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)\n  cpu = _conversion_method_template(device=torch.device(\"cpu\"))\n",
+      "stdout_excerpt": "2.5.1\n",
+      "timed_out": false
+    },
+    {
+      "command": "<missing:huggingface-cli>",
+      "details": {
+        "required_tool": "huggingface-cli"
+      },
+      "duration_sec": 0.0,
+      "exit_code": 127,
+      "name": "hf_download",
+      "status": "error",
+      "stderr_excerpt": "huggingface-cli is not available",
+      "stdout_excerpt": "",
+      "timed_out": false
+    },
+    {
+      "command": "<missing:whois>",
+      "details": {
+        "public_ip": "138.252.188.113"
+      },
+      "duration_sec": 0.0,
+      "exit_code": 127,
+      "name": "ip_owner",
+      "status": "error",
+      "stderr_excerpt": "whois is not available",
+      "stdout_excerpt": "",
+      "timed_out": false
+    },
+    {
+      "command": "<missing:speedtest-cli/speedtest>",
+      "details": {
+        "required_tool": "speedtest-cli/speedtest"
+      },
+      "duration_sec": 0.0,
+      "exit_code": 127,
+      "name": "speedtest",
+      "status": "error",
+      "stderr_excerpt": "speedtest-cli or speedtest is not available",
+      "stdout_excerpt": "",
+      "timed_out": false
+    }
+  ],
+  "config": {
+    "hf_local_dir_base": "/tmp",
+    "hf_model": "openai-community/gpt2",
+    "ngc_image": "nvcr.io/nvidia/pytorch:24.05-py3",
+    "timeout_sec": 900,
+    "torch_index_url": "https://download.pytorch.org/whl/cu124",
+    "torch_version": "2.5.1"
+  },
+  "failed_checks": [
+    "hf_download",
+    "ip_owner",
+    "speedtest"
+  ],
+  "host": "node2",
+  "passed_checks": [
+    "uv_torch_install",
+    "pip_torch_install",
+    "ngc_pull",
+    "torch_import"
+  ],
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon",
+  "selected_checks": [
+    "uv_torch_install",
+    "pip_torch_install",
+    "ngc_pull",
+    "torch_import",
+    "hf_download",
+    "ip_owner",
+    "speedtest"
+  ],
+  "status": "degraded",
+  "test": "quick_friction",
+  "timestamp_utc": "2026-02-10T06:33:51Z",
+  "tool_paths": {
+    "curl": "/usr/bin/curl",
+    "docker": "/usr/bin/docker",
+    "huggingface_cli": null,
+    "python3": "/usr/bin/python3",
+    "speedtest": null,
+    "uv": "/home/ubuntu/.local/bin/uv",
+    "whois": null
+  }
+}

@@ -97,7 +97,7 @@ class BaselineTEFP8Benchmark(VerificationPayloadMixin, BaseBenchmark):
     def setup(self) -> None:
         if not TE_AVAILABLE:
             raise RuntimeError(
-                "Transformer Engine is required for baseline_precisionfp8_te. "
+                "SKIPPED: Transformer Engine is required for baseline_precisionfp8_te. "
                 f"(import error: {TE_IMPORT_ERROR})"
             )
         torch.manual_seed(42)

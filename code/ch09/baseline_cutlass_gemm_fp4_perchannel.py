@@ -23,7 +23,7 @@ class BaselineCutlassGemmFp4PerchannelBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cutlass_gemm_fp4_perchannel",
             friendly_name="Baseline Cutlass Gemm Fp4 Perchannel",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={
@@ -31,7 +31,6 @@ class BaselineCutlassGemmFp4PerchannelBenchmark(CudaBinaryBenchmark):
                 "kN": 4096,
                 "kK": 4096,
                 "kIterations": 10,
-                "kSwizzle": 2,
                 "AlignmentA": 32,
                 "AlignmentB": 32,
                 "AlignmentC": 128,

@@ -30,7 +30,7 @@ class BaselineGemmBenchmark(CudaBinaryBenchmark):
             binary_name="baseline_gemm",
             friendly_name="Baseline GEMM (Individual Calls)",
             iterations=3,
-            warmup=3,
+            warmup=5,
             timeout_seconds=90,
             workload_params={
                 "M": m,

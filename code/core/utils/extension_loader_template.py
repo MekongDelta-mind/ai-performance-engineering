@@ -258,7 +258,13 @@ def _check_and_invalidate_cache(
         try:
             stored = json.loads(fingerprint_file.read_text())
             if stored.get("fingerprint") == current_fingerprint:
-                return False  # Cache is valid
+                # Treat missing build outputs as an invalid cache. This can
+                # happen if a build was interrupted after writing the
+                # fingerprint but before producing the shared library.
+                if any(build_dir.glob("*.so")):
+                    return False  # Cache is valid
+                if verbose:
+                    print(f"[extension_loader] Cache missing .so outputs; rebuilding {source_file.name}")
             # Cache mismatch - log why if verbose
             if verbose:
                 print(f"[extension_loader] Cache invalidated for {source_file.name}")
@@ -523,7 +529,7 @@ def load_cuda_extension(
     try:
         from torch.utils.cpp_extension import load
         
-        source_path = Path(cuda_source_file)
+        source_path = Path(cuda_source_file).resolve()
         if not source_path.exists():
             raise FileNotFoundError(f"CUDA source file not found: {cuda_source_file}")
         
@@ -536,7 +542,8 @@ def load_cuda_extension(
         # Normalize include directories
         include_dirs = list(include_dirs) if include_dirs is not None else []
 
-        # Collect include paths with TE CUTLASS first, then upstream CUTLASS, then everything else.
+        # Collect include paths with upstream CUTLASS first (newer SM100 support),
+        # then TE's vendored CUTLASS, then everything else.
         repo_root = source_path
         while repo_root.parent != repo_root:
             repo_root = repo_root.parent
@@ -549,11 +556,13 @@ def load_cuda_extension(
         ordered_includes: list[Path] = []
 
         def _add(path: Path) -> None:
+            if not path.is_absolute():
+                path = (repo_root / path).resolve()
             if path.exists() and path not in ordered_includes:
                 ordered_includes.append(path)
 
-        _add(te_cutlass)
         _add(cutlass_headers)
+        _add(te_cutlass)
         for inc in include_dirs:
             _add(Path(inc))
         

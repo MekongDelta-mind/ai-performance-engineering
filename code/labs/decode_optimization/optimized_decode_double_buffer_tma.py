@@ -36,15 +36,15 @@ def get_benchmark() -> BaseBenchmark:
     TMA is required on Blackwell B200 - no fallbacks.
     """
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA required for TMA decode kernel")
+        raise RuntimeError("SKIPPED: CUDA required for TMA decode kernel")
     
     supported, reason = tma_support_status()
     if not supported:
-        raise RuntimeError(f"TMA decode kernel unavailable: {reason}")
+        raise RuntimeError(f"SKIPPED: TMA decode kernel unavailable: {reason}")
     
     if not is_optimized_available():
         error = get_optimized_error() or "Unknown error"
-        raise RuntimeError(f"TMA optimized kernel not available: {error}")
+        raise RuntimeError(f"SKIPPED: TMA optimized kernel not available: {error}")
     
     return NanoChatWarpSpecializedCudaBenchmark()
 

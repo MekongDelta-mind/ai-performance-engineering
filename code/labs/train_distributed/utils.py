@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import random
 import re
 import time
 from pathlib import Path
@@ -140,8 +142,9 @@ def load_tinystories_packed(path: str | Path, seq_len: int, *, is_main_process: 
     """Load a pre-packed TinyStories dataset (input_ids/labels already aligned)."""
     try:
         from datasets import load_dataset, load_from_disk
-    except ImportError as exc:
-        raise RuntimeError("load_tinystories_packed() requires the `datasets` package") from exc
+    except ImportError:
+        load_dataset = None
+        load_from_disk = None
 
     packed_path = Path(path)
     if not packed_path.exists():
@@ -149,11 +152,50 @@ def load_tinystories_packed(path: str | Path, seq_len: int, *, is_main_process: 
 
     with _main_process_first(is_main_process):
         if packed_path.is_dir():
+            if load_from_disk is None:
+                raise RuntimeError(
+                    "load_tinystories_packed() requires the `datasets` package when loading a directory dataset."
+                )
             dataset = load_from_disk(str(packed_path))
         else:
-            dataset = load_dataset("json", data_files=str(packed_path), split="train")
+            if load_dataset is None:
+                # Minimal fallback to avoid the optional `datasets` dependency for the bundled JSONL.
+                samples: list[dict[str, Any]] = []
+                with packed_path.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            payload = json.loads(line)
+                        except json.JSONDecodeError as exc:
+                            raise ValueError(f"Invalid JSON in packed TinyStories file: {packed_path}") from exc
+                        if not isinstance(payload, dict):
+                            raise ValueError(f"Packed TinyStories rows must be objects (dict), got: {type(payload)}")
+                        samples.append(payload)
 
-    columns = set(dataset.column_names)
+                class _JsonlPackedDataset(torch.utils.data.Dataset):
+                    def __init__(self, rows: list[dict[str, Any]]):
+                        self._rows = rows
+                        self.column_names = list(rows[0].keys()) if rows else []
+
+                    def __len__(self) -> int:
+                        return len(self._rows)
+
+                    def __getitem__(self, idx: int) -> dict[str, Any]:
+                        return self._rows[idx]
+
+                    def shuffle(self, seed: int = 0):
+                        rng = random.Random(int(seed))
+                        indices = list(range(len(self._rows)))
+                        rng.shuffle(indices)
+                        return _JsonlPackedDataset([self._rows[i] for i in indices])
+
+                dataset = _JsonlPackedDataset(samples)
+            else:
+                dataset = load_dataset("json", data_files=str(packed_path), split="train")
+
+    columns = set(getattr(dataset, "column_names", []))
     if not {"input_ids", "labels"}.issubset(columns):
         raise ValueError("Packed TinyStories dataset must include input_ids and labels columns.")
     if len(dataset) == 0:
@@ -164,7 +206,6 @@ def load_tinystories_packed(path: str | Path, seq_len: int, *, is_main_process: 
         raise ValueError(f"Packed TinyStories sequences must match seq_len={seq_len}.")
 
     return dataset.shuffle(seed=2025)
-
 
 def create_collate_fn():
     def collate_fn(batch):

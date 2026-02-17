@@ -537,6 +537,79 @@ def hta_capture(args) -> int:
     return 0
 
 
+def nsys(args) -> int:
+    """Run Nsight Systems profiling on an arbitrary command."""
+    from rich.console import Console
+    from rich.panel import Panel
+    from core.profiling.nsight_automation import NsightAutomation
+
+    console = Console()
+    command_str = getattr(args, "command", "")
+    command_list = getattr(args, "command_list", None) or (shlex.split(command_str) if command_str else [])
+    if not command_list:
+        console.print("[red]Command is required (example: \"python train.py --batch 8\").[/red]")
+        return 1
+
+    output_dir_opt = getattr(args, "output_dir", None)
+    output_name = getattr(args, "output_name", None) or "profile_nsys"
+    _, output_root = _prepare_profile_run(output_dir_opt, "nsys", output_name)
+
+    trace_cuda = bool(getattr(args, "trace_cuda", True))
+    trace_nvtx = bool(getattr(args, "trace_nvtx", True))
+    trace_osrt = bool(getattr(args, "trace_osrt", True))
+    full_timeline = bool(getattr(args, "full_timeline", False))
+    trace_forks = bool(getattr(args, "trace_forks", False))
+    preset = str(getattr(args, "preset", "light") or "light").strip().lower()
+    wait_mode = str(getattr(args, "wait_mode", "primary") or "primary").strip().lower()
+    finalize_grace_seconds = float(getattr(args, "finalize_grace_seconds", 20.0) or 20.0)
+    force_lineinfo = bool(getattr(args, "force_lineinfo", True))
+    sanitize_python_startup = bool(getattr(args, "sanitize_python_startup", True))
+    timeout_seconds = getattr(args, "timeout_seconds", None)
+
+    automation = NsightAutomation(output_root)
+    if not automation.nsys_available:
+        console.print("[red]Nsight Systems (nsys) is not installed or not on PATH.[/red]")
+        return 1
+
+    console.print(f"[cyan]Running Nsight Systems ({preset})[/cyan]")
+    try:
+        output = automation.profile_nsys(
+            command=command_list,
+            output_name=output_name,
+            trace_cuda=trace_cuda,
+            trace_nvtx=trace_nvtx,
+            trace_osrt=trace_osrt,
+            full_timeline=full_timeline,
+            trace_forks=trace_forks,
+            preset=preset,
+            force_lineinfo=force_lineinfo,
+            timeout_seconds=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
+            wait_mode=wait_mode,
+            finalize_grace_seconds=finalize_grace_seconds,
+            sanitize_python_startup=sanitize_python_startup,
+        )
+    except ValueError as exc:
+        console.print(f"[red]NSYS configuration error:[/red] {exc}")
+        return 1
+
+    if not output:
+        console.print(f"[red]NSYS profiling failed:[/red] {automation.last_error or 'unknown error'}")
+        return 1
+
+    last_run = automation.last_run or {}
+    lines = [
+        f"[green]✓[/green] NSYS report: {output}",
+        f"Preset: {preset}",
+        f"Wait mode: {wait_mode}",
+        f"Trace forks: {bool(trace_forks)}",
+        f"Timeout hit: {bool(last_run.get('timeout_hit', False))}",
+        f"Force lineinfo: {force_lineinfo}",
+        f"Sanitize python startup: {sanitize_python_startup}",
+    ]
+    console.print(Panel.fit("\n".join(lines), title="Nsight Systems capture", border_style="green"))
+    return 0
+
+
 def ncu(args) -> None:
     """Run Nsight Compute profiling on a command or Python script."""
     from rich.console import Console

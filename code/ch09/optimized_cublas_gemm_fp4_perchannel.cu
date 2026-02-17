@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <vector>
 
@@ -217,11 +218,12 @@ int main() {
                                                          &kWorkspaceBytes,
                                                          sizeof(kWorkspaceBytes)));
 
-    cublasLtMatmulHeuristicResult_t heuristicResult{};
+    constexpr int kHeuristicCandidates = 8;
+    cublasLtMatmulHeuristicResult_t heuristicResults[kHeuristicCandidates]{};
     int returnedResults = 0;
     CUBLASLT_CHECK(cublasLtMatmulAlgoGetHeuristic(
         ltHandle, matmulDesc, layoutA, layoutB, layoutC, layoutC,
-        preference, 1, &heuristicResult, &returnedResults));
+        preference, kHeuristicCandidates, heuristicResults, &returnedResults));
     if (returnedResults == 0) {
         std::cerr << "No suitable cuBLASLt algorithm found for optimized NVFP4 GEMM." << std::endl;
         return 1;
@@ -234,6 +236,75 @@ int main() {
 
     float alpha = 1.0f;
     float beta = 0.0f;
+
+    cudaEvent_t tuneStart, tuneStop;
+    CUDA_CHECK(cudaEventCreate(&tuneStart));
+    CUDA_CHECK(cudaEventCreate(&tuneStop));
+    int bestIdx = -1;
+    float bestMs = std::numeric_limits<float>::max();
+
+    for (int candidate = 0; candidate < returnedResults; ++candidate) {
+        if (heuristicResults[candidate].workspaceSize > kWorkspaceBytes) {
+            continue;
+        }
+
+        for (int batch = 0; batch < kBatchCount; ++batch) {
+            const size_t offset_A = batch * elements_A_packed;
+            const size_t offset_B = batch * elements_B_packed;
+            const size_t offset_C = batch * elements_C;
+            CUBLASLT_CHECK(cublasLtMatmul(
+                ltHandle, matmulDesc,
+                &alpha,
+                d_A + offset_A, layoutA,
+                d_B + offset_B, layoutB,
+                &beta,
+                d_C + offset_C, layoutC,
+                d_C + offset_C, layoutC,
+                &heuristicResults[candidate].algo,
+                d_workspace, kWorkspaceBytes,
+                stream));
+        }
+        CUDA_CHECK(cudaStreamSynchronize(stream));
+
+        CUDA_CHECK(cudaEventRecord(tuneStart, stream));
+        for (int trial = 0; trial < 3; ++trial) {
+            for (int batch = 0; batch < kBatchCount; ++batch) {
+                const size_t offset_A = batch * elements_A_packed;
+                const size_t offset_B = batch * elements_B_packed;
+                const size_t offset_C = batch * elements_C;
+                CUBLASLT_CHECK(cublasLtMatmul(
+                    ltHandle, matmulDesc,
+                    &alpha,
+                    d_A + offset_A, layoutA,
+                    d_B + offset_B, layoutB,
+                    &beta,
+                    d_C + offset_C, layoutC,
+                    d_C + offset_C, layoutC,
+                    &heuristicResults[candidate].algo,
+                    d_workspace, kWorkspaceBytes,
+                    stream));
+            }
+        }
+        CUDA_CHECK(cudaEventRecord(tuneStop, stream));
+        CUDA_CHECK(cudaEventSynchronize(tuneStop));
+
+        float elapsedMs = 0.0f;
+        CUDA_CHECK(cudaEventElapsedTime(&elapsedMs, tuneStart, tuneStop));
+        const float avgCandidateMs = elapsedMs / (3.0f * static_cast<float>(kBatchCount));
+        if (avgCandidateMs < bestMs) {
+            bestMs = avgCandidateMs;
+            bestIdx = candidate;
+        }
+    }
+
+    CUDA_CHECK(cudaEventDestroy(tuneStart));
+    CUDA_CHECK(cudaEventDestroy(tuneStop));
+
+    if (bestIdx < 0) {
+        std::cerr << "No viable cuBLASLt heuristic candidate within workspace budget." << std::endl;
+        return 1;
+    }
+    const cublasLtMatmulAlgo_t* selectedAlgo = &heuristicResults[bestIdx].algo;
 
     for (int batch = 0; batch < kBatchCount; ++batch) {
         NVTX_RANGE("compute_math:ltmatmul");
@@ -248,7 +319,7 @@ int main() {
             &beta,
             d_C + offset_C, layoutC,
             d_C + offset_C, layoutC,
-            &heuristicResult.algo,
+            selectedAlgo,
             d_workspace, kWorkspaceBytes,
             stream));
     }
@@ -274,7 +345,7 @@ int main() {
                 &beta,
                 d_C + offset_C, layoutC,
                 d_C + offset_C, layoutC,
-                &heuristicResult.algo,
+                selectedAlgo,
                 d_workspace, kWorkspaceBytes,
                 stream));
         }

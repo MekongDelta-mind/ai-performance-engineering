@@ -144,31 +144,31 @@ class DecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if self.cfg.use_fp4 and self.cfg.use_fp8:
             raise ValueError("use_fp4 and use_fp8 are mutually exclusive")
         if self.cfg.use_te_mlp and not TE_AVAILABLE:
-            raise RuntimeError("use_te_mlp requested but Transformer Engine is unavailable")
+            raise RuntimeError("SKIPPED: use_te_mlp requested but Transformer Engine is unavailable")
 
         if self.cfg.use_fp4:
             if not TE_AVAILABLE:
-                raise RuntimeError("FP4 requested but Transformer Engine is unavailable")
+                raise RuntimeError("SKIPPED: FP4 requested but Transformer Engine is unavailable")
             if not _is_blackwell_family():
-                raise RuntimeError("FP4 decode requires Blackwell-class hardware")
+                raise RuntimeError("SKIPPED: FP4 decode requires Blackwell-class hardware")
             if getattr(te_constants, "NVFP4_BLOCK_SCALING_SIZE", None) is None:
-                raise RuntimeError("FP4 decode requires NVFP4 support in Transformer Engine")
+                raise RuntimeError("SKIPPED: FP4 decode requires NVFP4 support in Transformer Engine")
             try:
                 from transformer_engine.common.recipe import NVFP4BlockScaling
             except Exception as exc:
-                raise RuntimeError("FP4 decode requires NVFP4BlockScaling support") from exc
+                raise RuntimeError("SKIPPED: FP4 decode requires NVFP4BlockScaling support") from exc
             self.fp8_recipe = DelayedScaling(float8_block_scaling=NVFP4BlockScaling())
             self._fp4_enabled = True
         elif self.cfg.use_fp8:
             if not TE_AVAILABLE:
-                raise RuntimeError("FP8 requested but Transformer Engine is unavailable")
+                raise RuntimeError("SKIPPED: FP8 requested but Transformer Engine is unavailable")
             try:
                 # Prefer an inference-friendly FP8 recipe for perf stability.
                 # Float8CurrentScaling avoids delayed amax reductions that can introduce
                 # iteration-to-iteration jitter in short microbench loops.
                 from transformer_engine.common.recipe import Float8CurrentScaling
             except Exception as exc:
-                raise RuntimeError("FP8 decode requires Float8CurrentScaling support") from exc
+                raise RuntimeError("SKIPPED: FP8 decode requires Float8CurrentScaling support") from exc
             self.fp8_recipe = Float8CurrentScaling()
             self._fp8_enabled = True
         self.register_workload_metadata(

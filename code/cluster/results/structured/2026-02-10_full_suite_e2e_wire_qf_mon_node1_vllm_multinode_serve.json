@@ -1,0 +1,94 @@
+{
+  "artifacts": {
+    "bench_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_serve/bench.log",
+    "leader_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_serve/leader.log",
+    "raw_result_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_serve/bench_result.json",
+    "server_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_serve/server.log",
+    "structured_result_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_serve_result.json",
+    "worker_log": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_serve/worker_node2.log"
+  },
+  "clock_lock": {
+    "leader": {
+      "all_devices_locked": true,
+      "application_mem_mhz": [
+        3996
+      ],
+      "application_sm_mhz": [
+        2062
+      ],
+      "current_mem_mhz": [
+        3996
+      ],
+      "current_sm_mhz": [
+        1950
+      ],
+      "device_count": 4,
+      "path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_node1_vllm_multinode_leader_clock_lock.json",
+      "returncode": 0
+    },
+    "worker": {
+      "all_devices_locked": true,
+      "application_mem_mhz": [
+        3996
+      ],
+      "application_sm_mhz": [
+        2062
+      ],
+      "current_mem_mhz": [
+        3996
+      ],
+      "current_sm_mhz": [
+        975,
+        1950,
+        2062
+      ],
+      "device_count": 4,
+      "path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_node2_vllm_multinode_worker_clock_lock.json",
+      "returncode": 0
+    }
+  },
+  "concurrency": 64,
+  "failure_reason": null,
+  "hosts": {
+    "leader": "node1",
+    "worker": "node2"
+  },
+  "image": {
+    "digest": "sha256:2338992e8e6413ba65a768e8e767a8092037316107739fa41057be3b0aaa0f90",
+    "leader_image_id": "sha256:2338992e8e6413ba65a768e8e767a8092037316107739fa41057be3b0aaa0f90",
+    "leader_repodigest": "vllm/vllm-openai@sha256:2338992e8e6413ba65a768e8e767a8092037316107739fa41057be3b0aaa0f90",
+    "pinned": "vllm/vllm-openai@sha256:2338992e8e6413ba65a768e8e767a8092037316107739fa41057be3b0aaa0f90",
+    "requested": "vllm/vllm-openai:cu130-nightly-aarch64",
+    "worker_image_id": "sha256:2338992e8e6413ba65a768e8e767a8092037316107739fa41057be3b0aaa0f90",
+    "worker_repodigest": "vllm/vllm-openai@sha256:2338992e8e6413ba65a768e8e767a8092037316107739fa41057be3b0aaa0f90"
+  },
+  "isl": 1024,
+  "labels": {
+    "leader": "node1",
+    "worker": "node2"
+  },
+  "metrics": {
+    "completed": 640,
+    "failed": 0,
+    "mean_tpot_ms": 7.425298316518808,
+    "mean_ttft_ms": 257.3643368418743,
+    "median_tpot_ms": 7.429776715015936,
+    "median_ttft_ms": 165.20029946696013,
+    "output_throughput": 8339.939433109272,
+    "p99_tpot_ms": 7.588598657151792,
+    "p99_ttft_ms": 1260.3481235785875,
+    "request_throughput": 8.144472102645773,
+    "total_token_throughput": 16679.878866218543
+  },
+  "model": "openai/gpt-oss-120b",
+  "num_prompts": 640,
+  "osl": 1024,
+  "ray_cluster_size": 2,
+  "return_codes": {
+    "leader": 0,
+    "worker": 0
+  },
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon",
+  "status": "ok",
+  "tp": 8
+}

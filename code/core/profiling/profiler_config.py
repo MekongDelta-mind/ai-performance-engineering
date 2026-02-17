@@ -544,6 +544,11 @@ class ProfilerConfig:
 
         cmd = [
             "ncu",
+            # We manage GPU clocks at the harness level when possible. On many
+            # managed clusters, Nsight Compute cannot lock clocks (permission
+            # denied) which causes noisy stderr and can end profiling early.
+            "--clock-control",
+            "none",
             "--set", ncu_set,
             "--metrics", ",".join(metrics),
         ]
@@ -557,6 +562,9 @@ class ProfilerConfig:
                 cmd.extend(["--pm-sampling-interval", str(self.pm_sampling_interval)])
             cmd.extend([
                 "--target-processes", "all",
+                # Minimal profiling should not spend minutes collecting thousands of
+                # kernel instances. Capture a single representative kernel launch.
+                "--launch-count", "1",
             ])
         else:
             cmd.extend(["--replay-mode", self.ncu_replay_mode])

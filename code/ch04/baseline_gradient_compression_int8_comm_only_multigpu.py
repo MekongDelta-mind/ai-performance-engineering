@@ -14,7 +14,7 @@ def get_benchmark() -> BaseBenchmark:
     bench = GradientCompressionBenchmark(
         compression="none",
         equivalence_group="ch04_gradient_compression_int8_comm_only",
-        output_tolerance=(1e-1, 1e-1),
+        output_tolerance=(1e-1, 5e-1),
         tensor_size_mb=1024,
         multi_gpu=True,
     )

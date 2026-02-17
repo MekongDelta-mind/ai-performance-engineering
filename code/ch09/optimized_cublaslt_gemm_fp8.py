@@ -23,7 +23,7 @@ class OptimizedCublasltGemmFp8Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="optimized_cublaslt_gemm_fp8",
             friendly_name="Optimized Cublaslt Gemm Fp8",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={
@@ -32,7 +32,6 @@ class OptimizedCublasltGemmFp8Benchmark(CudaBinaryBenchmark):
                 "K": 4096,
                 "kIterations": 10,
                 "kBatchCount": 8,
-                "workspaceSize": 1024,
                 "dtype": 'fp8',
             },
         )

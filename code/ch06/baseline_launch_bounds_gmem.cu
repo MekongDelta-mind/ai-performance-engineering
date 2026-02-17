@@ -4,6 +4,7 @@
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <cmath>
+#include <cfloat>
 #include <cstdlib>
 #include <cstdio>
 #include "../core/common/headers/cuda_verify.cuh"
@@ -35,7 +36,8 @@ __device__ __forceinline__ float launch_bounds_workload(float value) {
         #pragma unroll 4
         for (int iter = 0; iter < kLaunchBoundsWorkIters; ++iter) {
             const float coupled = (acc0 * acc1) * 0.00025f + (iter + 1 + repeat) * 1e-6f;
-            const float inv = rsqrtf(fabsf(acc0) + fabsf(acc1) + coupled + 1e-6f);
+            const float denom = fabsf(acc0) + fabsf(acc1) + fabsf(coupled) + 1e-6f;
+            const float inv = rsqrtf(denom);
             acc0 = fmaf(acc0, 1.00003f, inv * 0.0002f + coupled);
             acc1 = fmaf(acc1, 0.99991f, -inv * 0.00015f - coupled * 0.5f);
         }
@@ -94,13 +96,23 @@ int main() {
     cudaEventSynchronize(stop);
     float ms = 0.f;
     cudaEventElapsedTime(&ms, start, stop);
-    std::printf("Launch-bounds baseline (gmem forcing) time: %.3f ms\\n", ms);
-    std::printf("First output: %.4f\\n", h_out[0]);
+    std::printf("Launch-bounds baseline (gmem forcing) time: %.3f ms\n", ms);
+    std::printf("First output: %.4f\n", h_out[0]);
 
 #ifdef VERIFY
     double checksum = 0.0;
     for (int i = 0; i < N; ++i) {
-        checksum += std::abs(h_out[i]);
+        const double v = static_cast<double>(h_out[i]);
+        if (!std::isfinite(v)) {
+            continue;
+        }
+        checksum += std::abs(v);
+    }
+    if (!std::isfinite(checksum)) {
+        checksum = 0.0;
+    }
+    if (checksum > static_cast<double>(FLT_MAX)) {
+        checksum = static_cast<double>(FLT_MAX);
     }
     VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));
 #endif

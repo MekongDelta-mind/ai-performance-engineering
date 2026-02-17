@@ -18,9 +18,13 @@ def _next_multiple(value: int, multiple: int) -> int:
 def fake_quant_int8(x: torch.Tensor) -> torch.Tensor:
     """Simple per-token symmetric int8 fake quantization."""
     amax = x.abs().amax(dim=-1, keepdim=True).clamp_min(1e-6)
-    scale = 127.0 / amax
-    x_int8 = torch.clamp((x * scale).round(), -128, 127).to(torch.int8)
-    return x_int8.float() / scale
+    # Compute quant/dequant in fp32 for stability, then cast back to preserve
+    # model-wide dtype (the benchmark runs the full model in bf16).
+    scale = (127.0 / amax).to(torch.float32)
+    x_fp32 = x.to(torch.float32)
+    x_int8 = torch.clamp((x_fp32 * scale).round(), -128, 127).to(torch.int8)
+    dequant = x_int8.to(torch.float32) / scale
+    return dequant.to(dtype=x.dtype)
 
 
 class MoEPadQuantFinalize(nn.Module):

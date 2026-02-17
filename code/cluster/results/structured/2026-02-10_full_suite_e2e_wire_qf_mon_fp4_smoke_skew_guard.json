@@ -1,0 +1,82 @@
+{
+  "labels": [
+    "node1",
+    "node2"
+  ],
+  "max_pairwise_median_gap_pair": [
+    "node1",
+    "node2"
+  ],
+  "max_pairwise_median_gap_pct": 1.3162101490266136,
+  "pairwise_median_gaps": [
+    {
+      "median_gap_pct": 1.3162101490266136,
+      "median_tflops": {
+        "node1": 1469.6042182873136,
+        "node2": 1489.2052894468543
+      },
+      "pair": [
+        "node1",
+        "node2"
+      ]
+    }
+  ],
+  "per_host": {
+    "node1": {
+      "deepgemm_avg_tflops": {
+        "max": 1499.150877655795,
+        "mean": 1475.72702639301,
+        "median": 1469.6042182873136,
+        "min": 1458.425983235921
+      },
+      "rounds": [
+        {
+          "deepgemm_avg_tflops": 1469.6042182873136,
+          "round": 1,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_r1_node1_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1458.425983235921,
+          "round": 2,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_r2_node1_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1499.150877655795,
+          "round": 3,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_r3_node1_cluster_perf_fp4_smoke.json"
+        }
+      ]
+    },
+    "node2": {
+      "deepgemm_avg_tflops": {
+        "max": 1567.4681774529072,
+        "mean": 1483.9409409083298,
+        "median": 1489.2052894468543,
+        "min": 1395.1493558252278
+      },
+      "rounds": [
+        {
+          "deepgemm_avg_tflops": 1567.4681774529072,
+          "round": 1,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_r1_node2_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1395.1493558252278,
+          "round": 2,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_r2_node2_cluster_perf_fp4_smoke.json"
+        },
+        {
+          "deepgemm_avg_tflops": 1489.2052894468543,
+          "round": 3,
+          "smoke_json": "/home/ubuntu/ai-performance-engineering/code/cluster/results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_r3_node2_cluster_perf_fp4_smoke.json"
+        }
+      ]
+    }
+  },
+  "reason": "max_pairwise_median_gap_within_threshold",
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon",
+  "smoke_rounds": 3,
+  "smoke_skew_threshold_pct": 5.0,
+  "status": "pass",
+  "timestamp": "2026-02-10T07:18:20+0000"
+}

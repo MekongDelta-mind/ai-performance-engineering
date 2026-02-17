@@ -17,6 +17,8 @@
 
 namespace cg = cooperative_groups;
 
+constexpr int kPipelineStages = 2;
+
 #define CUDA_CHECK(call)                                                     \
   do {                                                                       \
     cudaError_t status = (call);                                             \
@@ -209,7 +211,7 @@ int main() {
   }
 
   int tile = cuda_arch::select_square_tile_size<float>(
-      /*shared_tiles=*/3 * PIPELINE_STAGES, {32, 16, 8});
+      /*shared_tiles=*/3 * kPipelineStages, {32, 16, 8});
 
   // Use a large tile count so the block-strided loop runs long enough for the
   // double-buffered pipeline to hide global-memory latency in steady-state.

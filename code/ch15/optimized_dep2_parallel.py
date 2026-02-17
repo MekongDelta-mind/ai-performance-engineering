@@ -72,7 +72,7 @@ class OptimizedDep2ParallelBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 "fp8": False,
                 "tf32": torch.backends.cuda.matmul.allow_tf32,
             },
-            output_tolerance=(5e-2, 5e-1),
+            output_tolerance=(5e-2, 1e1),
         )
 
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

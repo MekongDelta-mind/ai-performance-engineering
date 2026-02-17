@@ -119,11 +119,11 @@ class OptimizedFP4PerChannelBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def setup(self) -> None:
         if not TE_AVAILABLE:
             raise RuntimeError(
-                "Transformer Engine is required for optimized_fp4_perchannel. "
+                "SKIPPED: Transformer Engine is required for optimized_fp4_perchannel. "
                 f"(import error: {TE_IMPORT_ERROR})"
             )
         if not is_nvfp4_available():
-            raise RuntimeError("NVFP4 kernels unavailable on this hardware/driver.")
+            raise RuntimeError("SKIPPED: NVFP4 kernels unavailable on this hardware/driver.")
 
         self.fp4_recipe = te_recipe.NVFP4BlockScaling(
             disable_rht=True,

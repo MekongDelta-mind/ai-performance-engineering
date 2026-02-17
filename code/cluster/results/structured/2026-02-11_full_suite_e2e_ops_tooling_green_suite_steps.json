@@ -1,0 +1,26 @@
+[
+  {
+    "name": "bootstrap_nodes",
+    "start_time": "2026-02-11T00:27:07+00:00",
+    "end_time": "2026-02-11T00:28:06+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/bootstrap_nodes.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/bootstrap_cluster_nodes.sh --run-id 2026-02-11_full_suite_e2e_ops_tooling_green --hosts node1\\,node2 --ssh-user ubuntu --host-parity-image cfregly/cluster_perf_orig_parity:latest --torch-index-url https://pypi.ngc.nvidia.com --torch-version 2.10.0a0+a36e1d39eb.nv26.01.42222806 --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "preflight_services",
+    "start_time": "2026-02-11T00:28:06+00:00",
+    "end_time": "2026-02-11T00:28:11+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/preflight_services.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/preflight_cluster_services.sh --run-id 2026-02-11_full_suite_e2e_ops_tooling_green --hosts node1\\,node2 --ssh-user ubuntu --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  },
+  {
+    "name": "discovery",
+    "start_time": "2026-02-11T00:28:11+00:00",
+    "end_time": "2026-02-11T00:28:23+00:00",
+    "exit_code": 0,
+    "log_path": "/home/ubuntu/ai-performance-engineering/code/cluster/results/raw/2026-02-11_full_suite_e2e_ops_tooling_green_suite/discovery.log",
+    "command": "/home/ubuntu/ai-performance-engineering/code/cluster/scripts/collect_discovery_and_tcp_sysctl.sh --run-id 2026-02-11_full_suite_e2e_ops_tooling_green --hosts node1\\,node2 --ssh-user ubuntu --labels node1\\,node2 --ssh-key /home/ubuntu/.ssh/ssh_key.pem"
+  }
+]

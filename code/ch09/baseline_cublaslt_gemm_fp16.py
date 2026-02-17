@@ -23,7 +23,7 @@ class BaselineCublasltGemmFp16Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cublaslt_gemm_fp16",
             friendly_name="Baseline Cublaslt Gemm Fp16",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={

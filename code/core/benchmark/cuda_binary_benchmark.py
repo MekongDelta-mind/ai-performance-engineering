@@ -412,7 +412,30 @@ class CudaBinaryBenchmark(VerificationPayloadMixin, BaseBenchmark):
         )
     
     def get_output_tolerance(self) -> tuple[float, float]:
-        """Verification tolerance for checksum-based CUDA binaries."""
+        """Verification tolerance for checksum-based CUDA binaries.
+
+        CUDA binaries typically emit a single checksum float when built with
+        `-DVERIFY=1`. For reduced-precision formats (FP8/FP4), small numeric
+        differences across implementations can accumulate into a noticeably
+        different checksum. Use dtype-aware tolerances to avoid false negatives
+        while still catching large correctness regressions.
+        """
+        dtype = str(self._workload_params.get("dtype", "float32")).lower()
+        if dtype in {"fp4", "nvfp4", "cuda_r_4f_e2m1"}:
+            return (1e-1, 1e-2)
+        if dtype in {
+            "fp8",
+            "nvfp8",
+            "fp8_e4m3",
+            "fp8_e5m2",
+            "cuda_r_8f_e4m3",
+            "cuda_r_8f_e5m2",
+        }:
+            return (1e-2, 1e-2)
+        if dtype in {"tf32", "tfloat32"}:
+            return (1e-2, 1e-2)
+        if dtype in {"fp16", "float16", "half", "bf16", "bfloat16"}:
+            return (1e-3, 1e-3)
         return (1e-5, 1e-5)
     
     def get_verify_output(self) -> "torch.Tensor":

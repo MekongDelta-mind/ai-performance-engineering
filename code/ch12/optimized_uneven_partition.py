@@ -27,8 +27,6 @@ class OptimizedUnevenPartitionBenchmark(CudaBinaryBenchmark):
             warmup=5,
             timeout_seconds=180,
             workload_params={
-                "grid_blocks": 192,
-                "block_threads": 256,
                 "warmup": 1,
                 "iters": 10,
                 "dtype": 'float32',

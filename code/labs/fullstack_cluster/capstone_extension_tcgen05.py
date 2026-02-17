@@ -32,16 +32,22 @@ def load_tcgen05_module():
     clang_host = _REPO_ROOT / "third_party" / "llvm" / "bin" / "clang++"
 
     include_flags = []
+    include_flags.append(f"-I{upstream_cutlass}")
     if te_cutlass.exists():
         include_flags.append(f"-I{te_cutlass}")
-    include_flags.append(f"-I{upstream_cutlass}")
 
     extra_cuda_cflags = [
         "-std=c++20",
         "-gencode=arch=compute_100a,code=sm_100a",
         "-gencode=arch=compute_100f,code=sm_100f",
         "-lineinfo",
+        # CUTLASS/CUTE headers can conflict with framework headers. These toggles
+        # disable debug-only or prefetch-only code paths and help keep builds
+        # stable across CUDA/toolchain revisions.
         "-DCUTE_PREFETCH_COPY_ATOM_DISABLED",
+        "-DCUTE_DISABLE_PREFETCH_OVERLOADS",
+        "-DCUTE_DISABLE_PRINT_LATEX",
+        "-DCUTE_DISABLE_COOPERATIVE_GEMM",
     ] + include_flags
     if clang_host.exists():
         extra_cuda_cflags.append(f"-ccbin={clang_host}")

@@ -394,6 +394,20 @@ class HTAAnalyzer:
     
     def _generate_html_report(self, report: HTAReport) -> str:
         """Generate HTML report."""
+        top_kernels_rows = "".join(
+            f"<tr><td>{k['name'][:50]}</td><td>{k['duration_us']:.0f}</td><td>{k['count']}</td></tr>"
+            for k in report.top_kernels[:10]
+        )
+        recommendations_html = "".join(
+            f'<div class="recommendation">{r}</div>' for r in report.recommendations
+        )
+        bottlenecks_html = (
+            "<div class=\"section\">"
+            "<h2>Bottlenecks</h2>"
+            + "".join(f'<div class="bottleneck">{b}</div>' for b in report.bottlenecks)
+            + "</div>"
+        ) if report.bottlenecks else ""
+
         return f'''<!DOCTYPE html>
 <html>
 <head>
@@ -465,19 +479,16 @@ class HTAAnalyzer:
                 <th>Time (μs)</th>
                 <th>Count</th>
             </tr>
-            {''.join(f"<tr><td>{k['name'][:50]}</td><td>{k['duration_us']:.0f}</td><td>{k['count']}</td></tr>" for k in report.top_kernels[:10])}
+            {top_kernels_rows}
         </table>
     </div>
     
     <div class="section">
         <h2>Recommendations</h2>
-        {''.join(f'<div class="recommendation">{r}</div>' for r in report.recommendations)}
+        {recommendations_html}
     </div>
     
-    {f'''<div class="section">
-        <h2>Bottlenecks</h2>
-        {''.join(f'<div class="bottleneck">{b}</div>' for b in report.bottlenecks)}
-    </div>''' if report.bottlenecks else ''}
+    {bottlenecks_html}
     
     <script>
         new Chart(document.getElementById('temporalChart'), {{
@@ -505,4 +516,3 @@ class HTAAnalyzer:
     </script>
 </body>
 </html>'''
-

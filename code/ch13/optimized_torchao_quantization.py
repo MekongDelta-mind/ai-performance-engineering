@@ -55,7 +55,7 @@ class OptimizedTorchAOQuantizationBenchmark(VerificationPayloadMixin, BaseBenchm
         if not torch.cuda.is_available():
             raise RuntimeError("CUDA required for torchao quantization benchmark")
         if TORCHAO_IMPORT_ERROR is not None or quantize_ is None or Int8DynamicActivationInt8WeightConfig is None:
-            raise RuntimeError(f"torchao is required for torchao quantization benchmark: {TORCHAO_IMPORT_ERROR}")
+            raise RuntimeError(f"SKIPPED: torchao is required for torchao quantization benchmark: {TORCHAO_IMPORT_ERROR}")
 
         self.model = nn.Sequential(
             nn.Linear(self.in_features, self.hidden_features),

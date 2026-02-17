@@ -23,17 +23,15 @@ class BaselineCublasltGemmFp4Benchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cublaslt_gemm_fp4",
             friendly_name="Baseline Cublaslt Gemm Fp4",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=180,
             workload_params={
-                "BLOCK_SIZE_SCALE": 32,
                 "M": 4096,
                 "N": 4096,
                 "K": 4096,
                 "kIterations": 10,
                 "kBatchCount": 8,
-                "TILE_SIZE": 32,
                 "dtype": 'fp4',
             },
         )

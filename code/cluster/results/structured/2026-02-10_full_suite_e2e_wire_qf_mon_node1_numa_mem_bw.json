@@ -1,0 +1,65 @@
+{
+  "bytes": 1073741824,
+  "cpu_node": 0,
+  "iters": 10,
+  "label": "node1",
+  "results": [
+    {
+      "bw_gbps": 136.605231,
+      "bytes": 1073741824,
+      "elapsed_s": 0.078602,
+      "iters": 10,
+      "node": 0,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 65.916449,
+      "bytes": 1073741824,
+      "elapsed_s": 0.162894,
+      "iters": 10,
+      "node": 1,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 60.385458,
+      "bytes": 1073741824,
+      "elapsed_s": 0.177815,
+      "iters": 10,
+      "node": 2,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 35.358803,
+      "bytes": 1073741824,
+      "elapsed_s": 0.30367,
+      "iters": 10,
+      "node": 10,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 32.838913,
+      "bytes": 1073741824,
+      "elapsed_s": 0.326972,
+      "iters": 10,
+      "node": 18,
+      "threads": 16,
+      "warmup": 2
+    },
+    {
+      "bw_gbps": 32.75876,
+      "bytes": 1073741824,
+      "elapsed_s": 0.327772,
+      "iters": 10,
+      "node": 26,
+      "threads": 16,
+      "warmup": 2
+    }
+  ],
+  "run_id": "2026-02-10_full_suite_e2e_wire_qf_mon",
+  "threads": 16,
+  "warmup": 2
+}

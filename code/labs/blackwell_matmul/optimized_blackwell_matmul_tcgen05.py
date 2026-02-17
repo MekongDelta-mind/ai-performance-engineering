@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import torch
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -39,6 +41,19 @@ class Tcgen05GraceBlackwellBenchmark(GraceBlackwellMatmulBenchmark):
         )
         self.required_capabilities = {"tcgen05": True}
 
+    def setup(self) -> None:
+        super().setup()
+        assert self._lhs is not None and self._rhs is not None
+        # Build/load the tcgen05 extension outside the timed region. If the
+        # environment cannot compile the inline extension, skip instead of
+        # failing the whole benchmark suite.
+        try:
+            with torch.no_grad():
+                _ = self._runner(self._lhs, self._rhs)
+            torch.cuda.synchronize(self.device)
+        except Exception as exc:
+            raise RuntimeError(f"SKIPPED: tcgen05 inline extension unavailable ({exc})") from exc
+
 
 class Tcgen05Cta2GraceBlackwellBenchmark(GraceBlackwellMatmulBenchmark):
     def __init__(self, size: int = 2048) -> None:
@@ -57,6 +72,16 @@ class Tcgen05Cta2GraceBlackwellBenchmark(GraceBlackwellMatmulBenchmark):
             reference_runner=baseline_blackwell_matmul,
         )
         self.required_capabilities = {"tcgen05": True, "cta_group": True}
+
+    def setup(self) -> None:
+        super().setup()
+        assert self._lhs is not None and self._rhs is not None
+        try:
+            with torch.no_grad():
+                _ = self._runner(self._lhs, self._rhs)
+            torch.cuda.synchronize(self.device)
+        except Exception as exc:
+            raise RuntimeError(f"SKIPPED: tcgen05 inline extension unavailable ({exc})") from exc
 
 
 

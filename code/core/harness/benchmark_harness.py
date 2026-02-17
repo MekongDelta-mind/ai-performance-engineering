@@ -228,6 +228,32 @@ def _resolve_physical_device_index(device_index: int) -> int:
     raise RuntimeError(f"Unsupported CUDA_VISIBLE_DEVICES entry {token!r}")
 
 
+_SUDO_NONINTERACTIVE_OK: Optional[bool] = None
+
+
+def _sudo_noninteractive_ok() -> bool:
+    """Return True if `sudo -n` is available for this process.
+
+    We use this to optionally run `nvidia-smi` as root for clock locking on
+    managed systems where unprivileged users can't change clocks.
+    """
+    global _SUDO_NONINTERACTIVE_OK
+    if _SUDO_NONINTERACTIVE_OK is not None:
+        return _SUDO_NONINTERACTIVE_OK
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        _SUDO_NONINTERACTIVE_OK = False
+        return False
+    if shutil.which("sudo") is None:
+        _SUDO_NONINTERACTIVE_OK = False
+        return False
+    try:
+        subprocess.check_output(["sudo", "-n", "true"], stderr=subprocess.STDOUT)
+        _SUDO_NONINTERACTIVE_OK = True
+    except Exception:
+        _SUDO_NONINTERACTIVE_OK = False
+    return _SUDO_NONINTERACTIVE_OK
+
+
 def ramp_gpu_clocks(device: int = 0, duration_ms: float = 50.0, max_iters: int = 200) -> None:
     """Run a short GPU workload to ramp clocks before measurement."""
     if not torch.cuda.is_available():
@@ -283,7 +309,6 @@ def lock_gpu_clocks(device: int = 0, sm_clock_mhz: Optional[int] = None, mem_clo
         raise RuntimeError("lock_gpu_clocks requires CUDA")
     props = torch.cuda.get_device_properties(device)
     physical_index = _resolve_physical_device_index(device)
-
     def _query_nvml_clocks() -> tuple[int, int, int, int]:
         """Return (app_sm, app_mem, cur_sm, cur_mem) for the physical GPU index."""
         try:
@@ -1894,11 +1919,22 @@ class BenchmarkHarness:
             print("[harness] sockets unavailable; launching torchrun wrapper directly (single process)", flush=True)
             torchrun_cmd = [sys.executable]
         else:
-            torchrun_cmd = [
-                "torchrun",
-                "--nproc_per_node",
-                str(nproc_per_node),
-            ]
+            torchrun_path = shutil.which("torchrun")
+            if torchrun_path:
+                torchrun_cmd = [
+                    torchrun_path,
+                    "--nproc_per_node",
+                    str(nproc_per_node),
+                ]
+            else:
+                # Avoid relying on PATH/entrypoints; works even when the venv isn't activated.
+                torchrun_cmd = [
+                    sys.executable,
+                    "-m",
+                    "torch.distributed.run",
+                    "--nproc_per_node",
+                    str(nproc_per_node),
+                ]
         if getattr(config, "nnodes", None):
             torchrun_cmd.extend(["--nnodes", str(config.nnodes)])
         if getattr(config, "rdzv_backend", None) or getattr(config, "nnodes", None):

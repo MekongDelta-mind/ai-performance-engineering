@@ -24,11 +24,20 @@ from core.harness.benchmark_harness import BenchmarkHarness, BenchmarkMode, Benc
 from core.benchmark.models import BenchmarkResult, TimingStats, MemoryStats
 
 
-# Skip tests if CUDA is not available
-pytestmark = pytest.mark.skipif(
-    not torch.cuda.is_available(),
-    reason="CUDA required - NVIDIA GPU and tools must be available"
-)
+# Skip tests if CUDA is not available and silence advisory runtime noise that is
+# expected in virtualized CI-like environments.
+pytestmark = [
+    pytest.mark.skipif(
+        not torch.cuda.is_available(),
+        reason="CUDA required - NVIDIA GPU and tools must be available",
+    ),
+    pytest.mark.filterwarnings(
+        "ignore:ENVIRONMENT WARNING.*:RuntimeWarning"
+    ),
+    pytest.mark.filterwarnings(
+        "ignore:MEMORY TRACKING WARNING.*:RuntimeWarning"
+    ),
+]
 
 
 class SimpleBenchmark(BaseBenchmark):

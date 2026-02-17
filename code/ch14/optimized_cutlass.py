@@ -64,7 +64,7 @@ class OptimizedCutlassBenchmark(VerificationPayloadMixin, BaseBenchmark):
         try:
             from core.benchmark.cutlass_binding import cutlass_gemm_fp16
         except Exception as exc:
-            raise RuntimeError("CUTLASS GEMM extension unavailable for optimized_cutlass benchmark.") from exc
+            raise RuntimeError("SKIPPED: CUTLASS GEMM extension unavailable for optimized_cutlass benchmark.") from exc
         self._cutlass_gemm = cutlass_gemm_fp16
     
     def benchmark_fn(self) -> None:

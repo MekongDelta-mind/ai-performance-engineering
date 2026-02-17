@@ -203,7 +203,7 @@ int main() {
     std::cout << "Throughput: " << tflops << " TFLOPS" << std::endl;
 
 #ifdef VERIFY
-    CUDA_CHECK(cudaMemcpy(h_C, d_C, size_C, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(h_C, d_C, size_C_fp16, cudaMemcpyDeviceToHost));
     const size_t elements = elements_C * kBatchCount;
     double checksum = 0.0;
     for (size_t i = 0; i < elements; ++i) {

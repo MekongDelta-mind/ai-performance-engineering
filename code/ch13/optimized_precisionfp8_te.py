@@ -100,7 +100,7 @@ class OptimizedTEFP8Benchmark(VerificationPayloadMixin, BaseBenchmark):
     def setup(self) -> None:
         if not TE_AVAILABLE:
             raise RuntimeError(
-                "Transformer Engine is required for optimized_precisionfp8_te. "
+                "SKIPPED: Transformer Engine is required for optimized_precisionfp8_te. "
                 f"(import error: {TE_IMPORT_ERROR})"
             )
         # Optimized FP8 recipe with best practices:

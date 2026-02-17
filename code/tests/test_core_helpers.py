@@ -1,4 +1,5 @@
 import json
+import inspect
 import subprocess
 import sys
 from pathlib import Path
@@ -404,6 +405,78 @@ def test_parse_ps_for_defunct_launcher():
     )
     assert NsightAutomation._parse_ps_for_defunct_launcher(ps_output, parent_pid=42)
     assert not NsightAutomation._parse_ps_for_defunct_launcher(ps_output, parent_pid=77)
+
+
+def test_nsight_automation_profile_nsys_defaults():
+    from core.profiling.nsight_automation import NsightAutomation
+
+    signature = inspect.signature(NsightAutomation.profile_nsys)
+    assert signature.parameters["preset"].default == "light"
+    assert signature.parameters["wait_mode"].default == "primary"
+    assert signature.parameters["finalize_grace_seconds"].default == 20.0
+    assert signature.parameters["sanitize_python_startup"].default is True
+
+
+def test_nsight_automation_build_env_adds_startup_stub(tmp_path: Path):
+    from core.profiling.nsight_automation import NsightAutomation
+
+    automation = NsightAutomation(tmp_path)
+    env = automation._build_env(sanitize_python_startup=True)  # type: ignore[attr-defined]
+    pythonpath_entries = [entry for entry in env.get("PYTHONPATH", "").split(":") if entry]
+    assert pythonpath_entries, "Expected PYTHONPATH to be populated"
+    assert "aisp_profile_python_startup" in pythonpath_entries[0]
+    assert env.get("PYTHONNOUSERSITE") == "1"
+    startup_stub = Path(pythonpath_entries[0]) / "sitecustomize.py"
+    assert startup_stub.exists()
+
+
+def test_profile_nsys_mcp_schema_includes_safety_defaults():
+    schema = mcp_server.TOOLS["profile_nsys"].input_schema
+    props = schema["properties"]
+    assert props["preset"]["default"] == "light"
+    assert props["trace_forks"]["default"] is False
+    assert props["wait_mode"]["default"] == "primary"
+    assert props["finalize_grace_seconds"]["default"] == 20.0
+    assert props["sanitize_python_startup"]["default"] is True
+
+
+def test_profile_nsys_cli_defaults_match_safety_profile():
+    import cli.aisp as aisp
+
+    commands = {command.name: command for command in aisp.profile_app.registered_commands}
+    nsys_cmd = commands["nsys"]
+    signature = inspect.signature(nsys_cmd.callback)
+    assert signature.parameters["preset"].default.default == "light"
+    assert signature.parameters["wait_mode"].default.default == "primary"
+    assert signature.parameters["finalize_grace_seconds"].default.default == 20.0
+    assert signature.parameters["sanitize_python_startup"].default.default is True
+
+
+def test_harness_nsys_paths_use_nsight_automation():
+    from core.harness import run_benchmarks
+
+    python_source = inspect.getsource(run_benchmarks.profile_python_benchmark)
+    cuda_source = inspect.getsource(run_benchmarks.profile_cuda_executable)
+    assert "NsightAutomation" in python_source
+    assert "profile_nsys(" in python_source
+    assert "NsightAutomation" in cuda_source
+    assert "profile_nsys(" in cuda_source
+
+
+def test_compare_tools_emit_pair_health_on_missing_pairs(tmp_path: Path):
+    nsys_result = mcp_server.tool_compare_nsys({"profiles_dir": str(tmp_path)})
+    assert nsys_result.get("success") is False
+    assert "pair_health" in nsys_result
+
+    ncu_result = mcp_server.tool_compare_ncu({"profiles_dir": str(tmp_path)})
+    assert ncu_result.get("success") is False
+    assert "pair_health" in ncu_result
+
+
+def test_profile_compare_emits_pair_health_on_missing_profiles(tmp_path: Path):
+    result = mcp_server.tool_profile_compare({"profiles_dir": str(tmp_path)})
+    assert result.get("error")
+    assert "pair_health" in result
 
 
 def test_collect_profile_role_files_materializes_role_symlinks_with_same_target(tmp_path: Path):

@@ -583,32 +583,50 @@ if typer and profile_app is not None:
         command: str = typer.Argument(..., help='Command to profile (quote it), e.g., "python train.py"'),
         output_name: Optional[str] = typer.Option(None, "--output-name", "-o", help="Base name for output"),
         output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Base artifacts directory (default: ./artifacts/runs)"),
-        preset: str = typer.Option("full", "--preset", help="Preset: full or light"),
+        preset: str = typer.Option("light", "--preset", help="Preset: light or full"),
+        trace_cuda: bool = typer.Option(True, "--trace-cuda/--no-trace-cuda", help="Trace CUDA API calls"),
+        trace_nvtx: bool = typer.Option(True, "--trace-nvtx/--no-trace-nvtx", help="Trace NVTX ranges"),
+        trace_osrt: bool = typer.Option(True, "--trace-osrt/--no-trace-osrt", help="Trace OS runtime"),
+        full_timeline: bool = typer.Option(False, "--full-timeline", help="Include cuda-hw/cublas/cudnn traces"),
+        trace_forks: bool = typer.Option(False, "--trace-forks", help="Trace child processes before exec"),
+        wait_mode: str = typer.Option("primary", "--wait-mode", help="NSYS wait mode: primary or all"),
+        finalize_grace_seconds: float = typer.Option(
+            20.0,
+            "--finalize-grace-seconds",
+            help="Grace window after timeout SIGINT for report finalization",
+        ),
+        force_lineinfo: bool = typer.Option(
+            True,
+            "--force-lineinfo/--no-force-lineinfo",
+            help="Force -lineinfo for source mapping",
+        ),
+        sanitize_python_startup: bool = typer.Option(
+            True,
+            "--sanitize-python-startup/--no-sanitize-python-startup",
+            help="Prefix a safe sitecustomize shim for profiling subprocesses",
+        ),
+        timeout_seconds: Optional[int] = typer.Option(None, "--timeout", help="Optional timeout in seconds"),
     ) -> None:
         """Run Nsight Systems profiling on a command."""
-        import shlex
-        from core.benchmark.artifact_manager import ArtifactManager, default_artifacts_root
-        cmd_parts = shlex.split(command)
-        from core.benchmark.artifact_manager import build_run_id, slugify
-
-        output = output_name or "profile"
-        base_dir = output_dir if output_dir else default_artifacts_root(Path.cwd())
-        run_label = output or "run"
-        run_id = build_run_id("profile-nsys", run_label, base_dir=Path(base_dir))
-        artifacts = ArtifactManager(base_dir=base_dir, run_id=run_id, run_kind="profile-nsys", run_label=run_label)
-        out_dir = artifacts.profiles_dir / "tools" / "nsys" / slugify(run_label)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        
-        nsys_cmd = [
-            "nsys", "profile",
-            "-o", str((out_dir / output)),
-            "--trace", "cuda,nvtx,osrt",
-            "--cuda-memory-usage=true",
-            *cmd_parts
-        ]
-        typer.echo(f"Running: {' '.join(nsys_cmd)}")
-        result = subprocess.run(nsys_cmd)
-        raise typer.Exit(code=result.returncode)
+        from cli.commands import profiling
+        _run(
+            profiling.nsys,
+            ctx,
+            command=command,
+            output_name=output_name,
+            output_dir=str(output_dir) if output_dir else None,
+            preset=preset,
+            trace_cuda=trace_cuda,
+            trace_nvtx=trace_nvtx,
+            trace_osrt=trace_osrt,
+            full_timeline=full_timeline,
+            trace_forks=trace_forks,
+            wait_mode=wait_mode,
+            finalize_grace_seconds=finalize_grace_seconds,
+            force_lineinfo=force_lineinfo,
+            sanitize_python_startup=sanitize_python_startup,
+            timeout_seconds=timeout_seconds,
+        )
 
     @profile_app.command("ncu", help="Run Nsight Compute capture")
     def profile_ncu(

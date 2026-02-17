@@ -5941,19 +5941,22 @@ def tool_profile_compare(params: Dict[str, Any]) -> Dict[str, Any]:
     if not profiles_dir or not profiles_dir.exists():
         return make_error(f"profiles_dir not found: {profiles_dir}", include_context, context_level)
 
+    pair_health = profile_insights.assess_profile_pair_health(profiles_dir, pair_key=pair_key)
     result = profile_insights.generate_flamegraph_comparison(profiles_dir, pair_key=pair_key)
     if result is None:
         nsys_comparison = profile_insights.compare_nsys_files(profiles_dir, pair_key=pair_key)
         ncu_comparison = profile_insights.compare_ncu_files(profiles_dir, pair_key=pair_key)
         if nsys_comparison is None and ncu_comparison is None:
-            return {
+            return attach_context_if_requested({
                 "error": "No baseline/optimized nsys profiles found",
                 "profiles_dir": str(profiles_dir),
                 "hint": "Profile both baseline and optimized with: nsys profile --stats=true -o <name> python <script>.py",
-            }
+                "pair_health": pair_health,
+            }, include_context, context_level)
         result = {
             "warning": "No baseline/optimized nsys profiles found for flamegraph comparison.",
             "profiles_dir": str(profiles_dir),
+            "pair_health": pair_health,
         }
         if nsys_comparison is not None:
             result["nsys_comparison"] = nsys_comparison
@@ -5970,7 +5973,8 @@ def tool_profile_compare(params: Dict[str, Any]) -> Dict[str, Any]:
         return attach_context_if_requested(result, include_context, context_level)
 
     if result.get("error"):
-        return result
+        result.setdefault("pair_health", pair_health)
+        return attach_context_if_requested(result, include_context, context_level)
 
     nsys_comparison = profile_insights.compare_nsys_files(profiles_dir, pair_key=pair_key)
     if nsys_comparison is not None:
@@ -6016,6 +6020,7 @@ def tool_profile_compare(params: Dict[str, Any]) -> Dict[str, Any]:
     # Add chapter/directory info
     result["chapter"] = chapter
     result["profiles_dir"] = str(profiles_dir)
+    result.setdefault("pair_health", pair_health)
 
     return attach_context_if_requested(result, include_context, context_level)
 
@@ -6031,6 +6036,7 @@ def tool_profile_compare(params: Dict[str, Any]) -> Dict[str, Any]:
     "⚠️ SLOW: 1-10+ minutes depending on workload. ALWAYS use dry_run=true first to preview command. "
     "PRESETS: preset='light' (default) for quick/small traces, preset='full' for comprehensive data. "
     "Reliability knobs: wait_mode='primary' (default) and finalize_grace_seconds help finalize reports on timeout-prone captures. "
+    "Startup isolation: sanitize_python_startup=true (default) prefixes a safe sitecustomize shim for profiler subprocesses. "
     "STREAM/OVERLAP STUDIES: set full_timeline=true and add NVTX ranges in the code so overlap is visible. "
     "WORKFLOW: status → profile_nsys(dry_run=true) → profile_nsys → nsys_summary → compare_nsys. "
     "COMPARE: compare_nsys auto-pairs baseline/optimized across subdirectories; pass pair if multiple pairs exist. "
@@ -6081,6 +6087,11 @@ def tool_profile_compare(params: Dict[str, Any]) -> Dict[str, Any]:
         "force_lineinfo": {
             "type": "boolean",
             "description": "Force -lineinfo via NVCC/TORCH_NVCC_FLAGS to improve source mapping",
+            "default": True
+        },
+        "sanitize_python_startup": {
+            "type": "boolean",
+            "description": "Prefix a safe sitecustomize shim on PYTHONPATH to isolate profiler runs from host startup hooks",
             "default": True
         },
         "precheck_only": {
@@ -6137,6 +6148,7 @@ def tool_profile_nsys(params: Dict[str, Any]) -> Dict[str, Any]:
         return make_error("wait_mode must be 'primary' or 'all'", include_context, context_level)
     finalize_grace_seconds = float(params.get("finalize_grace_seconds", 20.0))
     force_lineinfo = bool(params.get("force_lineinfo", True))
+    sanitize_python_startup = bool(params.get("sanitize_python_startup", True))
     precheck_only = bool(params.get("precheck_only", False))
     dry_run = bool(params.get("dry_run") or params.get("estimate_only"))
     run_async = bool(params.get("async"))
@@ -6179,6 +6191,7 @@ def tool_profile_nsys(params: Dict[str, Any]) -> Dict[str, Any]:
             "finalize_grace_seconds": finalize_grace_seconds,
             "full_timeline": full_timeline or preset == "full",
             "force_lineinfo": force_lineinfo,
+            "sanitize_python_startup": sanitize_python_startup,
             "timeout_seconds": timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
             "planned_output": str(output_path),
             "note": "Set dry_run=false to execute; use async=true to background the run. Default preset is light; set preset=full for richer traces.",
@@ -6216,6 +6229,7 @@ def tool_profile_nsys(params: Dict[str, Any]) -> Dict[str, Any]:
                 timeout_seconds=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
                 wait_mode=wait_mode,
                 finalize_grace_seconds=finalize_grace_seconds,
+                sanitize_python_startup=sanitize_python_startup,
             )
         nsys_metrics: Dict[str, Any] = {}
         nsys_metrics_error = None
@@ -6241,6 +6255,7 @@ def tool_profile_nsys(params: Dict[str, Any]) -> Dict[str, Any]:
             "finalize_grace_seconds": finalize_grace_seconds,
             "full_timeline": full_timeline or preset == "full",
             "force_lineinfo": force_lineinfo,
+            "sanitize_python_startup": sanitize_python_startup,
             "timeout_seconds": timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
             "timeout_hit": bool(auto.last_run.get("timeout_hit")) if hasattr(auto, "last_run") else False,  # type: ignore[attr-defined]
             "warning": "NSYS full timeline enabled: captures may run slower and produce large traces; set preset=light to keep it small." if preset == "full" or full_timeline else "Using light NSYS preset for safer/faster capture.",
@@ -7905,10 +7920,17 @@ def tool_compare_nsys(params: Dict[str, Any]) -> Dict[str, Any]:
     pair_key = params.get("pair")
     if not profiles_dir.exists():
         return make_error(f"profiles_dir not found: {profiles_dir}", include_context, context_level)
+    pair_health = profile_insights.assess_profile_pair_health(profiles_dir, pair_key=pair_key)
     try:
         result = profile_insights.compare_nsys_files(profiles_dir, pair_key=pair_key)
         if result is None:
-            result = {"error": "No comparable nsys files found", "success": False}
+            result = {
+                "error": "No comparable nsys files found",
+                "success": False,
+                "pair_health": pair_health,
+            }
+        else:
+            result.setdefault("pair_health", pair_health)
         ncu_comparison = profile_insights.compare_ncu_files(profiles_dir, pair_key=pair_key)
         if ncu_comparison is not None:
             result["ncu_comparison"] = ncu_comparison
@@ -7922,7 +7944,12 @@ def tool_compare_nsys(params: Dict[str, Any]) -> Dict[str, Any]:
             result["side_by_side_error"] = side_by_side_report.get("error", "side_by_side_failed")
         return attach_context_if_requested(result, include_context, context_level)
     except Exception as e:
-        return make_error(f"nsys comparison failed: {e}", include_context, context_level)
+        return make_error(
+            f"nsys comparison failed: {e}",
+            include_context,
+            context_level,
+            pair_health=pair_health,
+        )
 
 
 @register_tool(
@@ -7951,11 +7978,17 @@ def tool_compare_ncu(params: Dict[str, Any]) -> Dict[str, Any]:
     pair_key = params.get("pair")
     if not profiles_dir.exists():
         return make_error(f"profiles_dir not found: {profiles_dir}", include_context, context_level)
+    pair_health = profile_insights.assess_profile_pair_health(profiles_dir, pair_key=pair_key)
     try:
         result = profile_insights.compare_ncu_files(profiles_dir, pair_key=pair_key)
         if result is None:
-            result = {"error": "No comparable ncu files found", "success": False}
+            result = {
+                "error": "No comparable ncu files found",
+                "success": False,
+                "pair_health": pair_health,
+            }
         elif isinstance(result, dict):
+            result.setdefault("pair_health", pair_health)
             alignment_valid = bool(result.get("alignment_valid_for_tuning", True))
             if not alignment_valid:
                 result.setdefault("success", True)
@@ -7980,7 +8013,12 @@ def tool_compare_ncu(params: Dict[str, Any]) -> Dict[str, Any]:
             result["side_by_side_error"] = side_by_side_report.get("error", "side_by_side_failed")
         return attach_context_if_requested(result, include_context, context_level)
     except Exception as e:
-        return make_error(f"ncu comparison failed: {e}", include_context, context_level)
+        return make_error(
+            f"ncu comparison failed: {e}",
+            include_context,
+            context_level,
+            pair_health=pair_health,
+        )
 
 
 @register_tool(

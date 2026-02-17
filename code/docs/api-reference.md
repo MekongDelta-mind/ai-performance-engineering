@@ -166,7 +166,7 @@ Profiling with Nsight Systems, Nsight Compute, and torch.profiler.
 
 **Pair-health + manifests (CLI + MCP):** profile comparisons now emit `pair_health` metadata (presence/absence of baseline/optimized NSYS/NCU pairs), and comparison staging writes `pair_manifest.json` so downstream automation can consume deterministic pair context without re-discovering files.
 
-**NSYS timeout hardening (CLI + MCP):** `profile_nsys` defaults to the safer `preset='light'`, supports `wait_mode` (`primary`/`all`), and uses a graceful timeout finalization window (`finalize_grace_seconds`) before hard termination. This improves robustness on captures that stall during report finalization.
+**NSYS timeout hardening (CLI + MCP + harness):** all NSYS entrypoints now route through `NsightAutomation.profile_nsys`, default to the safer `preset='light'`, support `wait_mode` (`primary`/`all`), and use a graceful timeout finalization window (`finalize_grace_seconds`) before hard termination. `profile_nsys` also supports `sanitize_python_startup=true` to prefix a safe `sitecustomize` shim for profiler subprocesses.
 
 **Python API:**
 ```python

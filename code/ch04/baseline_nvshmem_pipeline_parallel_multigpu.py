@@ -44,7 +44,7 @@ class NVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBenchmark):
         original_async = os.environ.get("AISP_SYMMEM_PIPELINE_ASYNC")
         try:
             os.environ["AISP_DISABLE_SYMMEM_PIPELINE"] = "1"
-            os.environ["AISP_SYMMEM_PIPELINE_ASYNC"] = "0"
+            os.environ["AISP_SYMMEM_PIPELINE_ASYNC"] = "1"
             sys.argv = [
                 original_argv[0],
                 "--schedule",
@@ -52,7 +52,7 @@ class NVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBenchmark):
                 "--batch-size",
                 "64",
                 "--num-microbatches",
-                "2",
+                "4",
                 "--seq-len",
                 "16",
                 "--hidden-dim",
@@ -121,6 +121,7 @@ class NVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBenchmark):
             script_args=[],
             multi_gpu_required=True,
             name="baseline_nvshmem_pipeline_parallel_multigpu",
+            config_arg_map={"iterations": "--iterations", "warmup": "--warmup"},
         )
 
 

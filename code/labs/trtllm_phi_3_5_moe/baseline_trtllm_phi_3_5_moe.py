@@ -45,10 +45,10 @@ class BaselineTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
     def setup(self) -> None:
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA is required for the TRT-LLM Phi-3.5-MoE baseline")
+            raise RuntimeError("SKIPPED: CUDA is required for the TRT-LLM Phi-3.5-MoE baseline")
         if not self.model_path.exists():
             raise RuntimeError(
-                f"Model path not found: {self.model_path}. "
+                f"SKIPPED: Model path not found: {self.model_path}. "
                 "Provide --model-path to a local Phi-3.5-MoE checkout."
             )
         torch.manual_seed(42)

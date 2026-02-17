@@ -17,34 +17,19 @@ from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
 class OptimizedCuteDslNvfp4GemmBenchmark(CudaBinaryBenchmark):
     """Wraps the optimized CUDA binary."""
 
-    # NCU kernel replay is extremely expensive for microsecond-scale kernels if the
-    # benchmark does large internal loops. Clamp the CUDA binary's internal loop
-    # count during NCU capture so profiling finishes quickly and reliably.
-    ncu_env_overrides = {
-        "AISP_NCU_PROFILE_ITERS": "1",
-    }
-
     def __init__(self) -> None:
         chapter_dir = Path(__file__).parent
         super().__init__(
             chapter_dir=chapter_dir,
             binary_name="optimized_cute_dsl_nvfp4_gemm",
             friendly_name="Optimized Cute DSL Nvfp4 Gemm",
-            # CUDA binaries pay heavy per-process init costs; keep harness-level repeats low.
-            # The CUDA code runs its own internal iteration loop (kIterations).
             iterations=1,
-            warmup=1,
+            warmup=5,
             timeout_seconds=180,
             workload_params={
-                "M0": 128,
-                "N0": 7168,
-                "K0": 16384,
-                "M1": 128,
-                "N1": 4096,
-                "K1": 7168,
-                "M2": 128,
-                "N2": 7168,
-                "K2": 2048,
+                "M": 128,
+                "N": 7168,
+                "K": 16384,
                 "kIterations": 50,
                 "dtype": "nvfp4",
             },

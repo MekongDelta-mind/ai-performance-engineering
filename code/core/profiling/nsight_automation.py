@@ -14,6 +14,7 @@ import re
 import subprocess
 import json
 import signal
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Sequence
 import sys
@@ -85,6 +86,7 @@ class NsightAutomation:
         self.last_run: Dict[str, Any] = {}
         self._ncu_sets_cache: Optional[set[str]] = None
         self._last_resolved_ncu_set: Optional[str] = None
+        self._python_startup_stub_dir: Optional[Path] = None
         
         # Check availability
         self.nsys_available = self._check_command("nsys")
@@ -190,12 +192,51 @@ class NsightAutomation:
                     normalized.append(candidate)
         return normalized
 
-    def _build_env(self, force_lineinfo: bool = False) -> Dict[str, str]:
+    def _ensure_python_startup_stub(self) -> Path:
+        """Materialize a startup-safe `sitecustomize.py` shim for profiling subprocesses."""
+        if self._python_startup_stub_dir is not None:
+            return self._python_startup_stub_dir
+        stub_dir = Path(tempfile.gettempdir()) / "aisp_profile_python_startup"
+        stub_dir.mkdir(parents=True, exist_ok=True)
+        stub_path = stub_dir / "sitecustomize.py"
+        stub_contents = (
+            '"""AISP profiling startup shim.\n'
+            "\n"
+            "Overrides host-level sitecustomize side effects during profiler launches.\n"
+            '"""\n'
+        )
+        if not stub_path.exists() or stub_path.read_text() != stub_contents:
+            stub_path.write_text(stub_contents)
+        self._python_startup_stub_dir = stub_dir
+        return stub_dir
+
+    def _build_env(
+        self,
+        force_lineinfo: bool = False,
+        extra_env: Optional[Dict[str, str]] = None,
+        sanitize_python_startup: bool = True,
+    ) -> Dict[str, str]:
         """Build environment with repo root on PYTHONPATH for child commands."""
         env = os.environ.copy()
-        repo_root = Path(__file__).resolve().parents[2]
+        if extra_env:
+            env.update(extra_env)
+        pythonpath_entries: List[str] = [str(self.repo_root)]
+        if sanitize_python_startup:
+            stub_dir = self._ensure_python_startup_stub()
+            pythonpath_entries.insert(0, str(stub_dir))
+            # Keep user-site packages out of profiler child processes.
+            env.setdefault("PYTHONNOUSERSITE", "1")
         existing = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = f"{repo_root}:{existing}" if existing else str(repo_root)
+        if existing:
+            pythonpath_entries.append(existing)
+        deduped_entries: List[str] = []
+        seen = set()
+        for entry in pythonpath_entries:
+            if not entry or entry in seen:
+                continue
+            seen.add(entry)
+            deduped_entries.append(entry)
+        env["PYTHONPATH"] = os.pathsep.join(deduped_entries)
         if force_lineinfo:
             def _append_flag(key: str, flag: str) -> None:
                 current = env.get(key, "").strip()
@@ -219,6 +260,8 @@ class NsightAutomation:
         timeout_seconds: Optional[float] = None,
         wait_mode: str = "primary",
         finalize_grace_seconds: float = 20.0,
+        extra_env: Optional[Dict[str, str]] = None,
+        sanitize_python_startup: bool = True,
     ) -> Optional[Path]:
         """Run Nsight Systems profiling.
         
@@ -232,6 +275,8 @@ class NsightAutomation:
             trace_forks: If True, trace child processes before exec
             wait_mode: NSYS wait mode ('primary' or 'all')
             finalize_grace_seconds: Grace period after SIGINT on timeout
+            extra_env: Optional environment overrides for profiled process
+            sanitize_python_startup: Prefix a safe `sitecustomize.py` shim on PYTHONPATH
         
         Presets:
             - light (default): cuda,nvtx,osrt, no sampling/ctx switch.
@@ -309,6 +354,7 @@ class NsightAutomation:
             "preset": preset_normalized,
             "wait_mode": wait_mode_norm,
             "finalize_grace_seconds": finalize_grace_seconds,
+            "sanitize_python_startup": bool(sanitize_python_startup),
         }
         
         try:
@@ -317,7 +363,11 @@ class NsightAutomation:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                env=self._build_env(force_lineinfo=force_lineinfo),
+                env=self._build_env(
+                    force_lineinfo=force_lineinfo,
+                    extra_env=extra_env,
+                    sanitize_python_startup=sanitize_python_startup,
+                ),
                 cwd=str(self.run_cwd),
                 start_new_session=True,
             )
@@ -400,8 +450,12 @@ class NsightAutomation:
                     full_timeline=False,
                     trace_forks=False,
                     preset="light",
+                    force_lineinfo=force_lineinfo,
+                    timeout_seconds=timeout_seconds,
                     wait_mode=wait_mode_norm,
                     finalize_grace_seconds=finalize_grace_seconds,
+                    extra_env=extra_env,
+                    sanitize_python_startup=sanitize_python_startup,
                 )
             return None
 

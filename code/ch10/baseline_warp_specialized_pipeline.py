@@ -28,10 +28,8 @@ class BaselineWarpSpecializedPipelineBenchmark(CudaBinaryBenchmark):
             timeout_seconds=180,
             workload_params={
                 "TILE_SIZE": 64,
-                "WARPS_PER_BLOCK": 3,
-                "shared_bytes": 3,
                 "tiles": 512,
-                "dtype": 'float32',
+                "dtype": "float32",
                 "batch_size": 1,
             },
         )

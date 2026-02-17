@@ -45,12 +45,12 @@ class OptimizedDSMEMClusterAtomicBenchmark(CudaBinaryBenchmark):
             workload_params={
                 "batch_size": 1024,
                 "dtype": "float32",
-                "N": 16 * 1024 * 1024,
+                "N": 64 * 1024 * 1024,
                 "cluster_size": 4,
                 "block_elems": 4096,
             },
         )
-        self.register_workload_metadata(bytes_per_iteration=1024 * 1024)
+        self.register_workload_metadata(bytes_per_iteration=float(64 * 1024 * 1024 * 4))
 
     def get_custom_metrics(self) -> Optional[dict]:
         """Return domain-specific metrics using standardized helper."""
@@ -65,7 +65,7 @@ class OptimizedDSMEMClusterAtomicBenchmark(CudaBinaryBenchmark):
         return simple_signature(
             batch_size=1,
             dtype="float32",
-            N=16 * 1024 * 1024,
+            N=64 * 1024 * 1024,
         ).to_dict()
 
     def get_output_tolerance(self) -> tuple[float, float]:

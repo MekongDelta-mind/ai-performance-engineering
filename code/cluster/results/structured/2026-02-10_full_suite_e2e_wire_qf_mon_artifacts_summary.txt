@@ -1,0 +1,11 @@
+run_id=2026-02-10_full_suite_e2e_wire_qf_mon
+manifest=results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_manifest.json
+suite_steps=results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_suite_steps.json
+suite_log_dir=results/raw/2026-02-10_full_suite_e2e_wire_qf_mon_suite
+structured_count=155
+raw_count=273
+figures_count=33
+total_files=461
+structured_list=results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_artifacts_structured.txt
+raw_list=results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_artifacts_raw.txt
+figures_list=results/structured/2026-02-10_full_suite_e2e_wire_qf_mon_artifacts_figures.txt

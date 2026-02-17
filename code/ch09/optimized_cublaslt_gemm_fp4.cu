@@ -200,7 +200,7 @@ int main() {
     cublasLtMatmulDesc_t matmulDesc;
     CUBLASLT_CHECK(cublasLtMatmulDescCreate(&matmulDesc, CUBLAS_COMPUTE_32F, CUDA_R_32F));
 
-    cublasOperation_t transa = CUBLAS_OP_T;  // A is transposed for column-major
+    cublasOperation_t transa = CUBLAS_OP_N;
     cublasOperation_t transb = CUBLAS_OP_N;
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_TRANSA, &transa, sizeof(transa)));
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_TRANSB, &transb, sizeof(transb)));
@@ -216,12 +216,27 @@ int main() {
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_A_SCALE_POINTER, &d_A_scales_ptr, sizeof(d_A_scales_ptr)));
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_B_SCALE_POINTER, &d_B_scales_ptr, sizeof(d_B_scales_ptr)));
 
-    // Matrix layouts for NVFP4 (CUDA_R_4F_E2M1)
-    // Note: Leading dimensions are in terms of elements, not bytes
+    // Matrix layouts (row-major)
+    // Note: Leading dimensions / batch strides are expressed in elements (nibbles for FP4), not bytes.
     cublasLtMatrixLayout_t layoutA, layoutB, layoutC;
-    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutA, CUDA_R_4F_E2M1, M, K, M));  // A^T: KxM with ld=M
-    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutB, CUDA_R_4F_E2M1, K, N, K));  // B: KxN with ld=K
-    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutC, CUDA_R_16F, M, N, M));       // C: MxN with ld=M
+    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutA, CUDA_R_4F_E2M1, M, K, K));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutB, CUDA_R_4F_E2M1, K, N, N));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutC, CUDA_R_16F, M, N, N));
+    cublasLtOrder_t order = CUBLASLT_ORDER_ROW;
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutA, CUBLASLT_MATRIX_LAYOUT_ORDER, &order, sizeof(order)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutB, CUBLASLT_MATRIX_LAYOUT_ORDER, &order, sizeof(order)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutC, CUBLASLT_MATRIX_LAYOUT_ORDER, &order, sizeof(order)));
+
+    const int batch_count = kBatchCount;
+    const long long strideA = static_cast<long long>(M) * K;
+    const long long strideB = static_cast<long long>(K) * N;
+    const long long strideC = static_cast<long long>(M) * N;
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutA, CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET, &strideA, sizeof(strideA)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutB, CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET, &strideB, sizeof(strideB)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutC, CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET, &strideC, sizeof(strideC)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutA, CUBLASLT_MATRIX_LAYOUT_BATCH_COUNT, &batch_count, sizeof(batch_count)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutB, CUBLASLT_MATRIX_LAYOUT_BATCH_COUNT, &batch_count, sizeof(batch_count)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutC, CUBLASLT_MATRIX_LAYOUT_BATCH_COUNT, &batch_count, sizeof(batch_count)));
 
     float alpha = 1.0f;
     float beta = 0.0f;
@@ -274,18 +289,15 @@ int main() {
     std::cout << "NVFP4 GEMM algorithm found, running benchmark..." << std::endl;
 
     // Warmup
-    for (int batch = 0; batch < kBatchCount; ++batch) {
+    {
         NVTX_RANGE("compute_math:ltmatmul");
-        const size_t offset_A = batch * elements_A_packed;
-        const size_t offset_B = batch * elements_B_packed;
-        const size_t offset_C = batch * elements_C;
         CUBLASLT_CHECK(cublasLtMatmul(ltHandle, matmulDesc,
                                        &alpha,
-                                       d_A + offset_A, layoutA,
-                                       d_B + offset_B, layoutB,
+                                       d_A, layoutA,
+                                       d_B, layoutB,
                                        &beta,
-                                       d_C + offset_C, layoutC,
-                                       d_C + offset_C, layoutC,
+                                       d_C, layoutC,
+                                       d_C, layoutC,
                                        &heuristicResult.algo,
                                        d_workspace, workspaceSize,
                                        stream));
@@ -299,23 +311,17 @@ int main() {
     // Timed section
     CUDA_CHECK(cudaEventRecord(start, stream));
     for (int iter = 0; iter < kIterations; ++iter) {
-        NVTX_RANGE("batch");
-        for (int batch = 0; batch < kBatchCount; ++batch) {
-            NVTX_RANGE("compute_math:ltmatmul");
-            const size_t offset_A = batch * elements_A_packed;
-            const size_t offset_B = batch * elements_B_packed;
-            const size_t offset_C = batch * elements_C;
-            CUBLASLT_CHECK(cublasLtMatmul(ltHandle, matmulDesc,
-                                           &alpha,
-                                           d_A + offset_A, layoutA,
-                                           d_B + offset_B, layoutB,
-                                           &beta,
-                                           d_C + offset_C, layoutC,
-                                           d_C + offset_C, layoutC,
-                                           &heuristicResult.algo,
-                                           d_workspace, workspaceSize,
-                                           stream));
-        }
+        NVTX_RANGE("compute_math:ltmatmul");
+        CUBLASLT_CHECK(cublasLtMatmul(ltHandle, matmulDesc,
+                                       &alpha,
+                                       d_A, layoutA,
+                                       d_B, layoutB,
+                                       &beta,
+                                       d_C, layoutC,
+                                       d_C, layoutC,
+                                       &heuristicResult.algo,
+                                       d_workspace, workspaceSize,
+                                       stream));
     }
     CUDA_CHECK(cudaEventRecord(stop, stream));
     CUDA_CHECK(cudaEventSynchronize(stop));

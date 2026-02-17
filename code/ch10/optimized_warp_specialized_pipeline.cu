@@ -68,8 +68,8 @@ __global__ void optimized_warp_specialized_kernel(const float* __restrict__ A_gl
         float* stage_a = A_stage_base + stage * TILE_ELEMS;
         float* stage_b = B_stage_base + stage * TILE_ELEMS;
 
+        pipe.producer_acquire();
         if (warp_id == 0) {
-            pipe.producer_acquire();
             cuda::memcpy_async(
                 warp,
                 stage_a,
@@ -82,8 +82,8 @@ __global__ void optimized_warp_specialized_kernel(const float* __restrict__ A_gl
                 B_global + offset,
                 cuda::aligned_size_t<16>(static_cast<size_t>(TILE_ELEMS) * sizeof(float)),
                 pipe);
-            pipe.producer_commit();
         }
+        pipe.producer_commit();
     }
     __syncthreads();
 
@@ -120,8 +120,8 @@ __global__ void optimized_warp_specialized_kernel(const float* __restrict__ A_gl
             float* next_a = A_stage_base + next_stage * TILE_ELEMS;
             float* next_b = B_stage_base + next_stage * TILE_ELEMS;
             size_t next_offset = static_cast<size_t>(next_tile) * TILE_ELEMS;
+            pipe.producer_acquire();
             if (warp_id == 0) {
-                pipe.producer_acquire();
                 cuda::memcpy_async(
                     warp,
                     next_a,
@@ -134,8 +134,8 @@ __global__ void optimized_warp_specialized_kernel(const float* __restrict__ A_gl
                     B_global + next_offset,
                     cuda::aligned_size_t<16>(static_cast<size_t>(TILE_ELEMS) * sizeof(float)),
                     pipe);
-                pipe.producer_commit();
             }
+            pipe.producer_commit();
         }
         __syncthreads();
     }

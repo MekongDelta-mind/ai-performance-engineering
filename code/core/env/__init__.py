@@ -14,10 +14,11 @@ from core.harness.hardware_capabilities import (
 )
 import glob
 import os
+import site
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 try:
     from core.utils.build_utils import ensure_clean_build_directory
@@ -34,9 +35,18 @@ ENV_DEFAULTS: Dict[str, str] = {
     "NCCL_P2P_DISABLE": "0",
     "NCCL_SHM_DISABLE": "0",
     "CUDA_DEVICE_MAX_CONNECTIONS": "32",
+    # Hugging Face network calls can be slow/transient on some clusters.
+    # Raise defaults to reduce flaky dataset/model fetch failures.
+    "HF_HUB_DOWNLOAD_TIMEOUT": "120",
+    "HF_HUB_ETAG_TIMEOUT": "60",
     "TORCH_COMPILE_DEBUG": "0",
     # "TORCH_LOGS": "",  # Disabled - remove verbose dynamo logging to reduce noise
-    "CUDA_HOME": "/usr/local/cuda-13.0",
+    "CUDA_HOME": "/usr/local/cuda",
+    # Runtime policy for cuDNN/cuda user-mode library selection:
+    # - auto: prefer torch/lib when available, otherwise fall back to system runtime
+    # - torch: force torch/lib precedence
+    # - system: force system runtime precedence
+    "AISP_CUDNN_RUNTIME_POLICY": "auto",
 }
 
 CUDA_PATH_SUFFIXES: Tuple[str, ...] = ("bin",)
@@ -89,9 +99,12 @@ REPORTED_ENV_KEYS: Tuple[str, ...] = (
     "NCCL_P2P_DISABLE",
     "NCCL_SHM_DISABLE",
     "CUDA_DEVICE_MAX_CONNECTIONS",
+    "HF_HUB_DOWNLOAD_TIMEOUT",
+    "HF_HUB_ETAG_TIMEOUT",
     "PYTORCH_ALLOC_CONF",
     "TORCH_COMPILE_DEBUG",
     "TORCH_LOGS",
+    "AISP_CUDNN_RUNTIME_POLICY",
     "CUDA_HOME",
     "PATH",
     "LD_LIBRARY_PATH",
@@ -99,6 +112,123 @@ REPORTED_ENV_KEYS: Tuple[str, ...] = (
 )
 
 _ENV_AND_CAPABILITIES_LOGGED = False
+
+
+def _runtime_policy() -> str:
+    policy = os.environ.get("AISP_CUDNN_RUNTIME_POLICY", "auto").strip().lower()
+    if policy not in {"auto", "torch", "system"}:
+        policy = "auto"
+    os.environ["AISP_CUDNN_RUNTIME_POLICY"] = policy
+    return policy
+
+
+def _split_paths(value: str) -> List[str]:
+    return [entry for entry in value.split(":") if entry]
+
+
+def _append_if_valid(path: str, ordered: List[str], seen: Set[str]) -> None:
+    if not path or path in seen or not os.path.isdir(path):
+        return
+    ordered.append(path)
+    seen.add(path)
+
+
+def _looks_like_torch_lib(path: str) -> bool:
+    normalized = path.rstrip("/")
+    return normalized.endswith("/torch/lib") or "/site-packages/torch/lib" in normalized
+
+
+def _candidate_torch_site_roots() -> Iterable[Path]:
+    roots: List[Path] = []
+    py_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    roots.append(Path(sys.prefix) / "lib" / py_version / "site-packages")
+    roots.append(Path("/usr/local/lib") / py_version / "dist-packages")
+
+    venv = os.environ.get("VIRTUAL_ENV")
+    if venv:
+        roots.append(Path(venv) / "lib" / py_version / "site-packages")
+
+    try:
+        roots.extend(Path(p) for p in site.getsitepackages())
+    except Exception:
+        pass
+
+    try:
+        roots.append(Path(site.getusersitepackages()))
+    except Exception:
+        pass
+
+    seen: Set[Path] = set()
+    for root in roots:
+        if root in seen:
+            continue
+        seen.add(root)
+        yield root
+
+
+def _discover_torch_lib_dirs() -> List[str]:
+    dirs: List[str] = []
+    seen: Set[str] = set()
+    for root in _candidate_torch_site_roots():
+        candidate = root / "torch" / "lib"
+        candidate_str = str(candidate)
+        if candidate_str in seen or not candidate.is_dir():
+            continue
+        dirs.append(candidate_str)
+        seen.add(candidate_str)
+    return dirs
+
+
+def _discover_system_cudnn_dirs() -> List[str]:
+    candidates = (
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/aarch64-linux-gnu",
+        "/usr/lib64",
+        "/usr/lib",
+    )
+    found: List[str] = []
+    seen: Set[str] = set()
+    for directory in candidates:
+        if directory in seen or not os.path.isdir(directory):
+            continue
+        if list(Path(directory).glob("libcudnn*.so*")):
+            found.append(directory)
+            seen.add(directory)
+    return found
+
+
+def _prioritize_runtime_libraries() -> None:
+    policy = _runtime_policy()
+    current_paths = _split_paths(os.environ.get("LD_LIBRARY_PATH", ""))
+    ordered: List[str] = []
+    seen: Set[str] = set()
+
+    using_torch_runtime = False
+    if policy in {"auto", "torch"}:
+        for path in current_paths:
+            if _looks_like_torch_lib(path):
+                _append_if_valid(path, ordered, seen)
+        if not any(_looks_like_torch_lib(path) for path in ordered):
+            for path in _discover_torch_lib_dirs():
+                _append_if_valid(path, ordered, seen)
+        using_torch_runtime = any(_looks_like_torch_lib(path) for path in ordered)
+
+    if policy == "system":
+        for path in _discover_system_cudnn_dirs():
+            _append_if_valid(path, ordered, seen)
+
+    # Keep CUDA/system paths in existing order after runtime-preferred paths.
+    for path in current_paths:
+        if policy == "system" and _looks_like_torch_lib(path):
+            continue
+        _append_if_valid(path, ordered, seen)
+
+    if policy != "system" and not using_torch_runtime:
+        # If no torch runtime was found, preserve whatever CUDA/system ordering we already had.
+        os.environ["LD_LIBRARY_PATH"] = ":".join(ordered)
+        return
+
+    os.environ["LD_LIBRARY_PATH"] = ":".join(ordered)
 
 
 def apply_env_defaults() -> Dict[str, str]:
@@ -173,6 +303,10 @@ def apply_env_defaults() -> Dict[str, str]:
     else:
         # CUDA_HOME is set by user - only prepend paths if they're missing (don't force our defaults)
         _ensure_cuda_paths(use_existing_cuda_home=True)
+
+    # Ensure runtime library precedence is explicit and deterministic.
+    _prioritize_runtime_libraries()
+
     _ensure_nsight_paths()
     applied["PATH"] = os.environ.get("PATH", "")
     applied["LD_LIBRARY_PATH"] = os.environ.get("LD_LIBRARY_PATH", "")
@@ -271,6 +405,13 @@ def _prepend_if_missing(key: str, prefix: str) -> None:
 
 
 def _ensure_ld_preload() -> None:
+    # On aarch64 hosts, preloading distro NCCL often conflicts with the NCCL
+    # bundled in modern CUDA wheels (e.g., undefined symbol ncclWaitSignal).
+    # Prefer wheel-resolved libraries over forcing a system preload.
+    import platform
+    if platform.machine() in ("aarch64", "arm64"):
+        return
+
     os.environ.setdefault("LD_PRELOAD", "")
     preload_entries = [segment for segment in os.environ["LD_PRELOAD"].split(os.pathsep) if segment]
     

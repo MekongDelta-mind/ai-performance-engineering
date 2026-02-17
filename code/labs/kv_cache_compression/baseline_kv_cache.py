@@ -62,7 +62,7 @@ class BaselineKVCacheBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
     def _setup_with_recipe(self, recipe) -> None:
         if not TE_AVAILABLE or recipe is None:
-            raise RuntimeError(f"Transformer Engine not available: {TE_IMPORT_ERROR}")
+            raise RuntimeError(f"SKIPPED: Transformer Engine not available: {TE_IMPORT_ERROR}")
 
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)

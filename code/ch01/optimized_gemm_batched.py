@@ -30,7 +30,7 @@ class OptimizedGemmBatchedBenchmark(CudaBinaryBenchmark):
             binary_name="optimized_gemm_batched",
             friendly_name="Optimized GEMM (Batched)",
             iterations=3,
-            warmup=3,
+            warmup=5,
             timeout_seconds=90,
             workload_params={
                 "M": m,

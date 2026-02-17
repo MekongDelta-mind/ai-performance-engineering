@@ -30,7 +30,7 @@ class OptimizedGemmStridedBenchmark(CudaBinaryBenchmark):
             binary_name="optimized_gemm_strided",
             friendly_name="Optimized GEMM (Strided Batched)",
             iterations=3,
-            warmup=3,
+            warmup=5,
             timeout_seconds=90,
             workload_params={
                 "M": m,

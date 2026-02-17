@@ -60,7 +60,8 @@ int main() {
     std::vector<float> h_out(elems, 0.0f);
     for (int i = 0; i < elems; ++i) {
         NVTX_RANGE("warmup");
-        h_in[i] = std::cos(0.00045f * static_cast<float>(i));
+        // Match baseline input initialization so baseline/optimized checksums are comparable.
+        h_in[i] = std::sin(0.0005f * static_cast<float>(i));
     }
     const std::vector<UnevenSegment> segments = build_uneven_segments(elems);
 

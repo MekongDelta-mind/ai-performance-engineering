@@ -1525,20 +1525,12 @@ export CUDA_HOME=${CUDA_HOME_DIR}
 export PATH=${CUDA_HOME_DIR}/bin:\$PATH
 export CUDA_PATH=${CUDA_HOME_DIR}
 
-# CRITICAL: PyTorch was compiled against cuDNN 9.15.1, but bundles cuDNN 9.13.0
-# Use system cuDNN 9.15.1 instead of PyTorch's bundled 9.13.0
-SYSTEM_CUDNN_LIB="/usr/lib/aarch64-linux-gnu"
-PYTORCH_CUDNN_LIB="/usr/local/lib/python3.12/dist-packages/nvidia/cudnn/lib"
-if [ -n "\${LD_LIBRARY_PATH:-}" ]; then
-    # Remove PyTorch's bundled cuDNN path (contains 9.13.0)
-    LD_LIBRARY_PATH=\$(echo "\${LD_LIBRARY_PATH}" | tr ':' '\n' | grep -v "\${PYTORCH_CUDNN_LIB}" | tr '\n' ':' | sed 's/:$//')
-fi
-# Put system cuDNN 9.15.1 FIRST, then CUDA libs
-if [ -d "\${SYSTEM_CUDNN_LIB}" ]; then
-    export LD_LIBRARY_PATH="\${SYSTEM_CUDNN_LIB}:\${CUDA_HOME}/lib64:\${CUDA_HOME}/lib64/stubs\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
-else
-    export LD_LIBRARY_PATH="\${CUDA_HOME}/lib64:\${CUDA_HOME}/lib64/stubs\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
-fi
+# Runtime library policy:
+#  - auto (default): prefer PyTorch's bundled runtime when present
+#  - torch: force PyTorch runtime precedence
+#  - system: force system runtime precedence
+export AISP_CUDNN_RUNTIME_POLICY="\${AISP_CUDNN_RUNTIME_POLICY:-auto}"
+export LD_LIBRARY_PATH="\${CUDA_HOME}/lib64:\${CUDA_HOME}/lib64/stubs\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
 PROFILE_EOF
 chmod +x "${CUDA_PROFILE_SCRIPT}"
 echo "Created ${CUDA_PROFILE_SCRIPT} for persistent CUDA ${CUDA_SHORT_VERSION} environment"
@@ -1555,33 +1547,8 @@ source "${CUDA_PROFILE_SCRIPT}"
 export CUDA_HOME="${CUDA_HOME_DIR}"
 export PATH="$CUDA_HOME/bin:$PATH"
 
-# CRITICAL: PyTorch was compiled against cuDNN 9.15.1, but bundles cuDNN 9.13.0
-# Use system cuDNN 9.15.1 instead of PyTorch's bundled 9.13.0
-SYSTEM_CUDNN_LIB="/usr/lib/aarch64-linux-gnu"
-PYTORCH_CUDNN_LIB="${PYTHON_DIST_PACKAGES}/nvidia/cudnn/lib"
-current_ld="${LD_LIBRARY_PATH:-}"
-filtered_ld=""
-if [ -n "${current_ld}" ]; then
-    IFS=':' read -ra PATHS <<< "${current_ld}"
-    for path in "${PATHS[@]}"; do
-        # Remove PyTorch's bundled cuDNN path (contains 9.13.0)
-        if [[ "${path}" == *"${PYTORCH_CUDNN_LIB}"* ]]; then
-            continue
-        fi
-        # Keep other paths
-        if [ -n "${filtered_ld}" ]; then
-            filtered_ld="${filtered_ld}:${path}"
-        else
-            filtered_ld="${path}"
-        fi
-    done
-fi
-# Put system cuDNN 9.15.1 FIRST, then CUDA libs, then filtered paths
-if [ -d "${SYSTEM_CUDNN_LIB}" ]; then
-    export LD_LIBRARY_PATH="${SYSTEM_CUDNN_LIB}:${CUDA_HOME_DIR}/lib64:${CUDA_HOME_DIR}/lib64/stubs${filtered_ld:+:${filtered_ld}}"
-else
-    export LD_LIBRARY_PATH="${CUDA_HOME_DIR}/lib64:${CUDA_HOME_DIR}/lib64/stubs${filtered_ld:+:${filtered_ld}}"
-fi
+export AISP_CUDNN_RUNTIME_POLICY="${AISP_CUDNN_RUNTIME_POLICY:-auto}"
+export LD_LIBRARY_PATH="${CUDA_HOME_DIR}/lib64:${CUDA_HOME_DIR}/lib64/stubs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 echo ""
 echo "Verifying CUDA toolchain after installation..."
@@ -2963,20 +2930,8 @@ export TORCH_LOGS="+dynamo"
 # CUDA paths
 export CUDA_HOME="${CUDA_HOME_DIR}"
 export PATH=${CUDA_HOME_DIR}/bin:\$PATH
-# CRITICAL: PyTorch was compiled against cuDNN 9.15.1, but bundles cuDNN 9.13.0
-# Use system cuDNN 9.15.1 instead of PyTorch's bundled 9.13.0
-SYSTEM_CUDNN_LIB="/usr/lib/aarch64-linux-gnu"
-PYTORCH_CUDNN_LIB="/usr/local/lib/python3.12/dist-packages/nvidia/cudnn/lib"
-if [ -n "\${LD_LIBRARY_PATH:-}" ]; then
-    # Remove PyTorch's bundled cuDNN path (contains 9.13.0)
-    LD_LIBRARY_PATH=\$(echo "\${LD_LIBRARY_PATH}" | tr ':' '\n' | grep -v "\${PYTORCH_CUDNN_LIB}" | tr '\n' ':' | sed 's/:$//')
-fi
-# Put system cuDNN 9.15.1 FIRST, then CUDA libs
-if [ -d "\${SYSTEM_CUDNN_LIB}" ]; then
-    export LD_LIBRARY_PATH="\${SYSTEM_CUDNN_LIB}:\${CUDA_HOME_DIR}/lib64:\${CUDA_HOME_DIR}/lib64/stubs\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
-else
-    export LD_LIBRARY_PATH="\${CUDA_HOME_DIR}/lib64:\${CUDA_HOME_DIR}/lib64/stubs\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
-fi
+export AISP_CUDNN_RUNTIME_POLICY="\${AISP_CUDNN_RUNTIME_POLICY:-auto}"
+export LD_LIBRARY_PATH="\${CUDA_HOME_DIR}/lib64:\${CUDA_HOME_DIR}/lib64/stubs\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
 
 # NCCL preload configuration
 export NCCL_LIB_PATH="${NCCL_LIB_PATH}"
@@ -3377,37 +3332,8 @@ VERIFICATION_FAILED=0
 
 # Verify PyTorch installation
 echo "Verifying PyTorch installation..."
-# CRITICAL: PyTorch was compiled against cuDNN 9.15.1, but bundles cuDNN 9.13.0
-# We MUST use system cuDNN 9.15.1 (installed via apt) instead of PyTorch's bundled 9.13.0
-# Filter out PyTorch's bundled cuDNN path and ensure system cuDNN 9.15.1 is found first
-PYTORCH_CUDNN_LIB="${PYTHON_DIST_PACKAGES}/nvidia/cudnn/lib"
-SYSTEM_CUDNN_LIB="/usr/lib/aarch64-linux-gnu"
-
-current_ld="${LD_LIBRARY_PATH:-}"
-filtered_ld=""
-if [ -n "${current_ld}" ]; then
-    IFS=':' read -ra PATHS <<< "${current_ld}"
-    for path in "${PATHS[@]}"; do
-        if [ -n "${path}" ]; then
-            # Remove PyTorch's bundled cuDNN path (contains 9.13.0)
-            if [[ "${path}" == *"${PYTORCH_CUDNN_LIB}"* ]]; then
-                continue
-            fi
-            # Keep other paths
-            if [ -n "${filtered_ld}" ]; then
-                filtered_ld="${filtered_ld}:${path}"
-            else
-                filtered_ld="${path}"
-            fi
-        fi
-    done
-fi
-# Build final LD_LIBRARY_PATH: System cuDNN 9.15.1 FIRST, then CUDA libs, then filtered paths
-if [ -d "${SYSTEM_CUDNN_LIB}" ]; then
-    export LD_LIBRARY_PATH="${SYSTEM_CUDNN_LIB}:${CUDA_HOME_DIR}/lib64:${CUDA_HOME_DIR}/lib64/stubs${filtered_ld:+:${filtered_ld}}"
-else
-    export LD_LIBRARY_PATH="${CUDA_HOME_DIR}/lib64:${CUDA_HOME_DIR}/lib64/stubs${filtered_ld:+:${filtered_ld}}"
-fi
+export AISP_CUDNN_RUNTIME_POLICY="${AISP_CUDNN_RUNTIME_POLICY:-auto}"
+export LD_LIBRARY_PATH="${CUDA_HOME_DIR}/lib64:${CUDA_HOME_DIR}/lib64/stubs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 if python3 core/verification/verify_pytorch.py; then
     echo "PyTorch verification passed"
 else
@@ -3539,6 +3465,13 @@ pip_install --no-cache-dir --force-reinstall --ignore-installed --no-deps \
     einops==0.8.0 \
     fsspec==2024.6.1 || {
     echo "Warning: final dependency pinning failed"
+}
+pip_install --no-cache-dir --upgrade --ignore-installed \
+    --extra-index-url "https://pypi.org/simple" \
+    transformers==4.56.0 \
+    datasets==2.21.0 \
+    sentencepiece==0.2.0 || {
+    echo "Warning: final transformers/datasets/sentencepiece pinning failed"
 }
 
 # ------------------------------------------------------------------------------

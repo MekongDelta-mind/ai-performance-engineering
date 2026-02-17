@@ -165,29 +165,29 @@ def get_benchmark() -> BaseBenchmark:
     TMA is required on Blackwell B200 - no fallbacks.
     """
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA required for TMA decode kernel")
+        raise RuntimeError("SKIPPED: CUDA required for TMA decode kernel")
     
     supported, reason = tma_support_status()
     if not supported:
-        raise RuntimeError(f"TMA decode kernel unavailable: {reason}")
+        raise RuntimeError(f"SKIPPED: TMA decode kernel unavailable: {reason}")
     
     cap = detect_capabilities()
     if cap is None:
-        raise RuntimeError("TMA decode kernel requires detected hardware capabilities")
+        raise RuntimeError("SKIPPED: TMA decode kernel requires detected hardware capabilities")
     
     cap_desc = f"{cap.device_name} ({cap.compute_capability})"
     
     # Check if optimized kernel is available
     if not is_optimized_available():
         error = get_optimized_error() or "Unknown error"
-        raise RuntimeError(f"TMA optimized kernel not available: {error}")
+        raise RuntimeError(f"SKIPPED: TMA optimized kernel not available: {error}")
     
     candidate = OptimizedDecodeKernelBenchmark()
     
     # Verify TMA support for this shape
     if not optimized_kernel_supported(candidate.rows, candidate.cols):
         raise RuntimeError(
-            f"TMA decode kernel not supported for shape ({candidate.rows}, {candidate.cols}) "
+            f"SKIPPED: TMA decode kernel not supported for shape ({candidate.rows}, {candidate.cols}) "
             f"on {cap_desc}. Check CUDA driver/runtime."
         )
     

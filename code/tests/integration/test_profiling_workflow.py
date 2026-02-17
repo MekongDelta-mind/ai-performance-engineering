@@ -116,7 +116,7 @@ def test_ncu_profiling_workflow(tmp_path: Path) -> None:
 
     config = BenchmarkConfig(
         iterations=1,
-        warmup=1,
+        warmup=5,
         enable_profiling=True,
         enable_ncu=True,
         profiling_output_dir=str(output_dir),
@@ -177,7 +177,7 @@ def test_side_by_side_report_generation(tmp_path: Path) -> None:
 
     ncu_config = BenchmarkConfig(
         iterations=1,
-        warmup=1,
+        warmup=5,
         enable_profiling=True,
         enable_ncu=True,
         profiling_output_dir=str(output_dir),

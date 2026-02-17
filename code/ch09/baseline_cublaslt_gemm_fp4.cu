@@ -7,10 +7,12 @@
 // due to 4-bit precision with per-block scaling for numerical stability.
 // This baseline shows naive FP4 GEMM without tensor core acceleration.
 //
-// NOTE: Block-scaled FP4 uses groups of 32 or 64 elements sharing a single scale factor.
+// NOTE: Block-scaled FP4 uses groups of 16 elements sharing a single scale factor.
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
+#include <cuda_fp4.h>
+#include <cuda_fp8.h>
 
 #include <algorithm>
 #include <iostream>
@@ -30,32 +32,27 @@
   } while (0)
 
 // Block scaling parameters for FP4
-constexpr int BLOCK_SIZE_SCALE = 32;  // Elements per scaling block
+constexpr int BLOCK_SIZE_SCALE = 16;  // Elements per scaling block
 
 // FP4 representation: packed 2 values per byte (nibble format)
 // Value range: [-6, 6] with 4-bit representation (signed)
 struct PackedFP4 {
     uint8_t data;  // Contains 2 x 4-bit values
-    
+
     __host__ __device__ void pack(float v0, float v1, float scale) {
-        // Quantize to 4-bit signed integer (-8 to 7)
-        int q0 = static_cast<int>(roundf(v0 / scale));
-        int q1 = static_cast<int>(roundf(v1 / scale));
-        q0 = q0 < -8 ? -8 : (q0 > 7 ? 7 : q0);
-        q1 = q1 < -8 ? -8 : (q1 > 7 ? 7 : q1);
-        // Pack into single byte (low nibble = v0, high nibble = v1)
-        data = ((q1 & 0xF) << 4) | (q0 & 0xF);
+        // Quantize to NVFP4 (E2M1) and pack (low nibble = v0, high nibble = v1).
+        __nv_fp4_storage_t fp4_0 = __nv_cvt_float_to_fp4(v0 / scale, __NV_E2M1, cudaRoundNearest);
+        __nv_fp4_storage_t fp4_1 = __nv_cvt_float_to_fp4(v1 / scale, __NV_E2M1, cudaRoundNearest);
+        data = ((fp4_1 & 0x0F) << 4) | (fp4_0 & 0x0F);
     }
-    
+
     __host__ __device__ void unpack(float& v0, float& v1, float scale) const {
-        // Unpack 4-bit signed integers
-        int q0 = (data & 0xF);
-        int q1 = ((data >> 4) & 0xF);
-        // Sign extend
-        if (q0 & 0x8) q0 |= 0xFFFFFFF0;
-        if (q1 & 0x8) q1 |= 0xFFFFFFF0;
-        v0 = static_cast<float>(q0) * scale;
-        v1 = static_cast<float>(q1) * scale;
+        __nv_fp4_e2m1 fp4_0;
+        __nv_fp4_e2m1 fp4_1;
+        fp4_0.__x = static_cast<__nv_fp4_storage_t>(data & 0x0F);
+        fp4_1.__x = static_cast<__nv_fp4_storage_t>((data >> 4) & 0x0F);
+        v0 = static_cast<float>(fp4_0) * scale;
+        v1 = static_cast<float>(fp4_1) * scale;
     }
 };
 
@@ -63,9 +60,9 @@ struct PackedFP4 {
 // Uses block-scaled FP4 with FP32 accumulation
 template<int TILE_SIZE = 32>
 __global__ void tiled_fp4_gemm_kernel(const PackedFP4* __restrict__ A,
-                                       const float* __restrict__ A_scales,
+                                       const __nv_fp8_e4m3* __restrict__ A_scales,
                                        const PackedFP4* __restrict__ B,
-                                       const float* __restrict__ B_scales,
+                                       const __nv_fp8_e4m3* __restrict__ B_scales,
                                        __half* __restrict__ C,
                                        int M, int N, int K,
                                        float alpha, float beta) {
@@ -87,7 +84,7 @@ __global__ void tiled_fp4_gemm_kernel(const PackedFP4* __restrict__ A,
             // Determine which packed byte and position within byte
             const int a_idx = row * (K / 2) + k_idx / 2;
             const int scale_idx = row * (K / BLOCK_SIZE_SCALE) + k_idx / BLOCK_SIZE_SCALE;
-            const float scale_a = A_scales[scale_idx];
+            const float scale_a = static_cast<float>(A_scales[scale_idx]);
             
             float v0, v1;
             A[a_idx].unpack(v0, v1, scale_a);
@@ -100,7 +97,7 @@ __global__ void tiled_fp4_gemm_kernel(const PackedFP4* __restrict__ A,
         if (k_row < K && col < N) {
             const int b_idx = k_row * (N / 2) + col / 2;
             const int scale_idx = k_row * (N / BLOCK_SIZE_SCALE) + col / BLOCK_SIZE_SCALE;
-            const float scale_b = B_scales[scale_idx];
+            const float scale_b = static_cast<float>(B_scales[scale_idx]);
             
             float v0, v1;
             B[b_idx].unpack(v0, v1, scale_b);
@@ -129,7 +126,7 @@ __global__ void tiled_fp4_gemm_kernel(const PackedFP4* __restrict__ A,
 }
 
 // Helper function to quantize FP32 to block-scaled FP4
-void quantize_to_fp4(const float* input, PackedFP4* output, float* scales,
+void quantize_to_fp4(const float* input, PackedFP4* output, __nv_fp8_e4m3* scales,
                      int rows, int cols) {
     for (int r = 0; r < rows; ++r) {
         NVTX_RANGE("iteration");
@@ -142,9 +139,9 @@ void quantize_to_fp4(const float* input, PackedFP4* output, float* scales,
                 max_abs = std::max(max_abs, std::abs(input[r * cols + block_start + i]));
             }
             
-            // Scale factor to map max_abs to 7 (max positive FP4 value)
-            float scale = (max_abs > 0.0f) ? max_abs / 7.0f : 1.0f;
-            scales[r * (cols / BLOCK_SIZE_SCALE) + block_start / BLOCK_SIZE_SCALE] = scale;
+            // Scale factor to map max_abs to FP4 range [-6, 6]
+            float scale = (max_abs > 0.0f) ? max_abs / 6.0f : 1.0f;
+            scales[r * (cols / BLOCK_SIZE_SCALE) + block_start / BLOCK_SIZE_SCALE] = __nv_fp8_e4m3(scale);
             
             // Quantize pairs of values
             for (int i = 0; i < BLOCK_SIZE_SCALE; i += 2) {
@@ -182,8 +179,8 @@ int main() {
     float* h_B_fp32 = new float[K * N * kBatchCount];
     PackedFP4* h_A = new PackedFP4[packed_A_size];
     PackedFP4* h_B = new PackedFP4[packed_B_size];
-    float* h_A_scales = new float[scales_A_size];
-    float* h_B_scales = new float[scales_B_size];
+    __nv_fp8_e4m3* h_A_scales = new __nv_fp8_e4m3[scales_A_size];
+    __nv_fp8_e4m3* h_B_scales = new __nv_fp8_e4m3[scales_B_size];
     __half* h_C = new __half[elements_C * kBatchCount];
 
     // Initialize with random values
@@ -218,19 +215,19 @@ int main() {
 
     // Device allocation
     PackedFP4 *d_A = nullptr, *d_B = nullptr;
-    float *d_A_scales = nullptr, *d_B_scales = nullptr;
+    __nv_fp8_e4m3 *d_A_scales = nullptr, *d_B_scales = nullptr;
     __half *d_C = nullptr;
     CUDA_CHECK(cudaMalloc(&d_A, packed_A_size * sizeof(PackedFP4)));
     CUDA_CHECK(cudaMalloc(&d_B, packed_B_size * sizeof(PackedFP4)));
-    CUDA_CHECK(cudaMalloc(&d_A_scales, scales_A_size * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_B_scales, scales_B_size * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_A_scales, scales_A_size * sizeof(__nv_fp8_e4m3)));
+    CUDA_CHECK(cudaMalloc(&d_B_scales, scales_B_size * sizeof(__nv_fp8_e4m3)));
     CUDA_CHECK(cudaMalloc(&d_C, elements_C * kBatchCount * sizeof(__half)));
 
     // Pre-load all data before timing
     CUDA_CHECK(cudaMemcpy(d_A, h_A, packed_A_size * sizeof(PackedFP4), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_B, h_B, packed_B_size * sizeof(PackedFP4), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_A_scales, h_A_scales, scales_A_size * sizeof(float), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_B_scales, h_B_scales, scales_B_size * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_A_scales, h_A_scales, scales_A_size * sizeof(__nv_fp8_e4m3), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_B_scales, h_B_scales, scales_B_size * sizeof(__nv_fp8_e4m3), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_C, h_C, elements_C * kBatchCount * sizeof(__half), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaDeviceSynchronize());
 

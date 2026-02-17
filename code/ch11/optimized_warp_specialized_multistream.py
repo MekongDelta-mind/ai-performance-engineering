@@ -30,7 +30,6 @@ class OptimizedWarpSpecializedMultistreamBenchmark(CudaBinaryBenchmark):
                 "TILE": 32,
                 "THREADS": 96,
                 "batches": 4096,
-                "num_streams": 16,
                 "dtype": 'float32',
             },
         )

@@ -21,7 +21,7 @@ class BaselineCublasltGemmBenchmark(CudaBinaryBenchmark):
         chapter_dir = Path(__file__).parent
         m = n = k = 1024
         micro_batches = 32
-        iterations = 5
+        iterations=1
         bytes_a = m * k * 4
         bytes_b = k * n * 4
         bytes_c = m * n * 4
@@ -29,7 +29,7 @@ class BaselineCublasltGemmBenchmark(CudaBinaryBenchmark):
             chapter_dir=chapter_dir,
             binary_name="baseline_cublaslt_gemm",
             friendly_name="Baseline Cublaslt Gemm",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=120,
             workload_params={

@@ -23,7 +23,10 @@ if str(repo_root) not in sys.path:
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
 from core.harness.hardware_capabilities import detect_capabilities, format_capability_report
 import arch_config  # noqa: E402
-import importlib_metadata  # noqa: E402
+try:
+    import importlib_metadata  # type: ignore[import-not-found]  # noqa: E402
+except ModuleNotFoundError:  # pragma: no cover - stdlib fallback
+    from importlib import metadata as importlib_metadata  # noqa: E402
 import torch  # noqa: E402
 
 

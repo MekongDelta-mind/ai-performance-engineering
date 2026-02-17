@@ -20,13 +20,13 @@ class OptimizedFusedL2NormBenchmark(CudaBinaryBenchmark):
     def __init__(self) -> None:
         chapter_dir = Path(__file__).parent
         n_elems = 1 << 20
-        iterations = 100
+        iterations=1
         bytes_per_elem = 12  # two reads + one write (float32)
         super().__init__(
             chapter_dir=chapter_dir,
             binary_name="optimized_fused_l2norm",
             friendly_name="Optimized Fused L2Norm",
-            iterations=5,
+            iterations=1,
             warmup=5,
             timeout_seconds=90,
             workload_params={

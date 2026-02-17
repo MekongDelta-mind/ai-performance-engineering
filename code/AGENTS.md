@@ -7,7 +7,6 @@
 - DO NOT run destructive git commands in this repo (including `git restore`, `git checkout`, `git reset --hard`, `git revert`, or mass file deletions) unless I explicitly ask.
 - NEVER restore/revert/checkout any file to `HEAD` or any commit. Always keep files as-is and include changes (even if unexpected).
 - DO NOT delete any files, including untracked files or locally modified files, unless I explicitly ask.
-- NEVER delete anything (tracked or untracked, modified or not) unless I explicitly ask.
 - If you notice unexpected local file modifications, always call them out and ask for guidance; default to keeping them as-is and including them in the changes unless I explicitly say otherwise.
 - When you detect modified or untracked files, please treat them as part of this task.
 - If a file is already modified or open in the editor, keep its current contents as-is and include it in the final change list; you may continue editing without asking.
@@ -15,6 +14,160 @@
 - For Nsight artifacts/comparisons, do not rely on symlink-only layouts; stage real baseline/optimized files in a concrete directory with explicit role names before running compare tools.
 - Do not introduce new symlink-dependent profile-pair flows; if a symlink appears in inputs, copy it to a real file before pairing/comparison.
 - The Amazon book link in `README.md` is expected to fail automated link checks due to bot protection; treat it as an allowlisted exception.
+
+## Cluster Field Report Mode (ONLY when working in `code/cluster*` or writing the cluster field report)
+- This section adds constraints specific to cluster evaluation work; all other rules in this file still apply.
+- Discovery/inventory may use `nvidia-smi` and related commands. Benchmarks/profiling must still lock clocks via the harness (`lock_gpu_clocks`); do not manually lock clocks via `nvidia-smi`.
+- Cluster eval scripts MUST fail unless clock locking succeeds. Do not add bypass flags; any run without locked clocks is invalid and should not be produced by the harness.
+
+### Root-Cause First (CRITICAL)
+- Do not rely on fallback behavior when a benchmark/probe path fails. Identify the underlying root cause and fix it.
+- If a mode/feature is unsupported on the current cluster (for example a specific GDR mem type), fail fast with a clear diagnostic and required remediation; do not silently continue.
+- Remove warning-only continuation paths for required checks in canonical runs. Canonical suites must be green without remediation context.
+- Treat "retry in another runtime/tool" as a temporary debugging step only; do not keep it as the default collection path.
+- For GPUDirect RDMA specifically: probe requested `--gdr-mem-types` up front and fail preflight if unsupported (for example `cuda_mem_type=1` with no ODP MR / dmabuf support). Do not downgrade requested coverage mid-run.
+- Validate required artifacts by semantic status (`status=ok`, lock metadata, non-empty metrics), not only by file existence.
+- Do not manually inject signals/interruptions into benchmark or serving processes during canonical runs; treat any such run as invalid and rerun fresh.
+- For multinode vLLM: treat worker `rc=137` after forced teardown as a bug in run lifecycle handling; stop workers cleanly and only report success when leader + worker states are both semantically clean.
+- For nvbandwidth host-runtime failures like `cudaErrorUnsupportedPtxVersion`: fix the host user-mode compatibility chain (for example explicit CUDA compat libs) instead of switching canonical collection to a different runtime mode.
+- When logs show `CUDA Memory type is not supported with no odp MR or with dmabuf`, treat it as an environment capability gap that must be preflight-detected and reported, not a warning to continue through.
+
+### Canonical Run Hygiene (CRITICAL)
+- After producing a new canonical run, clean up superseded intermediate run artifacts so reports only point to the canonical package.
+- Preserve the canonical run and any explicitly requested historical baselines; remove only superseded intermediates.
+- Keep `results/structured/`, `results/raw/`, and `docs/figures/` tidy enough that stale artifacts cannot be mistaken for canonical evidence.
+- When cleanup is requested, remove superseded run artifacts in the same change as report synchronization so stale paths cannot remain referenced.
+
+### Report Completeness + Sync (CRITICAL)
+- Before finalizing `field-report.md`, diff against prior report revisions and restore any dropped sections/visuals/evidence links that are still relevant.
+- `field-report.md` and `field-report-notes.md` must always be synchronized to the same canonical run id, metrics, issues, and artifact links.
+- If report numbers diverge from current canonical artifacts, treat that as a blocker and fix the report (or rerun collection) before sign-off.
+- Explicitly include required issue ledgers (missing artifacts, GDR requested vs effective, latency knees) and verify each claim against canonical structured artifacts.
+
+#### Report Update Checklist (CRITICAL)
+- Whenever you update any of these files, complete the full checklist in the same change:
+  - `cluster/field-report.md`
+  - `cluster/field-report-notes.md`
+  - `cluster/docs/field-report-template.md`
+  - `cluster/docs/advanced-runbook.md`
+- Keep canonical run id + artifact links synchronized across all four docs.
+- Run the field-report validator and treat failures as blockers:
+  - `cluster/scripts/validate_field_report_requirements.sh --report cluster/field-report.md --notes cluster/field-report-notes.md --template cluster/docs/field-report-template.md --runbook cluster/docs/advanced-runbook.md --canonical-run-id <RUN_ID>`
+- Validator stale-artifact hygiene failures are blockers: remove unreferenced non-canonical run artifacts (structured/raw/figures) or explicitly allow requested historical baselines with `--allow-run-id <RUN_ID>`.
+- Do not leave old run artifacts on disk that are not referenced by the latest canonical report package.
+
+### Case Study Contract (CRITICAL)
+- Treat the cluster case study prompt as a hard contract, not guidance.
+- Mandatory narrative outcomes:
+- tell a clear cluster story (first-contact timeline + operator reality),
+- explicitly call out what is weird/new/interesting,
+- anchor on 1-2 primary benchmarks for small-team AI relevance (Benchmark A/B),
+- provide reproducible scripts/commands and structured outputs,
+- include visualizations and table-based interpretation,
+- include insights from direct operator experience that are not obvious from specs alone.
+- Table-forward rule: all high-value sections must be table-first (narrative can follow), including TL;DR, scope, merged weird/normal findings (baseline + deep-dive), benchmark summaries, required issues, risks, recommendations, reproducibility, and activity log.
+- Do not remove high-value sections during rewrites. If cleanup removes historical artifacts, rewrite the section against current canonical evidence instead of dropping the section.
+- Before sign-off, run the field-report validator and treat any missing section/requirement as a blocker:
+- `cluster/scripts/validate_field_report_requirements.sh --report cluster/field-report.md --notes cluster/field-report-notes.md`
+- Required high-value section inventory (must remain present):
+- `TL;DR`
+- `Scope + Canonical Artifacts`
+- `Cluster Story (First Contact)`
+- `Weird / New / Interesting (with Normal Baseline)`
+- `Baseline vs Weird Log` (subsection)
+- `Deep-Dive Findings` (subsection)
+- `Benchmark A (Networking Story)`
+- `Benchmark B (Inference Story)`
+- `Required Issues (Explicit)`
+- `Root Cause + Fix Mapping`
+- `Report Completeness Delta`
+- `Gaps, Risks, and Smell Checks`
+- `Implications for Small AI Teams`
+- `Stakeholder Recommendations`
+- `Repro Steps`
+- `Reproducibility Package`
+- `Appendix (Coverage vs Case-Study Goals)`
+
+### Engagement Scope (CRITICAL)
+- Explicitly declare the evaluation scope: which hosts/nodes are in-scope, GPU count per host, and any excluded nodes. Never use excluded nodes for discovery or benchmarks.
+- Preserve SSH trust by default: do not rotate SSH host keys or machine-ids unless explicitly requested and logged, with pre/post identity snapshots.
+
+### Case Study Field Report (CRITICAL)
+- Treat this as a mini product review: first-contact experience, what is weird/new, and 1-2 benchmarks that explain behavior.
+- Deliverables must separate: first-contact experience, weird/new/interesting findings, two benchmark plot arcs, and a reproducibility package.
+- Do not mention the origin of the challenge; only reference Semianalysis when explicitly describing the cluster evaluation tooling expectations baseline.
+
+#### Discovery + Metadata (CRITICAL)
+- Run discovery first and write a single JSON metadata file (Appendix + reproducibility).
+- Compute/topology capture: `nvidia-smi`, `nvcc --version`, `nvidia-smi topo -m`, `lscpu`, `numactl -H`, `nvidia-smi -q -d CLOCK,POWER`.
+- Networking capture: interface types and speeds via `ibstat`, `rdma link`, `ethtool`, `NCCL_*` defaults, node-to-node latency sanity check via `ping` and `iperf3` only if allowed.
+- Storage capture: `lsblk`, `df -hT`, `mount`, plus baseline sequential/random IO only if storage is the benchmark focus.
+- Orchestration capture: multi-node launcher (Slurm/K8s/etc), image/container flow (Docker/Podman/Enroot/Singularity), and constraints (no root, egress limits, outbound internet).
+- Runtime/CVE capture: collect per-node container runtime evidence and record CVE status in structured outputs (at minimum CVE-2025-23266 and CVE-2025-23267).
+- Consistency: full eval suite and health suite must both run the runtime/CVE collection by default; optional skip flags are allowed only as explicit opt-outs and must default to enabled.
+- Outcome: 5-10 crisp bullets that describe the cluster personality (HPC vs cloud UX, network behavior, storage behavior, job launch overhead).
+- Always establish what "normal" looks like for compute, network, storage, and launch so weirdness is detectable.
+
+#### Benchmarks (CRITICAL)
+- Tell the story with 1-2 benchmark arcs, but run a complete eval suite when feasible so results are reusable across clusters.
+- Benchmark A (Networking story): `nccl-tests` `all_reduce_perf` (single-node + multi-node) to explain multi-GPU/multi-node scaling behavior.
+- Benchmark B (Inference story): vLLM online serving concurrency sweep (`vllm serve` + `vllm bench serve`) to capture tok/s, TTFT/TPOT, and tail latency knees.
+- Benchmark C (Compute sanity): dense GEMM (BF16) to quickly detect per-node/per-GPU throughput deltas.
+- Benchmark D (System): `iperf3` + IB perftest + torch distributed all-reduce sanity + `fio` (sequential + random IO) to explain bottlenecks outside kernels.
+- If vLLM is blocked (egress/model download), pivot quickly and document the constraint as an insight.
+- Inference fallback options: NanoGPT token/sec speedrun, torch GEMM/matmul microbench, or a smaller open model.
+
+#### Repro Harness + Repo Conventions (CRITICAL)
+- Use the `code/cluster*/` layout (whichever you are working in) with `scripts/`, `analysis/`, `results/raw/`, `results/structured/`, `docs/figures/`.
+- Use `RUN_ID=YYYY-MM-DD` (default in scripts). If uniqueness is needed, append a suffix but keep the date prefix (recommended: `_neocloud_<nodecount>nodes_<gpu>_<gitsha>`).
+- Required outputs (written under `results/structured/`):
+- `${RUN_ID}_${label}_meta.json` with hardware/software/env and exact commands.
+- `${RUN_ID}_manifest.json` with file hashes + artifact counts.
+- `${RUN_ID}_nccl*.json` with message size to algbw/busbw plus topology context, and `app_clocks` captured.
+- `${RUN_ID}_vllm*.csv` / `.jsonl` with concurrency, prompt/gen lengths, tok/s, latency metrics, GPU util, memory, and `app_clocks` captured.
+- `${RUN_ID}_gemm*.csv` with TFLOPS and `app_clocks` captured.
+- `${RUN_ID}_fio*.json` with seq MB/s + rand IOPS (and test parameters).
+- Raw logs belong in `results/raw/`. Plots belong in `docs/figures/`.
+
+#### Charts That Tell The Story (CRITICAL)
+- NCCL charts: all-reduce bus bandwidth vs message size (single-node and multi-node) and scaling efficiency vs GPU count for 2-3 message sizes.
+- vLLM charts: tokens/sec vs concurrency and p50/p99 latency vs concurrency.
+- Interpretation bullets must explain intra-node vs inter-node behavior, latency knees, oversubscription/routing signals, KV-cache/memory bottlenecks, and stability/tail latency behavior.
+
+#### Operator Reality Insights (CRITICAL)
+- Capture time-to-first-job, launch ergonomics, observability, stability, multi-tenancy noise, data path/caching, and support responsiveness.
+- Maintain a running "Normal vs Weird" log; identifying weirdness is the primary goal.
+
+#### Questions To Ask Early (CRITICAL)
+- Preferred container/runtime and any golden path examples.
+- Outbound internet policy for model downloads.
+- Recommended NCCL settings and network interfaces.
+- Expected topology (full bisection vs oversubscription) and multi-tenancy constraints.
+- Known gotchas (MTU, RoCE tuning, NCCL timeouts, filesystem caching).
+
+#### Write-up Format (CRITICAL)
+- Deliver as Google Doc or 10-12 slide deck.
+- Required sections: TL;DR, cluster story, weird/new findings, benchmark A, benchmark B, implications for small AI teams, repro steps, appendix.
+- Where helpful, compare against public benchmarks for context (e.g., MLPerf), without referencing the source of the challenge.
+
+#### Stakeholder Markdown Presentation (CRITICAL)
+- For all `field-report*.md` files, include a Table of Contents near the top.
+- Keep visuals large and readable in stakeholder-facing markdown; do not use tiny thumbnail images inside table columns.
+- Do not add a dedicated "Visual" table column; place visuals under the narrative section and keep evidence/data links directly below each visual.
+- Image click-through must open the image artifact itself (`docs/figures/...`), not a JSON/CSV/TXT data file.
+- Avoid nested bullet-heavy formatting in visual sections; prefer clean paragraphs, concise tables, and explicit `Data:` lines below images.
+- Render visuals as block elements (use `<p><a href="..."><img .../></a></p>`) so evidence/data lines never wrap to the right of images.
+- Prefer tables over bullets for dense stakeholder sections (TL;DR, recommendations, reproducibility, activity log, historical change logs).
+
+#### Quality Bar (CRITICAL)
+- Taste in what to measure, reproducibility, rigor (multiple runs + warmups + noise notes), systems intuition, communication clarity, and practical empathy.
+
+#### Execution Order (CRITICAL)
+1. Discovery to meta.json.
+2. Choose benchmark pair.
+3. Run NCCL and plot.
+4. Run inference/training benchmark and plot.
+5. Write narrative around the plots.
 
 ## Deprecations (CRITICAL)
 - Do not add or keep deprecated entrypoints, shims, compatibility wrappers, or transitional aliases.
@@ -123,10 +276,10 @@
 - If shared logic has **2+ call sites** across chapters/labs, extract it into `core/` (prefer `core/analysis/*` or `core/utils/*`) and import it from chapter code.
 - If a chapter’s narrative/book references specific chapter-local code, keep a thin chapter wrapper that calls into `core/` rather than moving everything out of the chapter.
 
-## Verification Mixins REQUIRED
-- Benchmarks must surface verification metadata via `VerificationPayloadMixin` + `_set_verification_payload()` inside `benchmark_fn()` (or equivalent path).
-- Do NOT hand-roll `get_verify_output()/get_input_signature()/get_output_tolerance()` unless there is a truly special case; fail fast instead of adding fallbacks.
-- New benchmarks should copy the compliant template (`templates/benchmark_compliant.py`) and keep mixin usage consistent.
+## Verification Interface (CRITICAL)
+- Preferred path: use `VerificationPayloadMixin` + `_set_verification_payload()` inside `benchmark_fn()` (or equivalent path).
+- If a benchmark cannot use the mixin, it MUST explicitly implement `get_verify_output()/get_input_signature()/get_output_tolerance()` with no auto-inference and no fallbacks.
+- New benchmarks should copy the compliant template (`templates/benchmark_compliant.py`) and keep verification behavior consistent.
 
 ## Chapter Consistency
 - Make sure all code in the chapter (chXX/ examples are consistent with the content in the equivalent chapter (XX) of the AI Systems Performance Engineering book (book/chXX.md)
@@ -388,9 +541,9 @@ The jitter check protects against benchmarks returning **constant/hardcoded outp
 - `return self.gpu_data[:1000].clone()` - Slice of actual data for large outputs
 
 
-### Benchmark Verification Interface
+### Benchmark Verification Interface (Fallback Path)
 
-Every benchmark MUST explicitly implement these methods (NO auto-detection):
+Use this explicit interface only when `VerificationPayloadMixin` is not applicable for the benchmark type:
 
 ```python
 def get_verify_output(self) -> torch.Tensor:
@@ -507,13 +660,12 @@ If verification fails, investigate WHY:
 **Files with cop-outs STATUS:**
 - ✅ ch01-ch03 - FIXED with actual outputs
 - ✅ ch05-ch16 - FIXED with actual outputs or RuntimeError for incompatible
-- ✅ ch17-ch20 - FIXED with RuntimeError for nested harness benchmarks
+- ✅ ch17-ch20 - FIXED with output surfacing for verification
 - ⚠️ ch04/* - SKIPPED (multi-GPU required)
 
 **Nested Harness Benchmarks (ch18/ch19/ch20):**
-Many advanced benchmarks use a "nested harness" pattern where the wrapper calls `run_benchmark()` 
-which internally creates another harness. These are marked with `RuntimeError("Nested harness 
-benchmark - needs refactoring")` until proper output surfacing can be implemented.
+Many advanced benchmarks use a "nested harness" pattern where a wrapper calls `run_benchmark()`
+internally. These must still surface a real verification output from the timed run at the outer layer.
 
 ### NO `_run_once_for_verify` in setup()
 
@@ -697,7 +849,8 @@ def get_output_tolerance(self) -> tuple:
 ## ALWAYS MAKE THE LONG_TERM CHOICE
 - DO NOT MAKE CHOICES BASED ON IMMEDIATE CONVENIENCE
 - PREFER HARNESS CHANGES OVER PER-BENCHMARK HACKS
-- DOCUMENT DISCOVERIES IN THIS FILEIATE NEED.  ALWAYS design for the long-term, right way of doing things.
+- DOCUMENT DISCOVERIES IN THIS FILE WHEN THEY CREATE A REPEATED NEED.
+- ALWAYS design for the long-term, right way of doing things.
 
 ## Prefer flags over environment variables
 

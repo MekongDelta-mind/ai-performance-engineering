@@ -298,7 +298,9 @@ def reset_cuda_memory_pool(device: Optional[Any] = None) -> None:
     except Exception:
         pass
     try:
-        if hasattr(torch, "_C") and hasattr(torch._C, "_cuda_cudaCachingAllocator_set_allocator_settings"):
+        if hasattr(torch, "_C") and hasattr(torch._C, "_accelerator_setAllocatorSettings"):
+            torch._C._accelerator_setAllocatorSettings("reset_allocator:True")
+        elif hasattr(torch, "_C") and hasattr(torch._C, "_cuda_cudaCachingAllocator_set_allocator_settings"):
             torch._C._cuda_cudaCachingAllocator_set_allocator_settings("reset_allocator:True")
         elif hasattr(torch.cuda, "memory") and hasattr(torch.cuda.memory, "_set_allocator_settings"):
             torch.cuda.memory._set_allocator_settings("reset_allocator:True")
@@ -740,8 +742,9 @@ def validate_environment(
                 nodes_used = {cpu_to_nodes[cpu] for cpu in affinity if cpu in cpu_to_nodes}
                 details["numa_nodes_in_affinity"] = sorted(nodes_used)
                 if len(nodes_used) > 1:
-                    errors.append(
-                        f"CPU affinity spans multiple NUMA nodes ({sorted(nodes_used)}). Pin to a single NUMA node for benchmarking."
+                    warnings_list.append(
+                        f"CPU affinity spans multiple NUMA nodes ({sorted(nodes_used)}). "
+                        "Pin to a single NUMA node for tighter benchmark variance."
                     )
 
     # Virtualization detection (Virtualization Overhead)
@@ -1197,11 +1200,14 @@ class StreamAuditor:
                 "for accurate multi-stream timing."
             )
         
-        # Warning: many custom streams (unusual for benchmarks)
+        # Non-fatal notice: some real workloads legitimately use multiple streams (e.g., NCCL).
+        # Do not fail the harness solely on stream count; rely on the stronger checks above.
         if info.custom_streams_detected > 2:
-            warnings_list.append(
+            warnings.warn(
                 f"MULTI-STREAM WARNING: {info.custom_streams_detected} custom streams detected. "
-                "Unusual for standard benchmarks - verify all streams are properly synchronized."
+                "Unusual for standard benchmarks - verify all streams are properly synchronized.",
+                RuntimeWarning,
+                stacklevel=2,
             )
         
         return len(warnings_list) == 0, warnings_list

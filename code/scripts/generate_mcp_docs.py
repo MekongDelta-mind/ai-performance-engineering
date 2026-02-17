@@ -53,14 +53,18 @@ def _classify(name: str) -> str:
         return "GPU"
     if name.startswith("system_"):
         return "System"
-    if name.startswith("profile_") or name in {"compare_nsys", "compare_ncu", "nsys_summary"}:
+    if name == "clock_lock_check":
+        return "System"
+    if name.startswith("profile_") or name in {"compare_nsys", "compare_ncu", "nsys_summary", "ncu_summary"}:
         return "Profiling"
     if name.startswith("analyze_") or name.startswith("predict_"):
         return "Analyze"
     if name in {"optimize", "recommend", "optimize_roi", "optimize_techniques"}:
         return "Optimize"
-    if name.startswith("distributed_") or name.startswith("cluster_") or name == "launch_plan":
+    if name.startswith("distributed_") or name == "launch_plan":
         return "Distributed"
+    if name.startswith("cluster_") or name == "cost_estimate":
+        return "Cluster/Cost"
     if name.startswith("inference_"):
         return "Inference"
     if name.startswith("benchmark_") or name in {"run_benchmarks", "list_chapters"}:
@@ -73,8 +77,6 @@ def _classify(name: str) -> str:
         return "Hardware"
     if name == "hf":
         return "HuggingFace"
-    if name == "cost_estimate":
-        return "Cluster/Cost"
     if name.startswith("tools_"):
         return "Tools"
     if name in {"status", "triage", "context_summary", "context_full", "job_status"}:

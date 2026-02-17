@@ -229,6 +229,9 @@ if typer:
     
     # Domain 10: Export - CSV, PDF, HTML reports
     export_app = typer.Typer(help="Export: CSV, PDF, HTML reports")
+
+    # Extra group: Cluster - field report eval suite + validation helpers
+    cluster_app = typer.Typer(help="Cluster: eval suite, field report validation")
     
 # =============================================================================
 # Root callback
@@ -482,6 +485,21 @@ if typer:
         typer.echo(json.dumps(result, indent=2))
         raise typer.Exit(0)
 
+    @system_app.command(
+        "clock-lock-check",
+        help="Validate harness GPU clock locking works (required for canonical benchmarks)",
+    )
+    def system_clock_lock_check(
+        ctx: typer.Context,
+        sm_clock_mhz: Optional[int] = typer.Option(None, "--sm-clock-mhz", help="Target SM clock in MHz (default: max)"),
+        mem_clock_mhz: Optional[int] = typer.Option(None, "--mem-clock-mhz", help="Target memory clock in MHz (default: max)"),
+    ) -> None:
+        from core.engine import get_engine
+
+        result = get_engine().system.clock_lock_check(sm_clock_mhz=sm_clock_mhz, mem_clock_mhz=mem_clock_mhz)
+        typer.echo(json.dumps(result, indent=2))
+        raise typer.Exit(0)
+
 # =============================================================================
 # Domain 4: Analyze - Bottlenecks, pareto, scaling, what-if
 # =============================================================================
@@ -701,6 +719,40 @@ if typer and profile_app is not None:
             force_lineinfo=force_lineinfo,
             timeout_seconds=timeout_seconds,
         )
+
+    @profile_app.command("list-profiles", help="List available baseline/optimized profile pairs")
+    def profile_list_profiles(ctx: typer.Context) -> None:
+        from core.engine import get_engine
+
+        result = get_engine().profile.list_profiles()
+        typer.echo(json.dumps(result, indent=2))
+        raise typer.Exit(0)
+
+    @profile_app.command("compile-analysis", help="Summarize torch.compile graphs/breaks from the latest benchmark data")
+    def profile_compile_analysis(ctx: typer.Context) -> None:
+        from core.engine import get_engine
+
+        result = get_engine().profile.compile_analysis()
+        typer.echo(json.dumps(result, indent=2))
+        raise typer.Exit(0)
+
+    @profile_app.command("ncu-summary", help="Summarize an NCU report (top kernels + key metrics)")
+    def profile_ncu_summary(
+        ctx: typer.Context,
+        report_path: Path = typer.Argument(..., help="Path to .ncu-rep or exported NCU raw CSV"),
+        top_k: int = typer.Option(10, "--top-k", help="Number of kernels to include (sorted by total time when available)"),
+        timeout_seconds: int = typer.Option(60, "--timeout", help="Timeout for `ncu --import` when report_path is .ncu-rep"),
+    ) -> None:
+        from core.engine import get_engine
+
+        result = get_engine().profile.ncu_summary(
+            str(report_path),
+            top_k=top_k,
+            metrics=None,
+            timeout_seconds=timeout_seconds,
+        )
+        typer.echo(json.dumps(result, indent=2))
+        raise typer.Exit(0)
 
     @profile_app.command("torch", help="Run torch.profiler capture (Chrome trace + summary)")
     def profile_torch_profiler(
@@ -1624,6 +1676,76 @@ if typer:
 
 
 # =============================================================================
+# Extra group: cluster
+# =============================================================================
+
+if typer and cluster_app is not None:
+
+    @cluster_app.command("eval-suite", help="Run the cluster eval suite (full) or a fast local smoke run")
+    def cluster_eval_suite_cmd(
+        ctx: typer.Context,
+        mode: str = typer.Option("smoke", "--mode", help="smoke (local metadata+manifest) or full (cluster suite)"),
+        run_id: Optional[str] = typer.Option(None, "--run-id", help="RUN_ID prefix (default: YYYY-MM-DD)"),
+        hosts: Optional[str] = typer.Option(None, "--hosts", help="Comma-separated host list (required for --mode full)"),
+        labels: Optional[str] = typer.Option(None, "--labels", help="Comma-separated labels (optional; must match hosts count)"),
+        ssh_user: Optional[str] = typer.Option(None, "--ssh-user", help="SSH user (full mode)"),
+        ssh_key: Optional[Path] = typer.Option(None, "--ssh-key", help="SSH key path (full mode)"),
+        oob_if: Optional[str] = typer.Option(None, "--oob-if", help="Out-of-band interface (full mode, multi-node)"),
+        socket_ifname: Optional[str] = typer.Option(None, "--socket-ifname", help="NCCL socket interface (full mode)"),
+        nccl_ib_hca: Optional[str] = typer.Option(None, "--nccl-ib-hca", help="NCCL_IB_HCA allowlist (full mode)"),
+        primary_label: Optional[str] = typer.Option(None, "--primary-label", help="Label for single-node/local steps"),
+        timeout_seconds: Optional[int] = typer.Option(None, "--timeout", help="Optional timeout in seconds"),
+        extra_arg: List[str] = typer.Option([], "--extra-arg", help="Extra args appended to run_cluster_eval_suite.sh", show_default=False),
+    ) -> None:
+        from core.cluster import run_cluster_eval_suite
+
+        host_list = [h.strip() for h in (hosts or "").split(",") if h.strip()] if hosts else None
+        label_list = [l.strip() for l in (labels or "").split(",") if l.strip()] if labels else None
+
+        result = run_cluster_eval_suite(
+            mode=mode,
+            run_id=run_id,
+            hosts=host_list,
+            labels=label_list,
+            ssh_user=ssh_user,
+            ssh_key=str(ssh_key) if ssh_key else None,
+            oob_if=oob_if,
+            socket_ifname=socket_ifname,
+            nccl_ib_hca=nccl_ib_hca,
+            primary_label=primary_label,
+            extra_args=extra_arg or None,
+            timeout_seconds=timeout_seconds,
+        )
+        typer.echo(json.dumps(result, indent=2))
+        raise typer.Exit(0)
+
+    @cluster_app.command("validate-field-report", help="Validate cluster field report requirements + artifact hygiene")
+    def cluster_validate_field_report_cmd(
+        ctx: typer.Context,
+        canonical_run_id: Optional[str] = typer.Option(None, "--canonical-run-id", help="Expected canonical run id (optional)"),
+        report: Optional[Path] = typer.Option(None, "--report", help="Path to field-report.md"),
+        notes: Optional[Path] = typer.Option(None, "--notes", help="Path to field-report-notes.md"),
+        template: Optional[Path] = typer.Option(None, "--template", help="Path to field-report-template.md"),
+        runbook: Optional[Path] = typer.Option(None, "--runbook", help="Path to advanced-runbook.md"),
+        allow_run_id: List[str] = typer.Option([], "--allow-run-id", help="Additional run id allowed for hygiene checks", show_default=False),
+        timeout_seconds: int = typer.Option(120, "--timeout", help="Validator timeout in seconds"),
+    ) -> None:
+        from core.cluster import validate_field_report_requirements
+
+        result = validate_field_report_requirements(
+            report=str(report) if report else None,
+            notes=str(notes) if notes else None,
+            template=str(template) if template else None,
+            runbook=str(runbook) if runbook else None,
+            canonical_run_id=canonical_run_id,
+            allow_run_id=allow_run_id or None,
+            timeout_seconds=timeout_seconds,
+        )
+        typer.echo(json.dumps(result, indent=2))
+        raise typer.Exit(0)
+
+
+# =============================================================================
 # Top-level commands (bench, version, help)
 # =============================================================================
 
@@ -1764,6 +1886,7 @@ if typer:
     app.add_typer(benchmark_app, name="benchmark", help="Benchmark: microbench diagnostics, speed tests")
     app.add_typer(ai_app, name="ai", help="AI: ask, explain, suggest")
     app.add_typer(export_app, name="export", help="Export: CSV, PDF, HTML")
+    app.add_typer(cluster_app, name="cluster", help="Cluster: eval suite + field report validation")
 
 
 # =============================================================================

@@ -27,6 +27,7 @@ NSYS_SAMPLE = PROFILE_FIXTURE_DIR / "baseline_nccl_baseline.nsys-summary.csv"
 NCU_SAMPLE = PROFILE_FIXTURE_DIR / "baseline_nvlink_baseline.ncu-rep"
 NSYS_REP_FIXTURE = PROFILE_FIXTURE_DIR / "baseline_fixture.nsys-rep"
 NCU_REP_FIXTURE = PROFILE_FIXTURE_DIR / "baseline_fixture.ncu-rep"
+NCU_RAW_CSV_SAMPLE = PROFILE_FIXTURE_DIR / "baseline_nvlink_baseline.ncu-raw.csv"
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ CATEGORY_TOOLS: Dict[str, List[str]] = {
         "system_env",
         "system_network",
         "system_full",
+        "clock_lock_check",
     ],
     "info": [
         "info_features",
@@ -127,6 +129,9 @@ CATEGORY_TOOLS: Dict[str, List[str]] = {
         "compare_nsys",
         "compare_ncu",
         "nsys_summary",
+        "ncu_summary",
+        "profile_list_profiles",
+        "profile_compile_analysis",
     ],
     "exports": [
         "export_csv",
@@ -151,6 +156,8 @@ CATEGORY_TOOLS: Dict[str, List[str]] = {
     "cluster_cost": [
         "cluster_slurm",
         "cost_estimate",
+        "cluster_eval_suite",
+        "cluster_validate_field_report",
     ],
     "tools": [
         "tools_kv_cache",
@@ -291,6 +298,9 @@ TOOL_PARAMS: Dict[str, Dict[str, Any]] = {
     "compare_nsys": {"profiles_dir": str(PROFILE_FIXTURE_DIR), "include_context": False},
     "compare_ncu": {"profiles_dir": str(PROFILE_FIXTURE_DIR), "include_context": False},
     "nsys_summary": {"report_path": str(NSYS_SAMPLE), "include_context": False},
+    "ncu_summary": {"report_path": str(NCU_RAW_CSV_SAMPLE), "top_k": 3, "include_context": False},
+    "profile_list_profiles": {"include_context": False},
+    "profile_compile_analysis": {"include_context": False},
     "export_csv": {"detailed": False, "include_context": False},
     "export_pdf": {"include_context": False},
     "export_html": {"include_context": False},
@@ -336,6 +346,9 @@ TOOL_PARAMS: Dict[str, Dict[str, Any]] = {
     "hf": {"action": "search", "query": "llama", "limit": 3},
     "cluster_slurm": {"model": "7b", "nodes": 1, "gpus": 2},
     "cost_estimate": {"gpu_type": "h100", "num_gpus": 1, "hours_per_day": 1},
+    "cluster_eval_suite": {"mode": "smoke", "run_id": "mcp_cluster_smoke_test", "include_context": False},
+    "cluster_validate_field_report": {"canonical_run_id": "mcp_cluster_smoke_test", "include_context": False},
+    "clock_lock_check": {"devices": [0], "include_context": False},
     "suggest_tools": {"query": "profile this model", "llm_routing": False},
     "job_status": {"job_id": "test_job_missing"},
     "benchmark_data": {"page": 1, "page_size": 10},
@@ -379,6 +392,18 @@ def prepare_artifacts() -> None:
         nsys_csv.write_text(
             "Section,Metric Name,Metric Value,Time (%)\n"
             "NVTX,range0,123,45.6\n"
+        )
+    ncu_raw_csv = PROFILE_FIXTURE_DIR / "baseline_nvlink_baseline.ncu-raw.csv"
+    if not ncu_raw_csv.exists():
+        ncu_raw_csv.write_text(
+            "\"ID\",\"Kernel Name\",\"Block Size\",\"Grid Size\",\"gpu__time_duration.avg\",\"gpu__time_duration.sum\","
+            "\"sm__throughput.avg.pct_of_peak_sustained_elapsed\",\"gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed\","
+            "\"lts__throughput.avg.pct_of_peak_sustained_elapsed\",\"sm__warps_active.avg.pct_of_peak_sustained_active\","
+            "\"launch__registers_per_thread\",\"launch__shared_mem_per_block\",\"launch__occupancy_limit_blocks\","
+            "\"launch__occupancy_limit_registers\",\"launch__occupancy_limit_shared_mem\",\"launch__occupancy_limit_warps\"\n"
+            "\"\",\"\",\"\",\"\",\"us\",\"us\",\"%\",\"%\",\"%\",\"%\",\"register/thread\",\"Kbyte/block\",\"block\",\"block\",\"block\",\"block\"\n"
+            "\"0\",\"kernelA\",\"(256,1,1)\",\"(1024,1,1)\",\"10.0\",\"100.0\",\"80.0\",\"70.0\",\"60.0\",\"50.0\",\"64\",\"12.0\",\"16\",\"8\",\"8\",\"4\"\n"
+            "\"1\",\"kernelB\",\"(128,1,1)\",\"(2048,1,1)\",\"5.0\",\"50.0\",\"60.0\",\"50.0\",\"40.0\",\"30.0\",\"80\",\"8.0\",\"8\",\"4\",\"4\",\"2\"\n"
         )
 
 
@@ -431,7 +456,7 @@ def test_expected_tool_registration_matches_catalog():
     expected = {case.name for case in ALL_TOOL_CASES}
     registered = set(mcp_server.TOOLS.keys())
     assert expected == registered, "Tool catalog must mirror MCP server registry"
-    assert len(expected) == 97
+    assert len(expected) == 103
 
 
 def test_optimize_path_resolution():
@@ -547,6 +572,19 @@ def test_nsys_summary_uses_fixture_csv(server: mcp_server.MCPServer):
     tool_result = payload["result"]
     assert tool_result.get("success") is True
     assert tool_result.get("metrics")
+
+
+def test_ncu_summary_uses_fixture_csv(server: mcp_server.MCPServer):
+    result = server.call_tool(
+        "ncu_summary",
+        {"report_path": str(NCU_RAW_CSV_SAMPLE), "top_k": 3, "include_context": False},
+    )
+    payload = _payload_from_result(result)
+    assert payload["tool"] == "ncu_summary"
+    assert payload["status"] == "ok"
+    tool_result = payload["result"]
+    assert tool_result.get("success") is True
+    assert tool_result.get("kernels")
 
 
 FAST_TOOL_CASES = [case for case in ALL_TOOL_CASES if not case.slow]

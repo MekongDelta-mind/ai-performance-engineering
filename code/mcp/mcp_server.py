@@ -2252,6 +2252,43 @@ def tool_system_network(params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @register_tool(
+    "clock_lock_check",
+    "Tags: clocks, lock, benchmark-validity, harness, nvidia-smi, sudo. "
+    "Validate GPU clock locking works via the benchmark harness (required for canonical benchmark/profiling runs). "
+    "Returns: {success, gpu_count, results:[{device, physical_index, locked, before/during/after clocks, error?}]}. "
+    "⚡ FAST (~1-5s). USE when: You want to verify the host supports clock locking before running benchmarks. "
+    "NOT FOR: Manually locking clocks; this tool uses the repo harness and resets clocks on exit.",
+    {"type": "object", "properties": with_context_params({
+        "sm_clock_mhz": {"type": "integer", "description": "Target SM clock in MHz (default: max)"},
+        "mem_clock_mhz": {"type": "integer", "description": "Target memory clock in MHz (default: max)"},
+        "devices": {"type": "array", "items": {"type": "integer"}, "description": "Optional list of CUDA device indices to check (default: all visible GPUs)"},
+    })}
+)
+def tool_clock_lock_check(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate harness clock locking works."""
+    from core.engine import get_engine
+
+    include_context, context_level = extract_context_opts(params)
+    devices_raw = params.get("devices")
+    devices: Optional[List[int]] = None
+    if isinstance(devices_raw, list):
+        try:
+            devices = [int(x) for x in devices_raw]
+        except Exception:
+            devices = None
+
+    try:
+        result = get_engine().system.clock_lock_check(
+            sm_clock_mhz=params.get("sm_clock_mhz"),
+            mem_clock_mhz=params.get("mem_clock_mhz"),
+            devices=devices,
+        )
+        return attach_context_if_requested(result, include_context, context_level)
+    except Exception as e:
+        return make_error(f"clock lock check failed: {e}", include_context, context_level)
+
+
+@register_tool(
     "run_benchmarks",
     "Tags: benchmarks, run, profiling, performance-test, chapters, labs, validation. "
     "Run benchmarks via the bench CLI with optional profiling and LLM analysis. "
@@ -7817,6 +7854,85 @@ def tool_info_features(params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @register_tool(
+    "profile_list_profiles",
+    "Tags: profiles, list, discovery, baseline, optimized, nsys, ncu. "
+    "List available baseline/optimized profile pairs discovered under artifacts. "
+    "Returns: {pairs: [...], count}. "
+    "⚡ FAST (~1s). USE when: You want a machine-readable list of captured profile pairs for follow-up compare tools. "
+    "WORKFLOW: profile_list_profiles → compare_nsys/compare_ncu/profile_compare.",
+    {"type": "object", "properties": with_context_params({})},
+)
+def tool_profile_list_profiles(params: Dict[str, Any]) -> Dict[str, Any]:
+    from core.engine import get_engine
+
+    include_context, context_level = extract_context_opts(params)
+    try:
+        result = get_engine().profile.list_profiles()
+        return attach_context_if_requested(result, include_context, context_level)
+    except Exception as e:
+        return make_error(f"profile list failed: {e}", include_context, context_level)
+
+
+@register_tool(
+    "profile_compile_analysis",
+    "Tags: torch.compile, inductor, dynamo, graphs, breaks, analysis. "
+    "Summarize torch.compile behavior from the latest benchmark results (graphs, breaks, time in compile). "
+    "Returns: {summary, graphs, breaks, ...} (best-effort; depends on captured compile artifacts). "
+    "⚡ FAST (~1s). USE when: Investigating compile overhead or graph breaks affecting performance. "
+    "WORKFLOW: profile_compile_analysis → profile_torch/profile_nsys for deeper attribution.",
+    {"type": "object", "properties": with_context_params({})},
+)
+def tool_profile_compile_analysis(params: Dict[str, Any]) -> Dict[str, Any]:
+    from core.engine import get_engine
+
+    include_context, context_level = extract_context_opts(params)
+    try:
+        result = get_engine().profile.compile_analysis()
+        return attach_context_if_requested(result, include_context, context_level)
+    except Exception as e:
+        return make_error(f"compile analysis failed: {e}", include_context, context_level)
+
+
+@register_tool(
+    "ncu_summary",
+    "Tags: ncu, nsight-compute, summary, kernels, top, hotspots. "
+    "Summarize an existing Nsight Compute report, returning the top-N kernels with key utilization metrics. "
+    "Returns: {kernels:[...], kernel_count, sort_by, total_time_sum_ms?}. "
+    "⚡ FAST (~1-10s). USE when: You want a quick \"what kernel should I tune next?\" table from an .ncu-rep. "
+    "WORKFLOW: ncu_summary → profile_ncu (scoped) → compare_ncu.",
+    {"type": "object", "properties": with_context_params({
+        "report_path": {"type": "string", "description": "Path to .ncu-rep or exported NCU raw CSV"},
+        "top_k": {"type": "integer", "default": 10, "description": "Number of kernels to return"},
+        "metrics": {"type": "array", "items": {"type": "string"}, "description": "Optional explicit NCU metric columns to request/parse"},
+        "timeout_seconds": {"type": "integer", "default": 60, "description": "Timeout for `ncu --import` when report_path is .ncu-rep"},
+    })},
+)
+def tool_ncu_summary(params: Dict[str, Any]) -> Dict[str, Any]:
+    from core.engine import get_engine
+
+    include_context, context_level = extract_context_opts(params)
+    report_path = params.get("report_path")
+    if not report_path:
+        return make_error("report_path is required", include_context, context_level)
+
+    metrics = params.get("metrics")
+    metrics_list: Optional[List[str]] = None
+    if isinstance(metrics, list):
+        metrics_list = [str(x) for x in metrics if str(x).strip()]
+
+    try:
+        result = get_engine().profile.ncu_summary(
+            str(report_path),
+            top_k=int(params.get("top_k", 10) or 10),
+            metrics=metrics_list,
+            timeout_seconds=int(params.get("timeout_seconds", 60) or 60),
+        )
+        return attach_context_if_requested(result, include_context, context_level)
+    except Exception as e:
+        return make_error(f"ncu summary failed: {e}", include_context, context_level)
+
+
+@register_tool(
     "nsys_summary",
     "Tags: nsys, nsight, summary, quick, stats. "
     "Quick Nsight Systems summary stats without full profile capture. "
@@ -8244,12 +8360,96 @@ def tool_cluster_slurm(params: Dict[str, Any]) -> Dict[str, Any]:
     """Generate SLURM script."""
     from core.engine import get_engine
     include_context, context_level = extract_context_opts(params)
-    result = get_engine().cluster.slurm(
+    # Engine exposes SLURM generation under the distributed domain.
+    result = get_engine().distributed.slurm(
         model=params.get("model", "7b"),
         nodes=params.get("nodes", 1),
-        gpus=params.get("gpus", 8)
+        gpus=params.get("gpus", 8),
+        framework="pytorch",
     )
     return attach_context_if_requested(result, include_context, context_level)
+
+
+@register_tool(
+    "cluster_eval_suite",
+    "Tags: cluster, eval, suite, field-report, discovery, reproducibility. "
+    "Run the cluster field-report eval suite, or a fast local smoke run that captures metadata + manifest. "
+    "Returns: {success, mode, run_id, stdout/stderr, paths}. "
+    "🕐 MEDIUM (varies). USE when: You want a reproducible cluster evaluation bundle under `cluster/results/`. "
+    "Defaults to mode='smoke' for safety; use mode='full' with hosts to run the full suite.",
+    {"type": "object", "properties": with_context_params({
+        "mode": {"type": "string", "enum": ["smoke", "full"], "default": "smoke", "description": "smoke (local) or full (runs cluster suite)"},
+        "run_id": {"type": "string", "description": "RUN_ID prefix (default: YYYY-MM-DD)"},
+        "hosts": {"type": "array", "items": {"type": "string"}, "description": "Host list (required for mode=full)"},
+        "labels": {"type": "array", "items": {"type": "string"}, "description": "Optional labels (must match hosts count)"},
+        "ssh_user": {"type": "string", "description": "SSH user (full mode)"},
+        "ssh_key": {"type": "string", "description": "SSH key path (full mode)"},
+        "oob_if": {"type": "string", "description": "Out-of-band interface (full mode, multi-node)"},
+        "socket_ifname": {"type": "string", "description": "NCCL socket interface (full mode)"},
+        "nccl_ib_hca": {"type": "string", "description": "NCCL_IB_HCA allowlist (full mode)"},
+        "primary_label": {"type": "string", "description": "Label for single-node/local steps"},
+        "extra_args": {"type": "array", "items": {"type": "string"}, "description": "Extra args appended to run_cluster_eval_suite.sh"},
+        "timeout_seconds": {"type": "integer", "description": "Optional timeout in seconds (0/null = no timeout)"},
+    })},
+)
+def tool_cluster_eval_suite(params: Dict[str, Any]) -> Dict[str, Any]:
+    from core.cluster import run_cluster_eval_suite
+
+    include_context, context_level = extract_context_opts(params)
+    try:
+        result = run_cluster_eval_suite(
+            mode=str(params.get("mode", "smoke")),
+            run_id=params.get("run_id"),
+            hosts=params.get("hosts") if isinstance(params.get("hosts"), list) else None,
+            labels=params.get("labels") if isinstance(params.get("labels"), list) else None,
+            ssh_user=params.get("ssh_user"),
+            ssh_key=params.get("ssh_key"),
+            oob_if=params.get("oob_if"),
+            socket_ifname=params.get("socket_ifname"),
+            nccl_ib_hca=params.get("nccl_ib_hca"),
+            primary_label=params.get("primary_label"),
+            extra_args=params.get("extra_args") if isinstance(params.get("extra_args"), list) else None,
+            timeout_seconds=params.get("timeout_seconds"),
+        )
+        return attach_context_if_requested(result, include_context, context_level)
+    except Exception as e:
+        return make_error(f"cluster eval suite failed: {e}", include_context, context_level)
+
+
+@register_tool(
+    "cluster_validate_field_report",
+    "Tags: cluster, report, validate, hygiene, artifacts, requirements. "
+    "Validate `cluster/field-report.md` and companion notes/template/runbook plus artifact hygiene. "
+    "Returns: {success, returncode, stdout, stderr}. "
+    "⚡ FAST (~1-10s). USE when: You updated the field report and want to ensure required sections and canonical artifacts are consistent.",
+    {"type": "object", "properties": with_context_params({
+        "report": {"type": "string", "description": "Path to field-report.md (default: cluster/field-report.md)"},
+        "notes": {"type": "string", "description": "Path to field-report-notes.md (default: cluster/field-report-notes.md)"},
+        "template": {"type": "string", "description": "Path to field-report-template.md (default: cluster/docs/field-report-template.md)"},
+        "runbook": {"type": "string", "description": "Path to advanced-runbook.md (default: cluster/docs/advanced-runbook.md)"},
+        "canonical_run_id": {"type": "string", "description": "Expected canonical run id (optional)"},
+        "allow_run_id": {"type": "array", "items": {"type": "string"}, "description": "Additional run id(s) allowed for hygiene checks (repeatable)"},
+        "timeout_seconds": {"type": "integer", "default": 120, "description": "Validator timeout in seconds"},
+    })},
+)
+def tool_cluster_validate_field_report(params: Dict[str, Any]) -> Dict[str, Any]:
+    from core.cluster import validate_field_report_requirements
+
+    include_context, context_level = extract_context_opts(params)
+    try:
+        allow = params.get("allow_run_id") if isinstance(params.get("allow_run_id"), list) else None
+        result = validate_field_report_requirements(
+            report=params.get("report"),
+            notes=params.get("notes"),
+            template=params.get("template"),
+            runbook=params.get("runbook"),
+            canonical_run_id=params.get("canonical_run_id"),
+            allow_run_id=allow,
+            timeout_seconds=int(params.get("timeout_seconds", 120) or 120),
+        )
+        return attach_context_if_requested(result, include_context, context_level)
+    except Exception as e:
+        return make_error(f"field report validation failed: {e}", include_context, context_level)
 
 
 @register_tool(

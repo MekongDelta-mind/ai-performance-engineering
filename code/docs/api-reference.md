@@ -125,6 +125,7 @@ Software stack, dependencies, and environment information.
 | `cpu_memory()` | CPU/NUMA/cache hierarchy snapshot | `aisp system cpu-memory` | `system_cpu_memory` |
 | `env()` | Environment variables + paths | `aisp system env` | `system_env` |
 | `network()` | Network + InfiniBand status | `aisp system network` | `system_network` |
+| `clock_lock_check(...)` | Validate harness GPU clock locking works | `aisp system clock-lock-check` | `clock_lock_check` |
 
 **Python API:**
 ```python
@@ -137,6 +138,7 @@ engine.system.container()     # Container/cgroup limits
 engine.system.cpu_memory()    # CPU/NUMA/cache snapshot
 engine.system.env()           # Environment variables
 engine.system.network()       # Network/IB status
+engine.system.clock_lock_check()  # Validate clock locking works (benchmark validity gate)
 ```
 
 **MCP-only system tools:** `system_full`, `context_summary`, `context_full`, `status`, `triage`.
@@ -158,7 +160,9 @@ Profiling with Nsight Systems, Nsight Compute, and torch.profiler.
 | `memory_timeline()` | Memory allocation timeline | `aisp profile memory` | `profile_memory` |
 | `roofline()` | Roofline model data | `aisp profile roofline` | `profile_roofline` |
 | `compare(chapter)` | Compare baseline vs optimized | `aisp profile compare` | `profile_compare` |
-| `list_profiles()` | List available profile pairs | - | - |
+| `list_profiles()` | List available profile pairs | `aisp profile list-profiles` | `profile_list_profiles` |
+| `compile_analysis()` | torch.compile analysis summary | `aisp profile compile-analysis` | `profile_compile_analysis` |
+| `ncu_summary(report_path, ...)` | Top-N kernel summary from an NCU report | `aisp profile ncu-summary` | `ncu_summary` |
 
 **MCP profiling captures include metrics JSON:** `profile_nsys` returns `nsys_metrics`, `profile_ncu` returns `ncu_metrics`, `profile_torch` returns `torch_metrics` (and `report` alias), and `profile_hta` includes `nsys_metrics`. Use these payloads to analyze regressions and bottleneck shifts.
 
@@ -175,7 +179,21 @@ engine.profile.kernels()          # Kernel breakdown
 engine.profile.memory_timeline()  # Memory allocations
 engine.profile.hta()              # HTA analysis
 engine.profile.compare("ch11")    # Compare profiles
+engine.profile.list_profiles()    # Discover available profile pairs
+engine.profile.compile_analysis() # torch.compile graphs/breaks (best-effort)
+engine.profile.ncu_summary("path/to/report.ncu-rep", top_k=10)  # Top kernels from NCU
 ```
+
+---
+
+## Cluster Tools (Non-Domain)
+
+These are repo helpers for cluster evaluations under `cluster/` (field report workflows). They are intentionally separate from the unified 10-domain engine.
+
+| Operation | Description | CLI | MCP Tool |
+|-----------|-------------|-----|----------|
+| `run_cluster_eval_suite(...)` | Run cluster eval suite (full) or a safe local smoke run | `aisp cluster eval-suite` | `cluster_eval_suite` |
+| `validate_field_report_requirements(...)` | Validate `cluster/field-report*.md` requirements + artifact hygiene | `aisp cluster validate-field-report` | `cluster_validate_field_report` |
 
 ---
 

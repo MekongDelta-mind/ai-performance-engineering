@@ -257,6 +257,7 @@ class SystemDomain:
         container()     - Container/cgroup limits
         env()           - Environment snapshot (CUDA/torch/NCCL vars)
         network()       - Network + InfiniBand status
+        clock_lock_check() - Validate harness GPU clock locking works
     """
     
     def __init__(self, parent: 'PerformanceEngine'):
@@ -298,6 +299,22 @@ class SystemDomain:
         """Analyze CPU/memory hierarchy: NUMA, caches, TLB."""
         return _get_handler().get_cpu_memory_analysis()
 
+    def clock_lock_check(
+        self,
+        sm_clock_mhz: Optional[int] = None,
+        mem_clock_mhz: Optional[int] = None,
+        devices: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        """Validate GPU clock locking works via the harness (required for canonical benchmarks)."""
+        from core.harness.clock_lock_check import clock_lock_check
+
+        return _safe_call(
+            clock_lock_check,
+            sm_clock_mhz=sm_clock_mhz,
+            mem_clock_mhz=mem_clock_mhz,
+            devices=devices,
+        )
+
 
 # =============================================================================
 # DOMAIN 3: PROFILE
@@ -318,6 +335,7 @@ class ProfileDomain:
         list_profiles()     - List available profile pairs
         memory_timeline()   - Memory allocation timeline
         roofline()          - Roofline model data
+        ncu_summary()       - Top-N kernel summary from an existing NCU report
     """
     
     def __init__(self, parent: 'PerformanceEngine'):
@@ -366,6 +384,27 @@ class ProfileDomain:
     def nsys_summary(self, report_path: str) -> Dict[str, Any]:
         """Summarize an existing nsys report."""
         return _safe_call(_get_handler().summarize_nsys_report, report_path)
+
+    def ncu_summary(
+        self,
+        report_path: str,
+        top_k: int = 10,
+        metrics: Optional[List[str]] = None,
+        timeout_seconds: int = 60,
+    ) -> Dict[str, Any]:
+        """Summarize an existing ncu report (.ncu-rep or exported CSV)."""
+        if not report_path:
+            return {"success": False, "error": "report_path is required"}
+
+        from core.profiling.ncu_summary import summarize_ncu_report
+
+        return _safe_call(
+            summarize_ncu_report,
+            Path(report_path),
+            top_k=top_k,
+            metrics=metrics,
+            timeout_seconds=timeout_seconds,
+        )
 
 
 # =============================================================================

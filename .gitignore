@@ -7,6 +7,7 @@ code/ch14/torch_compile_debug/
 code/ch16/gpt_oss_120b_results.json
 code/ch16/gpt_quick_results.txt
 BENCHMARK_*.json
+code/cluster/results/structured/mcp_cluster_smoke_test*
 .venv/
 .pytest_cache/
 manuscript_diffs/

@@ -118,7 +118,8 @@ Generated from `mcp.mcp_server.TOOLS`. Run `python scripts/generate_mcp_docs.py`
 - `gpu_topology` — Get multi-GPU topology: NVLink/PCIe connections, NUMA affinity, P2P capability matrix
 - `gpu_topology_matrix` — Get raw GPU/NUMA topology matrix directly from nvidia-smi topo -m
 
-### System (10)
+### System (11)
+- `clock_lock_check` — Validate GPU clock locking works via the benchmark harness (required for canonical benchmark/profiling runs)
 - `system_capabilities` — Get hardware capabilities summary: compute capability, tensor cores, supported precisions
 - `system_container` — Inspect container/cgroup limits (CPU quota, memory limit, cgroup version)
 - `system_context` — Get comprehensive system context: GPU info + software stack + hardware capabilities combined
@@ -130,14 +131,17 @@ Generated from `mcp.mcp_server.TOOLS`. Run `python scripts/generate_mcp_docs.py`
 - `system_parameters` — Inspect kernel parameters that commonly affect performance (swappiness, dirty ratios, NUMA balancing, net buffers)
 - `system_software` — Get software stack versions: PyTorch, CUDA toolkit, cuDNN, Python, NVIDIA driver
 
-### Profiling (12)
+### Profiling (15)
 - `compare_ncu` — Compare baseline vs optimized Nsight Compute kernel metrics
 - `compare_nsys` — Compare baseline vs optimized Nsight Systems reports
+- `ncu_summary` — Summarize an existing Nsight Compute report, returning the top-N kernels with key utilization metrics
 - `nsys_summary` — Quick Nsight Systems summary stats without full profile capture
 - `profile_compare` — Generate visual flame graph comparison showing WHY optimized code is faster
+- `profile_compile_analysis` — Summarize torch.compile behavior from the latest benchmark results (graphs, breaks, time in compile)
 - `profile_flame` — Get flame graph data showing execution time breakdown by function/operation
 - `profile_hta` — Run Nsight Systems capture with HTA (Holistic Trace Analysis) for automated bottleneck detection
 - `profile_kernels` — Get CUDA kernel execution breakdown: time per kernel, launch counts, occupancy hints
+- `profile_list_profiles` — List available baseline/optimized profile pairs discovered under artifacts
 - `profile_memory` — Get memory allocation timeline: VRAM usage over time, allocation spikes, potential leaks
 - `profile_ncu` — Run Nsight Compute profiling to capture detailed per-kernel metrics (occupancy, throughput, etc.)
 - `profile_nsys` — Run Nsight Systems profiling to capture GPU timeline, CUDA API calls, kernel launches
@@ -162,8 +166,7 @@ Generated from `mcp.mcp_server.TOOLS`. Run `python scripts/generate_mcp_docs.py`
 - `optimize_techniques` — Get catalog of all optimization techniques with details, requirements, and expected benefits
 - `recommend` — Get prioritized optimization recommendations for your model configuration and goal
 
-### Distributed (4)
-- `cluster_slurm` — Generate SLURM job script for cluster submission with optimal settings
+### Distributed (3)
 - `distributed_nccl` — Get NCCL tuning recommendations: environment variables, IB settings, collective algorithms
 - `distributed_plan` — Plan parallelism strategy: recommend DP/TP/PP/FSDP layout for model size and GPU count
 - `launch_plan` — Generate launch commands for distributed training (torchrun, srun, etc.)
@@ -219,7 +222,10 @@ Generated from `mcp.mcp_server.TOOLS`. Run `python scripts/generate_mcp_docs.py`
 ### HuggingFace (1)
 - `hf` — HuggingFace Hub operations: search models, get trending, download models
 
-### Cluster/Cost (1)
+### Cluster/Cost (4)
+- `cluster_eval_suite` — Run the cluster field-report eval suite, or a fast local smoke run that captures metadata + manifest
+- `cluster_slurm` — Generate SLURM job script for cluster submission with optimal settings
+- `cluster_validate_field_report` — Validate `cluster/field-report.md` and companion notes/template/runbook plus artifact hygiene
 - `cost_estimate` — Cloud cost estimation for GPU fleets
 
 ### Tools (6)

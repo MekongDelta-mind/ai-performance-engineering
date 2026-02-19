@@ -355,10 +355,11 @@ def _prepare_grouped_ctx(data: tuple[Any, ...]) -> dict[str, Any]:
     ext = load_v2_custom_cuda_nvfp4_group_gemm()
 
     cta2_partition_b = _env_int("AISP_NVFP4_GROUP_GEMM_V2_CTA2_PARTITION_B", 1)
+    cta2_partition_b_eff = 0 if (use_cta2 and unroll_n == 2) else cta2_partition_b
 
     if not use_cta2:
         b_box_height = 256 if unroll_n == 2 else 128
-    elif cta2_partition_b == 1:
+    elif cta2_partition_b_eff == 1:
         b_box_height = 64
     elif unroll_n == 2:
         b_box_height = 256
@@ -391,12 +392,9 @@ def _prepare_grouped_ctx(data: tuple[Any, ...]) -> dict[str, Any]:
     # both cta_group::1 and cta_group::2; UMMA_2SM rank selection is expressed via the TMEM
     # scale-fragment mapping (tmem_sf_frg), not by changing the scale TMA box height.
     #
-    # cta_group::1 + UnrollN=2 can use a 256-row SFB box to load two adjacent N tiles at once.
+    # UnrollN=2 uses a single 256-row SFB transfer for both cta_group::1 and cta_group::2.
     sfa_box_height = 128
-    if not use_cta2:
-        sfb_box_height = 256 if unroll_n == 2 else 128
-    else:
-        sfb_box_height = 128
+    sfb_box_height = 256 if unroll_n == 2 else 128
 
     sfa_descs, sfb_descs = ext.nvfp4_group_gemm_v2_build_scale_tma_descs_cuda(
         sfa_ptrs_cpu_t,

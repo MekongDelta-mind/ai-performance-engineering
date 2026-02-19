@@ -716,20 +716,17 @@ def prepare_v2_custom_cuda_tcgen05(data_list: Sequence[input_t]) -> Optional[Seq
 
         # Build tensormap descriptors on the GPU (outside timed path).
         ext = load_v2_custom_cuda_nvfp4_group_gemm()
-        # For cta_group::2, the B tensormap box height must match how the kernel partitions B.
-        # Mode 1 (global N shift) loads only N/2 rows per CTA; mode 2 loads the full N rows and
-        # shifts the SMEM descriptor base by N/2.
+        # For cta_group::2 + UnrollN=2, the CUDA kernel forces non-partitioned B semantics
+        # (`cta2_partition_b_mode=0`) and issues a single 256-row B load per K tile.
+        # Keep descriptor construction aligned to that contract even if env still sets mode 1.
+        cta2_partition_b_eff = 0 if (use_cta2 and unroll_n == 2) else cta2_partition_b
         if not use_cta2:
-            # UnrollN=2 optimization: use a 256-row B tensormap box so the kernel can load both
-            # adjacent N128 tiles in a single TMA transaction per K tile.
+            # UnrollN=2 optimization: load both adjacent N128 tiles in one TMA transaction.
             b_box_height = 256 if unroll_n == 2 else 128
-        elif cta2_partition_b == 1:
-            # Mode 1 (global N shift) is partitioned across CTA ranks for the UnrollN=1 bring-up.
-            # UnrollN=2: correctness-first bring-up uses the same partitioned-B semantics as UnrollN=1:
-            # each CTA rank loads only N/2 rows (64) per N128 tile, but we still issue per-u loads.
+        elif cta2_partition_b_eff == 1:
+            # UnrollN=1 legacy mode: each CTA rank loads only N/2 rows.
             b_box_height = 64
         elif unroll_n == 2:
-            # UnrollN=2 loads two adjacent N tiles in one 256-row transaction when mode!=1.
             b_box_height = 256
         else:
             b_box_height = 128
@@ -750,12 +747,10 @@ def prepare_v2_custom_cuda_tcgen05(data_list: Sequence[input_t]) -> Optional[Seq
         # in both cta_group::1 and cta_group::2; UMMA_2SM rank selection is expressed via the TMEM
         # scale-fragment mapping (tmem_sf_frg), not by changing the scale TMA box height.
         #
-        # cta_group::1 + UnrollN=2 can use a 256-row SFB box to load two adjacent N tiles at once.
+        # UnrollN=2 uses a single 256-row SFB transfer for both cta_group::1 and cta_group::2.
+        # Keeping cta_group::2 at 128 here causes barrier/TMA byte-count mismatch and can deadlock.
         sfa_box_height = 128
-        if not use_cta2:
-            sfb_box_height = 256 if unroll_n == 2 else 128
-        else:
-            sfb_box_height = 128
+        sfb_box_height = 256 if unroll_n == 2 else 128
         sfa_descs, sfb_descs = ext.nvfp4_group_gemm_v2_build_scale_tma_descs_cuda(
             torch.tensor(sfa_ptrs_cpu, dtype=torch.int64, device="cpu").contiguous(),
             torch.tensor(sfb_ptrs_cpu, dtype=torch.int64, device="cpu").contiguous(),

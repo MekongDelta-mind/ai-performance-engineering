@@ -78,7 +78,7 @@ def _set_case_env(case_idx: int) -> None:
     if case_idx == 2:
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "1"
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "2"
+        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "0"
         os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
         os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "0"
         return
@@ -86,9 +86,9 @@ def _set_case_env(case_idx: int) -> None:
     if case_idx == 3:
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "1"
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "0"
+        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "2"
         os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "4"
+        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "16"
         return
 
 
@@ -120,6 +120,12 @@ def _group_order_for_case(case_idx: int, group_count: int) -> list[int]:
     if group_count <= 1:
         return list(range(group_count))
     return list(range(group_count))
+
+
+def _use_split_plans(case_idx: int, group_count: int) -> bool:
+    if int(case_idx) not in {2, 3} or int(group_count) != 2:
+        return False
+    return _env_bool("AISP_NVFP4_GROUP_GEMM_SPLIT_CASE23", False)
 
 
 def _ctx_key(problem_sizes: list[tuple[int, int, int, int]], variant: str) -> tuple[str, int, int, int, int, bool, tuple[tuple[int, int, int, int], ...]]:
@@ -179,65 +185,82 @@ def _prepare_data(data: tuple[Any, ...], case_idx: int) -> tuple[Any, ...]:
     abc_tensors, sfasfb_tensors, sfasfb_reordered_tensors, problem_sizes = data
     variant = _variant_for_case(int(case_idx))
     order = _group_order_for_case(int(case_idx), len(problem_sizes))
-    ordered_problem_sizes = [problem_sizes[i] for i in order]
-    ext, case_ctx, create_plan = _get_case_ctx(ordered_problem_sizes, variant)
 
-    a_ptrs: list[int] = []
-    b_ptrs: list[int] = []
-    c_ptrs: list[int] = []
-    sfa_ptrs: list[int] = []
-    sfb_ptrs: list[int] = []
-    for i in order:
-        a, b, c = abc_tensors[i]
-        sfa_reordered, sfb_reordered = sfasfb_reordered_tensors[i]
-        a_ptrs.append(int(a.data_ptr()))
-        b_ptrs.append(int(b.data_ptr()))
-        c_ptrs.append(int(c.data_ptr()))
-        sfa_ptrs.append(int(sfa_reordered.data_ptr()))
-        sfb_ptrs.append(int(sfb_reordered.data_ptr()))
+    def _make_plan_entry(indices: list[int]) -> dict[str, Any]:
+        sub_problem_sizes = [problem_sizes[i] for i in indices]
+        _ext, case_ctx, create_plan = _get_case_ctx(sub_problem_sizes, variant)
+
+        a_ptrs: list[int] = []
+        b_ptrs: list[int] = []
+        c_ptrs: list[int] = []
+        sfa_ptrs: list[int] = []
+        sfb_ptrs: list[int] = []
+        for i in indices:
+            a, b, c = abc_tensors[i]
+            sfa_reordered, sfb_reordered = sfasfb_reordered_tensors[i]
+            a_ptrs.append(int(a.data_ptr()))
+            b_ptrs.append(int(b.data_ptr()))
+            c_ptrs.append(int(c.data_ptr()))
+            sfa_ptrs.append(int(sfa_reordered.data_ptr()))
+            sfb_ptrs.append(int(sfb_reordered.data_ptr()))
+
+        entry = {
+            "ptr_a_i64": torch.tensor(a_ptrs, dtype=torch.int64, device="cuda"),
+            "ptr_b_i64": torch.tensor(b_ptrs, dtype=torch.int64, device="cuda"),
+            "ptr_c_i64": torch.tensor(c_ptrs, dtype=torch.int64, device="cuda"),
+            "ptr_d_i64": torch.tensor(c_ptrs, dtype=torch.int64, device="cuda"),
+            "ptr_sfa_i64": torch.tensor(sfa_ptrs, dtype=torch.int64, device="cuda"),
+            "ptr_sfb_i64": torch.tensor(sfb_ptrs, dtype=torch.int64, device="cuda"),
+        }
+        entry["plan"] = create_plan(
+            case_ctx["problem_shapes_u8"],
+            case_ctx["stride_a_u8"],
+            case_ctx["stride_b_u8"],
+            case_ctx["stride_c_u8"],
+            case_ctx["stride_d_u8"],
+            case_ctx["layout_sfa_u8"],
+            case_ctx["layout_sfb_u8"],
+            case_ctx["workspace_u8"],
+            entry["ptr_a_i64"],
+            entry["ptr_b_i64"],
+            entry["ptr_sfa_i64"],
+            entry["ptr_sfb_i64"],
+            entry["ptr_c_i64"],
+            entry["ptr_d_i64"],
+            1.0,
+            0.0,
+            case_ctx["raster_order"],
+            case_ctx["cluster_m"],
+            case_ctx["cluster_n"],
+            case_ctx["max_swizzle_size"],
+            case_ctx["use_pdl"],
+        )
+        return entry
+
+    entries: list[dict[str, Any]] = []
+    if _use_split_plans(int(case_idx), len(problem_sizes)):
+        for i in order:
+            entries.append(_make_plan_entry([int(i)]))
+    else:
+        entries.append(_make_plan_entry([int(i) for i in order]))
+
+    for entry in entries:
+        if entry.get("plan") is None:
+            raise RuntimeError("missing CUTLASS plan for graph capture")
 
     ctx = {
-        "ptr_a_i64": torch.tensor(a_ptrs, dtype=torch.int64, device="cuda"),
-        "ptr_b_i64": torch.tensor(b_ptrs, dtype=torch.int64, device="cuda"),
-        "ptr_c_i64": torch.tensor(c_ptrs, dtype=torch.int64, device="cuda"),
-        "ptr_d_i64": torch.tensor(c_ptrs, dtype=torch.int64, device="cuda"),
-        "ptr_sfa_i64": torch.tensor(sfa_ptrs, dtype=torch.int64, device="cuda"),
-        "ptr_sfb_i64": torch.tensor(sfb_ptrs, dtype=torch.int64, device="cuda"),
         "outputs": [abc_tensors[i][2] for i in range(len(abc_tensors))],
+        "entries": entries,
     }
 
-    ctx["plan"] = create_plan(
-        case_ctx["problem_shapes_u8"],
-        case_ctx["stride_a_u8"],
-        case_ctx["stride_b_u8"],
-        case_ctx["stride_c_u8"],
-        case_ctx["stride_d_u8"],
-        case_ctx["layout_sfa_u8"],
-        case_ctx["layout_sfb_u8"],
-        case_ctx["workspace_u8"],
-        ctx["ptr_a_i64"],
-        ctx["ptr_b_i64"],
-        ctx["ptr_sfa_i64"],
-        ctx["ptr_sfb_i64"],
-        ctx["ptr_c_i64"],
-        ctx["ptr_d_i64"],
-        1.0,
-        0.0,
-        case_ctx["raster_order"],
-        case_ctx["cluster_m"],
-        case_ctx["cluster_n"],
-        case_ctx["max_swizzle_size"],
-        case_ctx["use_pdl"],
-    )
-    plan = ctx.get("plan")
-    if plan is None:
-        raise RuntimeError("missing CUTLASS plan for graph capture")
     if ctx.get("graph_obj") is None:
-        plan.run()
+        for entry in entries:
+            entry["plan"].run()
         torch.cuda.synchronize()
         graph_obj = torch.cuda.CUDAGraph()
         with torch.cuda.graph(graph_obj):
-            plan.run()
+            for entry in entries:
+                entry["plan"].run()
         ctx["graph_obj"] = graph_obj
         for t in ctx["outputs"]:
             t.zero_()

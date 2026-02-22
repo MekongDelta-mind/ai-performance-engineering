@@ -62,45 +62,57 @@ def _set_case_env(case_idx: int) -> None:
     if case_idx == 0:
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "2"
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "0"
+        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "1"
         os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "16"
+        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "8"
         return
 
     if case_idx == 1:
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "2"
         os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "0"
-        os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "16"
-        return
-
-    if case_idx == 2:
-        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "2"
-        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "2"
-        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "2"
-        os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
-        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "16"
-        return
-
-    if case_idx == 3:
-        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "2"
-        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "2"
         os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "1"
         os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
         os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "0"
         return
 
+    if case_idx == 2:
+        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "1"
+        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
+        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "2"
+        os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
+        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "8"
+        return
+
+    if case_idx == 3:
+        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "1"
+        os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
+        os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "2"
+        os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "1"
+        os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "1"
+        return
+
 
 def _variant_for_case(case_idx: int) -> str:
-    if case_idx == 3:
+    if case_idx == 0:
         return "2sm_s4"
+    if case_idx == 1:
+        return "2sm"
+    if case_idx == 2:
+        return "1sm_n128"
+    if case_idx == 3:
+        return "1sm_n128"
     return "2sm"
 
 
 def _variant_fns(ext: Any, variant: str) -> tuple[Any, Any]:
+    if variant == "2sm_mxf4":
+        return ext.build_metadata_2sm_mxf4, ext.create_plan_2sm_mxf4
+    if variant == "1sm_n128":
+        return ext.build_metadata_1sm_n128, ext.create_plan_1sm_n128
     if variant == "2sm_s4":
         return ext.build_metadata_2sm_s4, ext.create_plan_2sm_s4
+    if variant == "2sm_s5":
+        return ext.build_metadata_2sm_s5, ext.create_plan_2sm_s5
     return ext.build_metadata_2sm, ext.create_plan_2sm
 
 
@@ -207,15 +219,27 @@ def _prepare_data(data: tuple[Any, ...], case_idx: int) -> tuple[Any, ...]:
         case_ctx["max_swizzle_size"],
         case_ctx["use_pdl"],
     )
+    plan = ctx.get("plan")
+    if plan is None:
+        raise RuntimeError("missing CUTLASS plan for graph capture")
+    if ctx.get("graph_obj") is None:
+        plan.run()
+        torch.cuda.synchronize()
+        graph_obj = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(graph_obj):
+            plan.run()
+        ctx["graph_obj"] = graph_obj
+        for t in ctx["outputs"]:
+            t.zero_()
     return (abc_tensors, sfasfb_tensors, sfasfb_reordered_tensors, problem_sizes, ctx)
 
 
 def _run_prepared(prepared: tuple[Any, ...]) -> list[torch.Tensor]:
     ctx = prepared[4]
-    plan = ctx.get("plan")
-    if plan is None:
-        raise RuntimeError("missing CUTLASS plan in prepared context")
-    plan.run()
+    graph_obj = ctx.get("graph_obj")
+    if graph_obj is None:
+        raise RuntimeError("missing graph object in prepared context")
+    graph_obj.replay()
     return ctx["outputs"]
 
 

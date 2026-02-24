@@ -92,6 +92,12 @@ from dataclasses import replace
 
 from core.benchmark.defaults import BenchmarkDefaults, get_defaults, set_defaults
 from core.benchmark.run_manifest import get_gpu_state
+from core.harness.validity_profile import (
+    VALIDITY_PROFILE_CHOICES,
+    VALIDITY_PROFILE_HELP_TEXT,
+    PORTABLE_EXPECTATIONS_UPDATE_HELP_TEXT,
+    normalize_validity_profile,
+)
 from core.harness.progress import ProgressEvent, ProgressRecorder
 from core.profiling import profiler_config as profiler_config_mod
 from core.discovery import chapter_slug, discover_all_chapters, resolve_target_chapters, discover_benchmarks
@@ -176,18 +182,14 @@ def _validate_profile_type(profile: str | None) -> str:
 
 def _validate_validity_profile(profile: str | None) -> str:
     if profile is None:
-        return "strict"
-    normalized = profile.strip().lower()
-    valid = {"strict", "portable"}
-    if normalized not in valid:
-        message = (
-            f"Invalid --validity-profile value '{profile}'. "
-            "Benchmark validity profile must be one of: strict, portable."
-        )
+        return VALIDITY_PROFILE_CHOICES[0]
+    try:
+        return normalize_validity_profile(profile, field_name="--validity-profile")
+    except ValueError as exc:
+        message = str(exc)
         if TYPER_AVAILABLE and typer is not None:
             raise typer.BadParameter(message)
         raise ValueError(message)
-    return normalized
 
 
 def _validate_deep_dive_mode(mode: str | None) -> str:
@@ -931,10 +933,7 @@ if TYPER_AVAILABLE:
         validity_profile: str = Option(
             "strict",
             "--validity-profile",
-            help=(
-                "Benchmark validity profile: strict (default; fail-fast with full validity checks) "
-                "or portable (compatibility mode for virtualized/limited hosts)."
-            ),
+            help=VALIDITY_PROFILE_HELP_TEXT,
             callback=_validate_validity_profile,
         ),
         reproducible: bool = Option(False, "--reproducible", help="Enable reproducible mode: set all seeds to 42 and force deterministic algorithms (uses slower fallbacks; ops without deterministic support may error)."),
@@ -1007,10 +1006,7 @@ if TYPER_AVAILABLE:
         allow_portable_expectations_update: bool = Option(
             False,
             "--allow-portable-expectations-update",
-            help=(
-                "In portable validity profile, expectation writes are disabled by default. "
-                "Set this flag to allow expectation-file updates."
-            ),
+            help=PORTABLE_EXPECTATIONS_UPDATE_HELP_TEXT,
             is_flag=True,
         ),
         allow_mixed_provenance: bool = Option(False, "--allow-mixed-provenance", help="Allow expectation updates when provenance differs (commit/hardware/profile mismatch) without forcing updates. Does NOT accept regressions (use --accept-regressions or --update-expectations).", is_flag=True),
@@ -1172,19 +1168,13 @@ if TYPER_AVAILABLE:
         validity_profile: str = Option(
             "strict",
             "--validity-profile",
-            help=(
-                "Benchmark validity profile: strict (default; fail-fast with full validity checks) "
-                "or portable (compatibility mode for virtualized/limited hosts)."
-            ),
+            help=VALIDITY_PROFILE_HELP_TEXT,
             callback=_validate_validity_profile,
         ),
         allow_portable_expectations_update: bool = Option(
             False,
             "--allow-portable-expectations-update",
-            help=(
-                "In portable validity profile, expectation writes are disabled by default. "
-                "Set this flag to allow expectation-file updates."
-            ),
+            help=PORTABLE_EXPECTATIONS_UPDATE_HELP_TEXT,
             is_flag=True,
         ),
         async_run: bool = Option(False, "--async", help="Run in background and return job_id; poll with job_status.", is_flag=True),

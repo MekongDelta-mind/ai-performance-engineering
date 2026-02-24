@@ -15,7 +15,9 @@ All compare.py modules must:
 
 from __future__ import annotations
 
+import argparse
 import importlib.util
+from dataclasses import dataclass
 import threading
 import sys
 from pathlib import Path
@@ -34,6 +36,10 @@ from core.harness.benchmark_harness import (
     BenchmarkMode,
     BenchmarkConfig,
 )
+from core.harness.validity_profile import (
+    VALIDITY_PROFILE_CHOICES,
+    VALIDITY_PROFILE_HELP_TEXT,
+)
 from core.discovery import discover_benchmarks
 
 # Import logger
@@ -47,6 +53,13 @@ except ImportError:
 __all__ = ['discover_benchmarks', 'load_benchmark', 'create_standard_metrics', 'profile_template', 'get_last_load_error']
 
 _LAST_LOAD_ERROR: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class _CompareCliArgs:
+    validity_profile: Optional[str] = None
+    profile: str = "none"
+    examples: Optional[List[str]] = None
 
 
 def load_benchmark(module_path: Path, timeout_seconds: int = 120) -> Optional[BaseBenchmark]:
@@ -135,35 +148,63 @@ def get_last_load_error() -> Optional[str]:
     return _LAST_LOAD_ERROR
 
 
-def _extract_cli_validity_profile(argv: Optional[List[str]] = None) -> Optional[str]:
-    """Extract --validity-profile value from argv, if provided.
+def _is_compare_cli_invocation(argv0: Optional[str] = None) -> bool:
+    if argv0 is None:
+        argv0 = sys.argv[0] if sys.argv else ""
+    return Path(str(argv0)).name == "compare.py"
 
-    Supports:
-    - --validity-profile portable
-    - --validity-profile=portable
+
+def _parse_compare_cli_args(
+    argv: Optional[List[str]] = None,
+    *,
+    argv0: Optional[str] = None,
+) -> _CompareCliArgs:
+    """Parse compare.py CLI args.
+
+    Parsing is only applied when the active entrypoint is compare.py. This keeps
+    programmatic imports (tests/harness flows) isolated from CLI-only validation.
     """
-    tokens = list(sys.argv[1:] if argv is None else argv)
-    for index, token in enumerate(tokens):
-        value: Optional[str] = None
-        if token == "--validity-profile":
-            if index + 1 >= len(tokens):
-                raise ValueError(
-                    "Missing value for --validity-profile. "
-                    "Expected one of: strict, portable."
-                )
-            value = tokens[index + 1]
-        elif token.startswith("--validity-profile="):
-            value = token.split("=", 1)[1]
-        if value is None:
-            continue
-        normalized = str(value).strip().lower()
-        if normalized not in {"strict", "portable"}:
-            raise ValueError(
-                f"Invalid --validity-profile value '{value}'. "
-                "Expected one of: strict, portable."
-            )
-        return normalized
-    return None
+    if not _is_compare_cli_invocation(argv0=argv0):
+        return _CompareCliArgs()
+
+    parser = argparse.ArgumentParser(
+        prog=Path(sys.argv[0] if argv0 is None else argv0).name,
+        description="Run chapter baseline/optimized comparison using the benchmark harness.",
+    )
+    parser.add_argument(
+        "--validity-profile",
+        choices=list(VALIDITY_PROFILE_CHOICES),
+        default=None,
+        help=VALIDITY_PROFILE_HELP_TEXT,
+    )
+    parser.add_argument(
+        "--profile",
+        choices=["none", "minimal", "deep_dive", "roofline"],
+        default="none",
+        help="Profiling preset for compare.py runs (default: none).",
+    )
+    parser.add_argument(
+        "--examples",
+        action="append",
+        default=None,
+        help=(
+            "Optional example name filter (repeatable, supports comma-separated values). "
+            "Only matching baseline/optimized pairs are executed."
+        ),
+    )
+    parsed = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
+    raw_examples = cast(Optional[List[str]], parsed.examples)
+    normalized_examples: List[str] = []
+    for raw in raw_examples or []:
+        for token in str(raw).split(","):
+            example = token.strip()
+            if example:
+                normalized_examples.append(example)
+    return _CompareCliArgs(
+        validity_profile=cast(Optional[str], parsed.validity_profile),
+        profile=cast(str, parsed.profile),
+        examples=normalized_examples or None,
+    )
 
 
 def create_standard_metrics(
@@ -387,7 +428,19 @@ def profile_template(
     except Exception as e:
         logger.warning(f"CUDA context initialization warning (non-fatal): {e}")
     
+    cli_args = _parse_compare_cli_args()
     pairs = discover_benchmarks(chapter_dir)
+
+    if cli_args.examples:
+        include_examples = set(cli_args.examples)
+        filtered_pairs = [pair for pair in pairs if pair[2] in include_examples]
+        missing_examples = sorted(include_examples.difference({pair[2] for pair in filtered_pairs}))
+        if missing_examples:
+            logger.warning(
+                "compare.py --examples ignored unknown example(s): %s",
+                ", ".join(missing_examples),
+            )
+        pairs = filtered_pairs
     
     if not pairs:
         logger.warning("No baseline/optimized pairs found")
@@ -437,13 +490,23 @@ def profile_template(
 
     # Allow chapter compare entrypoints to accept the same validity profile knob.
     # Rebuild the config so derived fields (e.g., allow_virtualization) remain consistent.
-    cli_validity_profile = _extract_cli_validity_profile()
+    cli_validity_profile = cli_args.validity_profile
     if cli_validity_profile is not None and cli_validity_profile != config.validity_profile:
         logger.info(
             "Applying compare.py CLI override: --validity-profile %s",
             cli_validity_profile,
         )
         config = replace(config, validity_profile=cli_validity_profile)
+    if cli_args.profile != "none":
+        logger.info("Applying compare.py CLI profiling preset: --profile %s", cli_args.profile)
+        config = replace(
+            config,
+            enable_profiling=True,
+            enable_nsys=True,
+            enable_ncu=True,
+            profile_mode=cli_args.profile,
+            profile_type=cli_args.profile,
+        )
     
     harness = BenchmarkHarness(
         mode=BenchmarkMode.CUSTOM,

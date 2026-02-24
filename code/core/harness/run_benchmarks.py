@@ -61,6 +61,12 @@ from core.utils.chapter_compare_template import (
     get_last_load_error,
 )
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, BenchmarkMode, BenchmarkConfig
+from core.harness.validity_profile import (
+    VALIDITY_PROFILE_CHOICES,
+    VALIDITY_PROFILE_HELP_TEXT,
+    PORTABLE_EXPECTATIONS_UPDATE_HELP_TEXT,
+    normalize_validity_profile,
+)
 from core.harness.progress import ProgressEvent, ProgressRecorder
 from core.benchmark.defaults import BenchmarkDefaults, set_defaults, get_defaults
 from core.benchmark.run_manifest import get_gpu_state
@@ -2891,10 +2897,7 @@ def _test_chapter_impl(
     """
     logger.info("launch_via arg=%s nproc_per_node=%s nnodes=%s", launch_via, nproc_per_node, nnodes)
     validity_profile = str(validity_profile).strip().lower()
-    if validity_profile not in {"strict", "portable"}:
-        raise ValueError(
-            f"Invalid validity_profile={validity_profile!r}. Expected 'strict' or 'portable'."
-        )
+    validity_profile = normalize_validity_profile(validity_profile, field_name="validity_profile")
     allow_virtualization = validity_profile == "portable"
     expectation_writes_enabled = (
         validity_profile == "strict" or bool(allow_portable_expectations_update)
@@ -9091,20 +9094,14 @@ def main():
     )
     parser.add_argument(
         '--validity-profile',
-        choices=['strict', 'portable'],
-        default='strict',
-        help=(
-            'Benchmark validity profile: strict (default, fail-fast with full validity checks) '
-            'or portable (compatibility mode for virtualized/limited hosts).'
-        ),
+        choices=list(VALIDITY_PROFILE_CHOICES),
+        default=VALIDITY_PROFILE_CHOICES[0],
+        help=VALIDITY_PROFILE_HELP_TEXT,
     )
     parser.add_argument(
         '--allow-portable-expectations-update',
         action='store_true',
-        help=(
-            'In portable validity profile, expectation writes are disabled by default. '
-            'Set this flag to allow expectation-file updates.'
-        ),
+        help=PORTABLE_EXPECTATIONS_UPDATE_HELP_TEXT,
     )
     parser.add_argument(
         '--nsys-timeout-seconds',

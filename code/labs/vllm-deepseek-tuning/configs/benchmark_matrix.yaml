@@ -1,0 +1,90 @@
+global:
+  base_url: http://127.0.0.1:8000
+  num_prompts: 1000
+  seed: 42
+  ignore_eos: true
+  startup_timeout_sec: 900
+  poll_interval_sec: 2
+  # Resolved relative to this config file; override with --results-dir if needed.
+  results_dir: ../results
+  # Command prefix used to invoke vLLM. Keep "vllm" for host installs.
+  vllm_cmd: vllm
+  bench_timeout_sec: 3600
+  concurrency_profiles:
+    smoke: [8, 16]
+    full: [8, 16, 32, 64, 128, 256]
+
+# Edit these for your environment
+paths:
+  # Use a local tokenizer path or an HF tokenizer ID. Override with --tokenizer if needed.
+  tokenizer: /path/to/DeepSeek-V3.2
+
+# Reusable benchmark scenarios (from vLLM blog structure)
+scenarios:
+  prefill_only:
+    isl: 2048
+    osl: 1
+  mixed_short_64:
+    isl: 2048
+    osl: 64
+  mixed_short_128:
+    isl: 2048
+    osl: 128
+  mixed_moderate_1k:
+    isl: 2048
+    osl: 1000
+
+# Tune this list for your hardware budget
+max_concurrency_values: [8, 16, 32, 64, 128, 256]
+
+runs:
+  - name: ds_v32_nvfp4_tp2
+    model: nvidia/DeepSeek-V3.2-NVFP4
+    serve:
+      tp: 2
+      extra_args:
+        - --max-num-batched-tokens
+        - "20480"
+    env:
+      VLLM_USE_FLASHINFER_MOE_FP4: "1"
+    scenarios: [prefill_only, mixed_short_64, mixed_short_128, mixed_moderate_1k]
+
+  - name: ds_v32_nvfp4_tp4
+    model: nvidia/DeepSeek-V3.2-NVFP4
+    serve:
+      tp: 4
+    env:
+      VLLM_USE_FLASHINFER_MOE_FP4: "1"
+    scenarios: [prefill_only, mixed_moderate_1k]
+
+  - name: ds_r1_nvfp4_tp2
+    model: nvidia/DeepSeek-R1-0528-NVFP4
+    serve:
+      tp: 2
+      extra_args:
+        - --max-num-batched-tokens
+        - "32768"
+    env:
+      VLLM_USE_FLASHINFER_MOE_FP4: "1"
+    scenarios: [prefill_only, mixed_short_64, mixed_moderate_1k]
+
+  - name: ds_r1_nvfp4_ep2
+    model: nvidia/DeepSeek-R1-0528-NVFP4
+    serve:
+      tp: 1
+      dp: 2
+      enable_expert_parallel: true
+    env:
+      VLLM_USE_FLASHINFER_MOE_FP4: "1"
+    scenarios: [prefill_only, mixed_short_64]
+
+  - name: ds_r1_nvfp4_tp2_mtp1
+    model: nvidia/DeepSeek-R1-0528-NVFP4
+    serve:
+      tp: 2
+      speculative:
+        method: mtp
+        num_speculative_tokens: 1
+    env:
+      VLLM_USE_FLASHINFER_MOE_FP4: "1"
+    scenarios: [mixed_short_64]

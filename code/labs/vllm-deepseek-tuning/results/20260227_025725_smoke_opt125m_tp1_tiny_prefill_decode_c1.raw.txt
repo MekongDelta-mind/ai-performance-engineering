@@ -1,0 +1,55 @@
+Namespace(subparser='bench', bench_type='serve', dispatch_function=<function BenchmarkServingSubcommand.cmd at 0x76d1250bf100>, trust_remote_code=False, seed=42, num_prompts=32, dataset_name='random', no_stream=False, dataset_path=None, no_oversample=False, skip_chat_template=False, enable_multimodal_chat=False, disable_shuffle=False, custom_output_len=256, spec_bench_output_len=256, spec_bench_category=None, sonnet_input_len=550, sonnet_output_len=150, sonnet_prefix_len=200, sharegpt_output_len=None, blazedit_min_distance=0.0, blazedit_max_distance=1.0, asr_max_audio_len_sec=inf, asr_min_audio_len_sec=0.0, random_input_len=128, random_output_len=32, random_range_ratio=0.0, random_prefix_len=0, random_batch_size=1, no_reranker=False, random_mm_base_items_per_request=1, random_mm_num_mm_items_range_ratio=0.0, random_mm_limit_mm_per_prompt={'image': 255, 'video': 1}, random_mm_bucket_config={(256, 256, 1): 0.5, (720, 1280, 1): 0.5, (720, 1280, 16): 0.0}, hf_subset=None, hf_split=None, hf_name=None, hf_output_len=None, prefix_repetition_prefix_len=256, prefix_repetition_suffix_len=256, prefix_repetition_num_prefixes=10, prefix_repetition_output_len=128, label=None, backend='openai', base_url='http://127.0.0.1:8000', host='127.0.0.1', port=8000, endpoint='/v1/completions', header=None, max_concurrency=1, model='facebook/opt-125m', input_len=None, output_len=None, tokenizer='facebook/opt-125m', tokenizer_mode='auto', use_beam_search=False, logprobs=None, request_rate=inf, burstiness=1.0, disable_tqdm=False, num_warmups=0, profile=False, save_result=False, save_detailed=False, append_result=False, metadata=None, result_dir=None, result_filename=None, ignore_eos=True, percentile_metrics=None, metric_percentiles='99', goodput=None, request_id_prefix='bench-a40b5f7d-', top_p=None, top_k=None, min_p=None, temperature=None, frequency_penalty=None, presence_penalty=None, repetition_penalty=None, served_model_name=None, lora_modules=None, ramp_up_strategy=None, ramp_up_start_rps=None, ramp_up_end_rps=None, ready_check_timeout_sec=0, extra_body=None, skip_tokenizer_init=False, insecure=False)
+INFO 02-27 02:57:22 [datasets.py:626] Sampling input_len from [127, 127] and output_len from [32, 32]
+WARNING: vllm bench serve no longer sets temperature==0 (greedy) in requests by default. The default will be determined on the server side and can be model/API specific. For the old behavior, include --temperature=0.
+Starting initial single prompt test run...
+Skipping endpoint ready check.
+Starting main benchmark run...
+Traffic request rate: inf
+Burstiness factor: 1.0 (Poisson process)
+Maximum request concurrency: 1
+tip: install termplotlib and gnuplot to plot the metrics
+============ Serving Benchmark Result ============
+Successful requests:                     32        
+Failed requests:                         0         
+Maximum request concurrency:             1         
+Benchmark duration (s):                  2.37      
+Total input tokens:                      4064      
+Total generated tokens:                  1024      
+Request throughput (req/s):              13.53     
+Output token throughput (tok/s):         432.88    
+Peak output token throughput (tok/s):    434.00    
+Peak concurrent requests:                14.00     
+Total token throughput (tok/s):          2150.85   
+---------------Time to First Token----------------
+Mean TTFT (ms):                          16.13     
+Median TTFT (ms):                        15.66     
+P99 TTFT (ms):                           27.70     
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          1.86      
+Median TPOT (ms):                        1.86      
+P99 TPOT (ms):                           1.93      
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           1.88      
+Median ITL (ms):                         1.87      
+P99 ITL (ms):                            2.87      
+==================================================
+
+
+  0%|          | 0/32 [00:00<?, ?it/s]
+  6%|▋         | 2/32 [00:00<00:02, 11.94it/s]
+ 12%|█▎        | 4/32 [00:00<00:02, 12.92it/s]
+ 19%|█▉        | 6/32 [00:00<00:01, 13.28it/s]
+ 25%|██▌       | 8/32 [00:00<00:01, 13.43it/s]
+ 31%|███▏      | 10/32 [00:00<00:01, 13.47it/s]
+ 38%|███▊      | 12/32 [00:00<00:01, 13.45it/s]
+ 44%|████▍     | 14/32 [00:01<00:01, 13.48it/s]
+ 50%|█████     | 16/32 [00:01<00:01, 13.50it/s]
+ 56%|█████▋    | 18/32 [00:01<00:01, 13.54it/s]
+ 62%|██████▎   | 20/32 [00:01<00:00, 13.46it/s]
+ 69%|██████▉   | 22/32 [00:01<00:00, 13.41it/s]
+ 75%|███████▌  | 24/32 [00:01<00:00, 13.60it/s]
+ 81%|████████▏ | 26/32 [00:01<00:00, 13.69it/s]
+ 88%|████████▊ | 28/32 [00:02<00:00, 13.73it/s]
+ 94%|█████████▍| 30/32 [00:02<00:00, 13.78it/s]
+100%|██████████| 32/32 [00:02<00:00, 13.77it/s]
+100%|██████████| 32/32 [00:02<00:00, 13.53it/s]

@@ -1,0 +1,29 @@
+global:
+  base_url: http://127.0.0.1:8000
+  num_prompts: 32
+  seed: 42
+  ignore_eos: true
+  startup_timeout_sec: 600
+  poll_interval_sec: 2
+  results_dir: ../results
+  vllm_cmd: vllm
+  bench_timeout_sec: 900
+  concurrency_profiles:
+    smoke: [1, 2]
+
+paths:
+  tokenizer: facebook/opt-125m
+
+scenarios:
+  tiny_prefill_decode:
+    isl: 128
+    osl: 32
+
+max_concurrency_values: [1, 2]
+
+runs:
+  - name: smoke_opt125m_tp1
+    model: facebook/opt-125m
+    serve:
+      tp: 1
+    scenarios: [tiny_prefill_decode]

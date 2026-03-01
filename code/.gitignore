@@ -1,5 +1,7 @@
 
 book/
+book-before/
+book-after/
 clustermax/
 clustermax_from_node2
 clustermax*/

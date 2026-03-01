@@ -15,6 +15,7 @@ Key optimizations vs baseline:
 
 from __future__ import annotations
 
+import os
 from typing import Callable, Optional, Tuple
 
 import torch
@@ -91,18 +92,26 @@ class OptimizedWarpDivergenceILPBenchmark(VerificationPayloadMixin, BaseBenchmar
         def fused_fn(data: torch.Tensor, logits: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
             return _fused_branchless_kernel(data, logits, branch_iters)
         
-        # Disable CUDA graph features that conflict with compiled functions
-        if self._inductor_state is None:
-            self._inductor_state = disable_inductor_cudagraph_features()
-        
-        # Compile once for the full tensor - no chunking
-        self._compiled_fn = compile_callable(
-            fused_fn,
-            fullgraph=True,
-            mode="reduce-overhead",
-        )
-        
-        # Warmup the compiled function
+        # Keep eager branchless execution as default because compile can alter
+        # transcendental numerics enough to fail strict output verification.
+        use_compile = os.environ.get("AISP_CH06_ILP_USE_TORCH_COMPILE", "0").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if use_compile:
+            if self._inductor_state is None:
+                self._inductor_state = disable_inductor_cudagraph_features()
+            self._compiled_fn = compile_callable(
+                fused_fn,
+                fullgraph=True,
+                mode="reduce-overhead",
+            )
+        else:
+            self._compiled_fn = fused_fn
+
+        # Warmup the execution function
         _, _ = self._compiled_fn(self.input, self.routing_logits)
         self._synchronize()
 

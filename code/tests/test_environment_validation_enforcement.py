@@ -136,15 +136,13 @@ def test_environment_enforcement_swap_enabled() -> None:
         assert any("ENVIRONMENT INVALID" in e and "Swap is enabled" in e for e in errors), errors
 
 
-def test_environment_enforcement_virtualization_detected() -> None:
+def test_environment_virtualization_strict_is_warning_only() -> None:
     with tempfile.TemporaryDirectory() as env_dir:
         env_root = Path(env_dir)
         _make_base_env(env_root)
         _write_file(env_root, "/proc/cpuinfo", "processor\t: 0\nflags\t: hypervisor\n")
         errors = _run_harness(env_root, probe=EnvironmentProbe(root=env_root, env={}), allow_virtualization=False)
-        assert any("ENVIRONMENT INVALID" in e and "Virtualization detected" in e for e in errors), errors
-        assert any("--validity-profile portable" in e for e in errors), errors
-        assert any("--allow-portable-expectations-update" in e for e in errors), errors
+        assert not any("ENVIRONMENT INVALID" in e and "Virtualization detected" in e for e in errors), errors
 
 
 def test_environment_warning_virtualization_portable_message() -> None:
@@ -159,3 +157,17 @@ def test_environment_warning_virtualization_portable_message() -> None:
         assert result.is_valid, result
         assert not result.errors, result.errors
         assert any("validity_profile=portable" in warning for warning in result.warnings), result.warnings
+
+
+def test_environment_warning_virtualization_strict_loud_message() -> None:
+    with tempfile.TemporaryDirectory() as env_dir:
+        env_root = Path(env_dir)
+        _make_base_env(env_root)
+        _write_file(env_root, "/proc/cpuinfo", "processor\t: 0\nflags\t: hypervisor\n")
+        result = validate_environment(
+            probe=EnvironmentProbe(root=env_root, env={}),
+            allow_virtualization=False,
+        )
+        assert result.is_valid, result
+        assert not result.errors, result.errors
+        assert any("STRICT VALIDITY WARNING [VIRTUALIZATION]" in warning for warning in result.warnings), result.warnings

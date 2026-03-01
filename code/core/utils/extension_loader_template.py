@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import sys
 import time
@@ -35,6 +36,18 @@ _EXTENSIONS: Dict[str, ModuleType] = {}
 
 # Build fingerprint version - bump this when changing build logic
 _BUILD_FINGERPRINT_VERSION = "v1"
+
+
+def _ensure_worker_stdio() -> None:
+    """Restore stdio streams when multiprocessing workers clear sys.stdout/stderr.
+
+    torch.utils.cpp_extension may call sys.stdout.flush() during builds.
+    In spawned workers, sys.stdout can be None, which crashes extension loads.
+    """
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
 
 
 def _get_cuda_version() -> str:
@@ -470,6 +483,7 @@ def load_cuda_extension_v2(
         load_kwargs["extra_ldflags"] = ldflags
     
     try:
+        _ensure_worker_stdio()
         _EXTENSIONS[name] = _load_with_lock_retry(load, load_kwargs, build_dir)
         
         # Save fingerprint after successful build
@@ -596,6 +610,7 @@ def load_cuda_extension(
         if extra_ldflags:
             load_kwargs["extra_ldflags"] = extra_ldflags
 
+        _ensure_worker_stdio()
         _EXTENSIONS[extension_name] = _load_with_lock_retry(load, load_kwargs, build_dir)
         
         # Save fingerprint after successful build

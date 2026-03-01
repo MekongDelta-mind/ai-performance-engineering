@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import random
+from pathlib import Path
 from typing import Callable
 
 import numpy as np
@@ -15,14 +16,49 @@ from torch.utils.data import DataLoader, DistributedSampler
 MODEL_NAME = "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"
 
 
+def _ensure_writable_hf_cache() -> str:
+    """Return a writable Hugging Face cache root and export HF_* env vars.
+
+    Some benchmark hosts have a non-writable shared `~/.cache/huggingface`.
+    We fall back to a repo-local cache to avoid hard torchrun failures.
+    """
+    candidates = []
+    if os.environ.get("HF_HOME"):
+        candidates.append(Path(os.environ["HF_HOME"]))
+    candidates.append(Path.home() / ".cache" / "huggingface")
+    candidates.append(Path(__file__).resolve().parents[1] / ".hf_cache")
+
+    last_error: Exception | None = None
+    for root in candidates:
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+            if os.access(root, os.W_OK):
+                hub_dir = root / "hub"
+                hub_dir.mkdir(parents=True, exist_ok=True)
+                os.environ["HF_HOME"] = str(root)
+                os.environ.setdefault("HF_HUB_CACHE", str(hub_dir))
+                return str(root)
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            last_error = exc
+            continue
+
+    raise RuntimeError(
+        "Unable to initialize a writable Hugging Face cache directory"
+    ) from last_error
+
+
 def build_text_model(model_id: str = MODEL_NAME, dtype: torch.dtype = torch.bfloat16):
     """Return a small causal LM we can shard/replicate (eager attention)."""
     try:
         from transformers import AutoModelForCausalLM
     except ImportError as exc:
         raise RuntimeError("build_text_model() requires the `transformers` package") from exc
+    cache_dir = _ensure_writable_hf_cache()
     return AutoModelForCausalLM.from_pretrained(
-        model_id, torch_dtype=dtype, attn_implementation="eager"
+        model_id,
+        torch_dtype=dtype,
+        attn_implementation="eager",
+        cache_dir=cache_dir,
     )
 
 
@@ -32,8 +68,12 @@ def build_text_model_flash(model_id: str = MODEL_NAME, dtype: torch.dtype = torc
         from transformers import AutoModelForCausalLM
     except ImportError as exc:
         raise RuntimeError("build_text_model_flash() requires the `transformers` package") from exc
+    cache_dir = _ensure_writable_hf_cache()
     return AutoModelForCausalLM.from_pretrained(
-        model_id, torch_dtype=dtype, attn_implementation="flash_attention_2"
+        model_id,
+        torch_dtype=dtype,
+        attn_implementation="flash_attention_2",
+        cache_dir=cache_dir,
     )
 
 
@@ -52,7 +92,8 @@ def build_tokenizer(model_id: str = MODEL_NAME):
         from transformers import AutoTokenizer
     except ImportError as exc:
         raise RuntimeError("build_tokenizer() requires the `transformers` package") from exc
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    cache_dir = _ensure_writable_hf_cache()
+    tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     return tokenizer

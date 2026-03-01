@@ -219,7 +219,7 @@ class MoEJourneyBenchmark(VerificationPayloadMixin, BaseBenchmark):
         return self._workload
     
     def validate_result(self) -> Optional[str]:
-        return None if self.compiled_model else "Model not initialized"
+        return None if self.compiled_model is not None else "Model not initialized"
     
     def get_custom_metrics(self) -> Optional[Dict[str, float]]:
         return {

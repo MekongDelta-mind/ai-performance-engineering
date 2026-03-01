@@ -771,7 +771,9 @@ def validate_environment(
             )
         else:
             warnings_list.append(
-                f"{message} Continuing in strict mode because virtualization alone is non-fatal."
+                "!!! STRICT VALIDITY WARNING [VIRTUALIZATION] !!! "
+                f"{message} Strict mode will continue because virtualization alone is non-fatal. "
+                "Treat these numbers as non-canonical and re-run on bare metal before publishing."
             )
 
     # torch.compile backend sanity (Compile category)

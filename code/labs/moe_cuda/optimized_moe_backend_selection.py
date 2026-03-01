@@ -52,11 +52,32 @@ class OptimizedMoEBackendSelectionBenchmark(VerificationPayloadMixin, BaseBenchm
             _ = compiled(self.workload.x)
         torch.cuda.synchronize(self.device)
 
+        with torch.inference_mode():
+            reference = self.workload.forward_naive(self.workload.x).detach()
+        torch.cuda.synchronize(self.device)
+
         candidates: Dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
             "vectorized": vectorized,
             "trtllm_gen": compiled,
         }
-        self._backend_name, self._backend_fn = select_best_backend(candidates, self.workload.x)
+
+        # Only benchmark/select backends that preserve baseline math under benchmark tolerances.
+        valid_candidates: Dict[str, Callable[[torch.Tensor], torch.Tensor]] = {}
+        for name, fn in candidates.items():
+            with torch.inference_mode():
+                candidate_out = fn(self.workload.x).detach()
+            if torch.allclose(candidate_out, reference, rtol=5e-2, atol=5e-1):
+                valid_candidates[name] = fn
+
+        if not valid_candidates:
+            self._backend_name = "vectorized"
+            self._backend_fn = vectorized
+            return
+
+        self._backend_name, self._backend_fn = select_best_backend(
+            valid_candidates,
+            self.workload.x,
+        )
 
     def benchmark_fn(self) -> None:
         if self.workload is None or self._backend_fn is None:

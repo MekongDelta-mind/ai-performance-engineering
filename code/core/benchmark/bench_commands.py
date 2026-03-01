@@ -1873,19 +1873,40 @@ if TYPER_AVAILABLE:
             typer.echo("❌ No benchmark results found. Run `aisp bench run` first.")
             raise typer.Exit(1)
         
+        def _status_bucket(status: object) -> str:
+            normalized = str(status or "").strip().lower()
+            if normalized in {"success", "ok"}:
+                normalized = "succeeded"
+            elif normalized in {"skip"}:
+                normalized = "skipped"
+            elif normalized in {"error"}:
+                normalized = "failed"
+            if normalized.startswith("failed_"):
+                return "failed"
+            if normalized in {"succeeded", "failed", "skipped"}:
+                return normalized
+            return normalized or "unknown"
+
         # Analyze
         total = len(benchmarks)
-        passed = sum(1 for b in benchmarks if b.get("speedup", 0) >= 1.0)
-        failed = total - passed
+        passed = sum(1 for b in benchmarks if _status_bucket(b.get("status")) == "succeeded")
+        failed = sum(1 for b in benchmarks if _status_bucket(b.get("status")) == "failed")
+        skipped = sum(1 for b in benchmarks if _status_bucket(b.get("status")) == "skipped")
         avg_speedup = sum(b.get("speedup", 1.0) for b in benchmarks) / total if total > 0 else 0
         
         regressions = sorted(
-            [b for b in benchmarks if b.get("speedup", 1.0) < 0.95],
+            [
+                b for b in benchmarks
+                if _status_bucket(b.get("status")) == "succeeded" and b.get("speedup", 1.0) < 0.95
+            ],
             key=lambda x: x.get("speedup", 1.0)
         )[:top_n]
         
         improvements = sorted(
-            [b for b in benchmarks if b.get("speedup", 1.0) > 1.05],
+            [
+                b for b in benchmarks
+                if _status_bucket(b.get("status")) == "succeeded" and b.get("speedup", 1.0) > 1.05
+            ],
             key=lambda x: x.get("speedup", 1.0),
             reverse=True
         )[:top_n]
@@ -1923,6 +1944,7 @@ if TYPER_AVAILABLE:
                 "total": total,
                 "passed": passed,
                 "failed": failed,
+                "skipped": skipped,
                 "pass_rate": f"{(passed/total)*100:.1f}%" if total > 0 else "N/A",
                 "avg_speedup": round(avg_speedup, 2),
             },

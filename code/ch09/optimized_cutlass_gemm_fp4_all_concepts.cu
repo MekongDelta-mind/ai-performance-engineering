@@ -148,7 +148,7 @@ using MmaTileShape = Shape<_128, _64, _256>;
 // N-dimension CTA clustering enables TMA multicast for A/SF across multiple CTAs.
 // We use 4-way clustering here to increase multicast fanout for the leaderboard shapes
 // where N is divisible by 256 (N-tile=64, cluster_n=4 => 256 columns per cluster).
-using ClusterShape = Shape<_1, _4, _1>;
+using ClusterShape = Shape<_1, _1, _1>;
 using MainloopSchedule = cutlass::gemm::KernelTmaWarpSpecialized1SmNvf4Sm100;
 
 using CollectiveEpilogue = typename cutlass::epilogue::collective::CollectiveBuilder<
@@ -161,7 +161,10 @@ using CollectiveEpilogue = typename cutlass::epilogue::collective::CollectiveBui
     cutlass::epilogue::collective::EpilogueScheduleAuto
   >::CollectiveOp;
 
-using CollectiveMainloop = typename cutlass::gemm::collective::CollectiveBuilder<
+// Shape-specific dispatch (request from tuning pass):
+// - shape (128,7168,16384): keep StageCountAutoCarveout
+// - other leaderboard shapes: use fixed StageCount<7>
+using CollectiveMainloopAuto = typename cutlass::gemm::collective::CollectiveBuilder<
     ArchTag, OperatorClass,
     ElementA, LayoutATag, AlignmentA,
     ElementB, LayoutBTag, AlignmentB,
@@ -171,43 +174,69 @@ using CollectiveMainloop = typename cutlass::gemm::collective::CollectiveBuilder
     MainloopSchedule
   >::CollectiveOp;
 
-using GemmKernel = cutlass::gemm::kernel::GemmUniversal<
+using CollectiveMainloopStage7 = typename cutlass::gemm::collective::CollectiveBuilder<
+    ArchTag, OperatorClass,
+    ElementA, LayoutATag, AlignmentA,
+    ElementB, LayoutBTag, AlignmentB,
+    ElementAccumulator,
+    MmaTileShape, ClusterShape,
+    cutlass::gemm::collective::StageCount<7>,
+    MainloopSchedule
+  >::CollectiveOp;
+
+using GemmKernelAuto = cutlass::gemm::kernel::GemmUniversal<
     Shape<int, int, int, int>,
-    CollectiveMainloop,
+    CollectiveMainloopAuto,
     CollectiveEpilogue,
     void>;
 
-using Gemm = cutlass::gemm::device::GemmUniversalAdapter<GemmKernel>;
+using GemmKernelStage7 = cutlass::gemm::kernel::GemmUniversal<
+    Shape<int, int, int, int>,
+    CollectiveMainloopStage7,
+    CollectiveEpilogue,
+    void>;
 
-using StrideA = typename Gemm::GemmKernel::StrideA;
-using LayoutA = decltype(cute::make_layout(make_shape(0, 0, 0), StrideA{}));
-using LayoutSFA = typename Gemm::GemmKernel::CollectiveMainloop::LayoutSFA;
-using StrideB = typename Gemm::GemmKernel::StrideB;
-using LayoutB = decltype(cute::make_layout(make_shape(0, 0, 0), StrideB{}));
-using LayoutSFB = typename Gemm::GemmKernel::CollectiveMainloop::LayoutSFB;
-using StrideC = typename Gemm::GemmKernel::StrideC;
-using LayoutC = decltype(cute::make_layout(make_shape(0, 0, 0), StrideC{}));
-using StrideD = typename Gemm::GemmKernel::StrideD;
-using LayoutD = decltype(cute::make_layout(make_shape(0, 0, 0), StrideD{}));
+using GemmAuto = cutlass::gemm::device::GemmUniversalAdapter<GemmKernelAuto>;
+using GemmStage7 = cutlass::gemm::device::GemmUniversalAdapter<GemmKernelStage7>;
+constexpr uint64_t kSeed = 42;
 
-StrideA stride_A;
-LayoutA layout_A;
-LayoutSFA layout_SFA;
-StrideB stride_B;
-LayoutB layout_B;
-LayoutSFB layout_SFB;
-StrideC stride_C;
-LayoutC layout_C;
-StrideD stride_D;
-LayoutD layout_D;
-uint64_t seed = 42;
+enum class KernelVariant {
+    AutoStage,
+    Stage7
+};
 
-cutlass::HostTensor<ElementA::DataType, cutlass::layout::PackedVectorLayout> block_A;
-cutlass::HostTensor<ElementA::ScaleFactorType, cutlass::layout::PackedVectorLayout> block_SFA;
-cutlass::HostTensor<ElementB::DataType, cutlass::layout::PackedVectorLayout> block_B;
-cutlass::HostTensor<ElementB::ScaleFactorType, cutlass::layout::PackedVectorLayout> block_SFB;
-cutlass::HostTensor<ElementC, cutlass::layout::PackedVectorLayout> block_C;
-cutlass::HostTensor<ElementD, cutlass::layout::PackedVectorLayout> block_D;
+KernelVariant pick_kernel_variant(int m, int n, int k) {
+    if (const char* force_auto = std::getenv("AISP_NVFP4_FORCE_AUTO_STAGE")) {
+        if (std::atoi(force_auto) != 0) {
+            return KernelVariant::AutoStage;
+        }
+    }
+    if (const char* force_stage7 = std::getenv("AISP_NVFP4_FORCE_STAGE7")) {
+        if (std::atoi(force_stage7) != 0) {
+            return KernelVariant::Stage7;
+        }
+    }
+    if (m == 128 && n == 7168 && k == 16384) {
+        return KernelVariant::AutoStage;
+    }
+    return KernelVariant::Stage7;
+}
+
+const char* kernel_variant_name(KernelVariant variant) {
+    switch (variant) {
+        case KernelVariant::AutoStage: return "auto_stage";
+        case KernelVariant::Stage7: return "stage7";
+    }
+    return "unknown";
+}
+
+int swizzle_for_variant(KernelVariant variant) {
+    switch (variant) {
+        case KernelVariant::AutoStage: return 1;
+        case KernelVariant::Stage7: return 1;
+    }
+    return 1;
+}
 
 template <typename Element, typename Layout>
 bool initialize_block(cutlass::TensorView<Element, Layout> view, uint64_t seed_value) {
@@ -233,20 +262,38 @@ void initialize_scale(cutlass::TensorView<Element, Layout> view, float value) {
     cutlass::reference::host::TensorFill(view, Element(value));
 }
 
-void initialize(const Options& options) {
-    using Sm1xxBlkScaledConfig = typename Gemm::GemmKernel::CollectiveMainloop::Sm1xxBlkScaledConfig;
+template <typename GemmT>
+float run_cutlass_with_gemm(const Options& options, double* checksum_accum = nullptr) {
+    using StrideA = typename GemmT::GemmKernel::StrideA;
+    using LayoutA = decltype(cute::make_layout(make_shape(0, 0, 0), StrideA{}));
+    using LayoutSFA = typename GemmT::GemmKernel::CollectiveMainloop::LayoutSFA;
+    using StrideB = typename GemmT::GemmKernel::StrideB;
+    using LayoutB = decltype(cute::make_layout(make_shape(0, 0, 0), StrideB{}));
+    using LayoutSFB = typename GemmT::GemmKernel::CollectiveMainloop::LayoutSFB;
+    using StrideC = typename GemmT::GemmKernel::StrideC;
+    using LayoutC = decltype(cute::make_layout(make_shape(0, 0, 0), StrideC{}));
+    using StrideD = typename GemmT::GemmKernel::StrideD;
+    using LayoutD = decltype(cute::make_layout(make_shape(0, 0, 0), StrideD{}));
+    using Sm1xxBlkScaledConfig = typename GemmT::GemmKernel::CollectiveMainloop::Sm1xxBlkScaledConfig;
 
-    stride_A = cutlass::make_cute_packed_stride(StrideA{}, {options.m, options.k, 1});
-    stride_B = cutlass::make_cute_packed_stride(StrideB{}, {options.n, options.k, 1});
-    stride_C = cutlass::make_cute_packed_stride(StrideC{}, {options.m, options.n, 1});
-    stride_D = cutlass::make_cute_packed_stride(StrideD{}, {options.m, options.n, 1});
+    StrideA stride_A = cutlass::make_cute_packed_stride(StrideA{}, {options.m, options.k, 1});
+    StrideB stride_B = cutlass::make_cute_packed_stride(StrideB{}, {options.n, options.k, 1});
+    StrideC stride_C = cutlass::make_cute_packed_stride(StrideC{}, {options.m, options.n, 1});
+    StrideD stride_D = cutlass::make_cute_packed_stride(StrideD{}, {options.m, options.n, 1});
 
-    layout_A = make_layout(make_shape(options.m, options.k, 1), stride_A);
-    layout_B = make_layout(make_shape(options.n, options.k, 1), stride_B);
-    layout_C = make_layout(make_shape(options.m, options.n, 1), stride_C);
-    layout_D = make_layout(make_shape(options.m, options.n, 1), stride_D);
-    layout_SFA = Sm1xxBlkScaledConfig::tile_atom_to_shape_SFA(make_shape(options.m, options.n, options.k, 1));
-    layout_SFB = Sm1xxBlkScaledConfig::tile_atom_to_shape_SFB(make_shape(options.m, options.n, options.k, 1));
+    LayoutA layout_A = make_layout(make_shape(options.m, options.k, 1), stride_A);
+    LayoutB layout_B = make_layout(make_shape(options.n, options.k, 1), stride_B);
+    LayoutC layout_C = make_layout(make_shape(options.m, options.n, 1), stride_C);
+    LayoutD layout_D = make_layout(make_shape(options.m, options.n, 1), stride_D);
+    LayoutSFA layout_SFA = Sm1xxBlkScaledConfig::tile_atom_to_shape_SFA(make_shape(options.m, options.n, options.k, 1));
+    LayoutSFB layout_SFB = Sm1xxBlkScaledConfig::tile_atom_to_shape_SFB(make_shape(options.m, options.n, options.k, 1));
+
+    cutlass::HostTensor<ElementA::DataType, cutlass::layout::PackedVectorLayout> block_A;
+    cutlass::HostTensor<ElementA::ScaleFactorType, cutlass::layout::PackedVectorLayout> block_SFA;
+    cutlass::HostTensor<ElementB::DataType, cutlass::layout::PackedVectorLayout> block_B;
+    cutlass::HostTensor<ElementB::ScaleFactorType, cutlass::layout::PackedVectorLayout> block_SFB;
+    cutlass::HostTensor<ElementC, cutlass::layout::PackedVectorLayout> block_C;
+    cutlass::HostTensor<ElementD, cutlass::layout::PackedVectorLayout> block_D;
 
     block_A.reset(cutlass::make_Coord(size(layout_A)));
     block_B.reset(cutlass::make_Coord(size(layout_B)));
@@ -255,8 +302,8 @@ void initialize(const Options& options) {
     block_SFA.reset(cutlass::make_Coord(size(filter_zeros(layout_SFA))));
     block_SFB.reset(cutlass::make_Coord(size(filter_zeros(layout_SFB))));
 
-    initialize_block(block_A.host_view(), seed + 2021);
-    initialize_block(block_B.host_view(), seed + 2022);
+    initialize_block(block_A.host_view(), kSeed + 2021);
+    initialize_block(block_B.host_view(), kSeed + 2022);
     cutlass::reference::host::TensorFill(block_C.host_view(), ElementC(0));
     initialize_scale(block_SFA.host_view(), 1.0f);
     initialize_scale(block_SFB.host_view(), 1.0f);
@@ -266,10 +313,8 @@ void initialize(const Options& options) {
     block_C.sync_device();
     block_SFA.sync_device();
     block_SFB.sync_device();
-}
 
-typename Gemm::Arguments args_from_options(const Options& options) {
-    typename Gemm::Arguments arguments{
+    typename GemmT::Arguments arguments{
         cutlass::gemm::GemmUniversalMode::kGemm,
         {options.m, options.n, options.k, 1},
         {
@@ -284,19 +329,10 @@ typename Gemm::Arguments args_from_options(const Options& options) {
             block_D.device_data(), stride_D
         }
     };
-
     arguments.scheduler.max_swizzle_size = options.swizzle;
 
-    return arguments;
-}
-
-float run_cutlass(const Options& options, double* checksum_accum = nullptr) {
-    initialize(options);
-
-    Gemm gemm;
-    auto arguments = args_from_options(options);
-
-    size_t workspace_size = Gemm::get_workspace_size(arguments);
+    GemmT gemm;
+    size_t workspace_size = GemmT::get_workspace_size(arguments);
     cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
 
     CUTLASS_CHECK(gemm.can_implement(arguments));
@@ -362,6 +398,16 @@ float run_cutlass(const Options& options, double* checksum_accum = nullptr) {
     return avg_ms;
 }
 
+float run_cutlass(const Options& options, KernelVariant variant, double* checksum_accum = nullptr) {
+    switch (variant) {
+        case KernelVariant::AutoStage:
+            return run_cutlass_with_gemm<GemmAuto>(options, checksum_accum);
+        case KernelVariant::Stage7:
+            return run_cutlass_with_gemm<GemmStage7>(options, checksum_accum);
+    }
+    return run_cutlass_with_gemm<GemmAuto>(options, checksum_accum);
+}
+
 #endif  // CUTLASS_ARCH_MMA_SM100_SUPPORTED
 
 int main() {
@@ -410,11 +456,14 @@ int main() {
         options.m = s.m;
         options.n = s.n;
         options.k = s.k;
-
-        const float t_ms = run_cutlass(options, checksum_ptr);
+        const KernelVariant variant = pick_kernel_variant(options.m, options.n, options.k);
+        options.swizzle = swizzle_for_variant(variant);
+        const float t_ms = run_cutlass(options, variant, checksum_ptr);
         times_ms.push_back(static_cast<double>(t_ms));
         std::cout << "CUTLASS NVFP4 GEMM (all-concepts optimized) shape=("
-                  << s.m << "," << s.n << "," << s.k << ") TIME_MS: " << t_ms << std::endl;
+                  << s.m << "," << s.n << "," << s.k << ") variant="
+                  << kernel_variant_name(variant) << " swizzle=" << options.swizzle
+                  << " TIME_MS: " << t_ms << std::endl;
     }
 
     // Geometric mean over leaderboard shapes.

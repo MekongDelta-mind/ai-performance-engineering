@@ -37,7 +37,8 @@ class OptimizedSpeculativeDecodeBenchmark(VerificationPayloadMixin, BaseBenchmar
     def __init__(self) -> None:
         super().__init__()
 
-        self.workload = default_workload(dtype=torch.bfloat16)
+        # Use FP32 for deterministic argmax stability across launch/shape variations.
+        self.workload = default_workload(dtype=torch.float32)
 
         self.target_model: Optional[TokenMLP] = None
         self.draft_model: Optional[TokenMLP] = None

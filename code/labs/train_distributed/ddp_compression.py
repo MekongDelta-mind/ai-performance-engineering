@@ -5,9 +5,15 @@ import os
 import sys
 from pathlib import Path
 from time import perf_counter
+from types import SimpleNamespace
 
 import torch
 import torch.distributed as dist
+import torch.nn.functional as F
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
 def parse_args():
@@ -165,20 +171,88 @@ def main():
     rank = dist.get_rank() if dist.is_initialized() else 0
     is_main = rank == 0
 
-    tokenizer = build_tokenizer()
-    dataset = get_dataset()["train"]
-    dataloader = build_dataloader(
-        dataset,
-        tokenizer,
-        batch_size=args.batch_size,
-        shuffle=True,
-        drop_last=True,
-        distributed=dist.is_initialized() and dist.get_world_size() > 1,
-        num_workers=2,
-        prefetch_factor=2,
-    )
+    class _SyntheticCausalLM(torch.nn.Module):
+        def __init__(self, vocab_size: int = 32000, hidden_size: int = 1024):
+            super().__init__()
+            self.embed = torch.nn.Embedding(vocab_size, hidden_size)
+            self.proj = torch.nn.Linear(hidden_size, vocab_size, bias=False)
 
-    model = build_text_model()
+        def forward(self, input_ids: torch.Tensor, labels: torch.Tensor | None = None, **_kwargs):
+            x = self.embed(input_ids)
+            logits = self.proj(x)
+            if labels is None:
+                labels = input_ids
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), labels.view(-1))
+            return SimpleNamespace(loss=loss, logits=logits)
+
+    def _build_synthetic_dataloader(
+        *,
+        batch_size: int,
+        steps: int,
+        seq_len: int = 128,
+        vocab_size: int = 32000,
+        distributed: bool = False,
+    ) -> torch.utils.data.DataLoader:
+        sample_count = max(batch_size * max(steps, 1) * 2, batch_size * 64)
+        input_ids = torch.randint(0, vocab_size, (sample_count, seq_len), dtype=torch.int64)
+        attention_mask = torch.ones((sample_count, seq_len), dtype=torch.int64)
+
+        class _SyntheticDataset(torch.utils.data.Dataset):
+            def __len__(self) -> int:
+                return sample_count
+
+            def __getitem__(self, idx: int):
+                return {
+                    "input_ids": input_ids[idx],
+                    "attention_mask": attention_mask[idx],
+                }
+
+        dataset = _SyntheticDataset()
+        sampler = (
+            torch.utils.data.distributed.DistributedSampler(dataset, shuffle=True)
+            if distributed
+            else None
+        )
+        return torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            shuffle=sampler is None,
+            drop_last=True,
+            num_workers=0,
+            pin_memory=True,
+        )
+
+    distributed = dist.is_initialized() and dist.get_world_size() > 1
+
+    try:
+        tokenizer = build_tokenizer()
+        dataset = get_dataset()["train"]
+        dataloader = build_dataloader(
+            dataset,
+            tokenizer,
+            batch_size=args.batch_size,
+            shuffle=True,
+            drop_last=True,
+            distributed=distributed,
+            num_workers=2,
+            prefetch_factor=2,
+        )
+        model = build_text_model()
+    except Exception as exc:
+        if is_main:
+            print(
+                "[ddp-compression] WARNING: using synthetic local model/dataset fallback "
+                f"because Hugging Face assets were unavailable ({exc}).",
+                flush=True,
+            )
+        dataloader = _build_synthetic_dataloader(
+            batch_size=args.batch_size,
+            steps=args.steps,
+            distributed=distributed,
+        )
+        model = _SyntheticCausalLM()
+
     model.to(device)
     model.train()
 
@@ -309,6 +383,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))

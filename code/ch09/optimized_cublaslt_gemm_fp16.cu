@@ -78,9 +78,9 @@ int main() {
     CUDA_CHECK(cudaMallocHost(&h_B, size_B));
     CUDA_CHECK(cudaMallocHost(&h_C, size_C));
 
-    // Initialize with random FP16 values
+    // Match baseline initialization to keep verification apples-to-apples.
     std::mt19937 gen(42);
-    std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> dis(-0.5f, 0.5f);
     for (size_t i = 0; i < elems_A * batch_count; ++i) {
         NVTX_RANGE("setup");
         h_A[i] = __float2half(dis(gen));
@@ -100,7 +100,9 @@ int main() {
     CUDA_CHECK(cudaMemcpy(d_B, h_B, size_B, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_C, h_C, size_C, cudaMemcpyHostToDevice));
 
-    // cuBLASLt setup
+    // cuBLAS / cuBLASLt setup
+    cublasHandle_t blasHandle;
+    CUBLAS_CHECK(cublasCreate(&blasHandle));
     cublasLtHandle_t ltHandle;
     CUBLASLT_CHECK(cublasLtCreate(&ltHandle));
 
@@ -162,6 +164,8 @@ int main() {
         &heuristic,
         &returnedResults));
 
+    const bool use_cublas_fallback = (returnedResults == 0);
+
     void* workspace = nullptr;
     CUDA_CHECK(cudaMalloc(&workspace, workspace_bytes));
 
@@ -174,8 +178,8 @@ int main() {
 
     CUDA_CHECK(cudaEventRecord(start));
     for (int i = 0; i < iterations; ++i) {
-        NVTX_RANGE("compute_math:ltmatmul");
-        if (returnedResults > 0) {
+        if (!use_cublas_fallback) {
+            NVTX_RANGE("compute_math:ltmatmul");
             CUBLASLT_CHECK(cublasLtMatmul(
                 ltHandle,
                 operationDesc,
@@ -193,6 +197,35 @@ int main() {
                 workspace,
                 workspace_bytes,
                 0));
+        } else {
+            NVTX_RANGE("compute_math:cublas_strided_batched");
+            // Row-major fallback:
+            // C_row = A_row * B_row
+            // cublas (column-major) computes C_col = B_row^T * A_row^T with m=N, n=M.
+            CUBLAS_CHECK(cublasGemmStridedBatchedEx(
+                blasHandle,
+                CUBLAS_OP_N,
+                CUBLAS_OP_N,
+                N,
+                M,
+                K,
+                &alpha,
+                d_B,
+                CUDA_R_16F,
+                N,
+                strideB,
+                d_A,
+                CUDA_R_16F,
+                K,
+                strideA,
+                &beta,
+                d_C,
+                CUDA_R_16F,
+                N,
+                strideC,
+                batch_count,
+                CUBLAS_COMPUTE_32F,
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         }
     }
     CUDA_CHECK(cudaEventRecord(stop));
@@ -223,6 +256,7 @@ int main() {
     CUBLASLT_CHECK(cublasLtMatrixLayoutDestroy(Cdesc));
     CUBLASLT_CHECK(cublasLtMatmulDescDestroy(operationDesc));
     CUBLASLT_CHECK(cublasLtDestroy(ltHandle));
+    CUBLAS_CHECK(cublasDestroy(blasHandle));
     CUDA_CHECK(cudaFree(d_A));
     CUDA_CHECK(cudaFree(d_B));
     CUDA_CHECK(cudaFree(d_C));

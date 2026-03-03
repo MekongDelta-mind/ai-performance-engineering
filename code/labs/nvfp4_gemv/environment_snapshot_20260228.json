@@ -1,0 +1,8 @@
+{
+  "timestamp_utc": "2026-02-28T17:13:38.332170Z",
+  "python": "3.12.3",
+  "torch": "2.10.0.dev20251213+cu130",
+  "torch_cuda": "13.0",
+  "nvcc": "Build cuda_13.0.r13.0/compiler.36424714_0",
+  "nvidia_smi": "NVIDIA B200, 580.126.09, 97.00.C5.00.0E, 1965 MHz, 3996 MHz, 1000.00 W"
+}

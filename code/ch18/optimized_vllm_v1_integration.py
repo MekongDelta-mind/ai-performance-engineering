@@ -8,13 +8,17 @@ Demonstrates optimized vLLM v1 usage with:
 - Chunked prefill for long contexts
 """
 
-import os
-import torch
-import time
-from typing import Dict, Any, List, Optional
+import importlib
+import importlib.metadata
 import random
+import gc
+import os
 import sys
+import time
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import torch
 
 # Ensure the hack/numba stub is importable before vLLM touches numba.
 repo_root = Path(__file__).resolve().parents[1]
@@ -35,19 +39,100 @@ import numba  # noqa: F401
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+from core.harness.serving_stack import get_serving_stack_pins
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
+_SERVING_STACK = get_serving_stack_pins()
+
+
+def _is_vllm_abi_mismatch_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return (
+        ("undefined symbol" in text and ("vllm/_c.abi3.so" in text or "vllm._c" in text))
+        or "c10_cuda_check_implementation" in text
+    )
+
+
+def _dist_version(name: str) -> Optional[str]:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _assert_serving_stack_versions() -> None:
+    if torch.__version__ != _SERVING_STACK.torch_version:
+        raise RuntimeError(
+            "FAIL FAST: Serving stack mismatch for torch "
+            f"(expected {_SERVING_STACK.torch_version}, got {torch.__version__}). "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}."
+        )
+    vllm_version = _dist_version("vllm")
+    if vllm_version != _SERVING_STACK.vllm_version:
+        raise RuntimeError(
+            "FAIL FAST: Serving stack mismatch for vllm "
+            f"(expected {_SERVING_STACK.vllm_version}, got {vllm_version}). "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}."
+        )
+    flashinfer_version = _dist_version("flashinfer-python")
+    if flashinfer_version != _SERVING_STACK.flashinfer_version:
+        raise RuntimeError(
+            "FAIL FAST: Serving stack mismatch for flashinfer-python "
+            f"(expected {_SERVING_STACK.flashinfer_version}, got {flashinfer_version}). "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}."
+        )
+
+
+def _assert_vllm_runtime_ready(import_error: Optional[BaseException]) -> None:
+    _assert_serving_stack_versions()
+    if import_error is not None:
+        if _is_vllm_abi_mismatch_error(import_error):
+            raise RuntimeError(
+                "FAIL FAST: vLLM ABI mismatch detected while importing vLLM. "
+                f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+                "Then verify with: "
+                "`python -c \"import importlib, importlib.metadata as md, torch, vllm; "
+                "importlib.import_module('vllm._C'); "
+                "print(torch.__version__, md.version('vllm'), vllm.__version__)\"`. "
+                f"Original error: {import_error}"
+            )
+        raise RuntimeError(
+            "FAIL FAST: vLLM import failed before benchmark setup. "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+            f"Original error: {import_error}"
+        )
+    try:
+        importlib.import_module("vllm._C")
+    except Exception as exc:
+        if _is_vllm_abi_mismatch_error(exc):
+            raise RuntimeError(
+                "FAIL FAST: vLLM ABI mismatch detected while loading vllm._C. "
+                f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+                "Then verify with: "
+                "`python -c \"import importlib, importlib.metadata as md, torch, vllm; "
+                "importlib.import_module('vllm._C'); "
+                "print(torch.__version__, md.version('vllm'), vllm.__version__)\"`. "
+                f"Original error: {exc}"
+            ) from exc
+        raise RuntimeError(
+            "FAIL FAST: vllm._C failed to import. "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+            f"Original error: {exc}"
+        ) from exc
 
 # Check for vLLM
 try:
     from vllm import LLM, SamplingParams
     from vllm.inputs.data import TokensPrompt
     VLLM_AVAILABLE = True
-except ImportError:
+    _IMPORT_ERROR: Optional[BaseException] = None
+except Exception as exc:
+    LLM = SamplingParams = TokensPrompt = None  # type: ignore[assignment]
     VLLM_AVAILABLE = False
-    logger.warning("vLLM not available, using simulation mode")
+    _IMPORT_ERROR = exc
+    logger.warning("vLLM import failed during module load: %s", exc)
 
 
 class OptimizedVLLMV1Integration:
@@ -66,37 +151,69 @@ class OptimizedVLLMV1Integration:
         self.batch_size = batch_size
         self.use_vllm = use_vllm and VLLM_AVAILABLE
         self.enable_chunked_prefill = enable_chunked_prefill
+        self._runtime_mode = "unknown"
         
         if not self.use_vllm:
             logger.info("Running in simulation mode (vLLM not available)")
+
+    def _new_llm(self, *, enforce_eager: bool, gpu_memory_utilization: float) -> "LLM":
+        return LLM(
+            model=self.model_name,
+            enforce_eager=enforce_eager,
+            enable_prefix_caching=True,
+            enable_chunked_prefill=self.enable_chunked_prefill,
+            gpu_memory_utilization=gpu_memory_utilization,
+            dtype="bfloat16",
+            tensor_parallel_size=1,
+            max_model_len=512,
+        )
     
     def setup(self):
         """Initialize optimized vLLM model."""
         random.seed(42)
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
+        _assert_vllm_runtime_ready(_IMPORT_ERROR)
         if self.use_vllm:
-            import gc
-
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 torch.cuda.synchronize()
 
-            # Optimized: CUDA graphs enabled + prefix caching (workload remains identical).
-            self.llm = LLM(
-                model=self.model_name,
-                enforce_eager=False,  # Enable CUDA graphs
-                enable_prefix_caching=True,
-                enable_chunked_prefill=self.enable_chunked_prefill,
-                gpu_memory_utilization=0.7,  # Match baseline to keep memory pressure comparable
-                dtype="bfloat16",
-                tensor_parallel_size=1,
-                max_model_len=512,
+            self._runtime_mode = "cuda_graphs"
+            try:
+                # Preferred optimized path.
+                self.llm = self._new_llm(enforce_eager=False, gpu_memory_utilization=0.7)
+            except RuntimeError as err:
+                err_msg = str(err)
+                # Keep the benchmark runnable on hosts where vLLM core init is flaky.
+                if "Engine core initialization failed" not in err_msg:
+                    raise
+                logger.warning(
+                    "Optimized vLLM startup failed with CUDA graphs; retrying in eager fallback mode: %s",
+                    err_msg,
+                )
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
+                self.llm = self._new_llm(enforce_eager=True, gpu_memory_utilization=0.65)
+                self._runtime_mode = "eager_fallback"
+
+            logger.info(
+                "Loaded model: %s (runtime_mode=%s, torch=%s, vllm=%s, flashinfer=%s)",
+                self.model_name,
+                self._runtime_mode,
+                _SERVING_STACK.torch_version,
+                _SERVING_STACK.vllm_version,
+                _SERVING_STACK.flashinfer_version,
             )
-            
-            logger.info(f"Loaded model: {self.model_name}")
-            logger.info("Optimized config: CUDA graphs, prefix caching, chunked prefill")
+            if self._runtime_mode == "cuda_graphs":
+                logger.info("Optimized config: CUDA graphs, prefix caching, chunked prefill")
+            else:
+                logger.warning(
+                    "Running optimized benchmark in eager fallback mode (CUDA graphs unavailable on this host/state)."
+                )
 
         if not self.use_vllm:
             raise RuntimeError("vLLM required for this benchmark. Install with: pip install vllm")
@@ -162,6 +279,7 @@ class OptimizedVLLMV1Integration:
             "throughput_tokens_per_sec": throughput,
             "total_tokens": total_tokens,
             "token_ids": token_ids,
+            "runtime_mode": self._runtime_mode,
         }
     
     def cleanup(self):

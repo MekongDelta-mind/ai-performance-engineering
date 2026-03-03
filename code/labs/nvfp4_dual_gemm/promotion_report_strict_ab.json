@@ -1,0 +1,301 @@
+{
+  "status": "ok",
+  "started_at_unix": 1772305474.9218457,
+  "owner_pid": 2854464,
+  "paths": {
+    "repo_root": "/home/cfregly/ai-performance-engineering/code",
+    "baseline_file": "labs/nvfp4_dual_gemm/cand_stage64_7_stage128_5_cacheA_first.py",
+    "candidate_file": "labs/nvfp4_dual_gemm/optimized_submission.py",
+    "reference_file": "labs/nvfp4_dual_gemm/reference_submission.py",
+    "local_eval_script": "labs/nvfp4_dual_gemm/local_eval.py",
+    "output": "labs/nvfp4_dual_gemm/promotion_report_strict_ab.json"
+  },
+  "settings": {
+    "pairs": 4,
+    "warmup": 1,
+    "repeats": 3,
+    "inputs_per_repeat": 20,
+    "timeout_seconds_per_run": 600,
+    "run_window_seconds": 1800,
+    "require_idle_gpu": true,
+    "kill_foreign_gpu_jobs": true,
+    "isolation_settle_seconds": 1.0,
+    "isolation_allow_cmd_substring": [
+      "python -m mcp.mcp_server --serve"
+    ],
+    "torch_extensions_dir": "/tmp/nvfp4_dual_strict_ab_1772305474"
+  },
+  "pair_rows": [
+    {
+      "pair": 1,
+      "baseline_score_us": 20.956502883503273,
+      "candidate_score_us": 20.856864475022252,
+      "delta_candidate_minus_baseline_us": -0.09963840848102024,
+      "baseline_wall_seconds": 19.198715686798096,
+      "candidate_wall_seconds": 19.294020175933838,
+      "pre_a": {
+        "context": "pair1_pre_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_a": {
+        "context": "pair1_post_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "pre_b": {
+        "context": "pair1_pre_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_b": {
+        "context": "pair1_post_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      }
+    },
+    {
+      "pair": 2,
+      "baseline_score_us": 20.953632147717776,
+      "candidate_score_us": 20.929279608232342,
+      "delta_candidate_minus_baseline_us": -0.024352539485434477,
+      "baseline_wall_seconds": 19.143319368362427,
+      "candidate_wall_seconds": 19.133370876312256,
+      "pre_a": {
+        "context": "pair2_pre_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_a": {
+        "context": "pair2_post_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "pre_b": {
+        "context": "pair2_pre_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_b": {
+        "context": "pair2_post_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      }
+    },
+    {
+      "pair": 3,
+      "baseline_score_us": 20.911729666854256,
+      "candidate_score_us": 20.798656617609137,
+      "delta_candidate_minus_baseline_us": -0.11307304924511996,
+      "baseline_wall_seconds": 19.336002588272095,
+      "candidate_wall_seconds": 19.456801891326904,
+      "pre_a": {
+        "context": "pair3_pre_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_a": {
+        "context": "pair3_post_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "pre_b": {
+        "context": "pair3_pre_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_b": {
+        "context": "pair3_post_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      }
+    },
+    {
+      "pair": 4,
+      "baseline_score_us": 20.979707531853133,
+      "candidate_score_us": 21.166567422297774,
+      "delta_candidate_minus_baseline_us": 0.1868598904446408,
+      "baseline_wall_seconds": 19.109586715698242,
+      "candidate_wall_seconds": 19.29470992088318,
+      "pre_a": {
+        "context": "pair4_pre_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_a": {
+        "context": "pair4_post_A",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "pre_b": {
+        "context": "pair4_pre_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      },
+      "post_b": {
+        "context": "pair4_post_B",
+        "owner_pid": 2854464,
+        "kill_foreign": true,
+        "require_idle": true,
+        "allow_cmd_substrings": [
+          "python -m mcp.mcp_server --serve"
+        ],
+        "before": [],
+        "after": [],
+        "killed_pids": [],
+        "ok": true
+      }
+    }
+  ],
+  "top_score_us_598": 12.91340352464226,
+  "initial_isolation_preflight": {
+    "context": "strict_ab_initial",
+    "owner_pid": 2854464,
+    "kill_foreign": true,
+    "require_idle": true,
+    "allow_cmd_substrings": [
+      "python -m mcp.mcp_server --serve"
+    ],
+    "before": [],
+    "after": [],
+    "killed_pids": [],
+    "ok": true
+  },
+  "summary": {
+    "pairs": 4,
+    "baseline_geomean_us": 20.950378719746166,
+    "candidate_geomean_us": 20.937376109719278,
+    "delta_geomean_candidate_minus_baseline_us": -0.01300261002688785,
+    "delta_mean_candidate_minus_baseline_us": -0.012551026691733469,
+    "delta_median_candidate_minus_baseline_us": -0.061995473983227356,
+    "delta_stdev_candidate_minus_baseline_us": 0.13855549870301834,
+    "wins_candidate": 3,
+    "wins_baseline": 1,
+    "ties": 0,
+    "promote_candidate": true,
+    "delta_candidate_vs_top598_us": 8.023972585077018,
+    "delta_baseline_vs_top598_us": 8.036975195103906
+  },
+  "finished_at_unix": 1772305630.3500175,
+  "total_wall_seconds": 155.42817187309265
+}

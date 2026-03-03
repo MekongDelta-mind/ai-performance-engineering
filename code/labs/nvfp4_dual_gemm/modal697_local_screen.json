@@ -1,0 +1,178 @@
+{
+  "ids": [
+    384742,
+    374258,
+    374194,
+    373846,
+    384562,
+    379887,
+    373872,
+    373963,
+    373926,
+    373947
+  ],
+  "results": [
+    {
+      "submission_id": 384742,
+      "status": "ok",
+      "user_name": "guaguabear",
+      "lb697_score": 1.2901270381059116e-05,
+      "local_score_us": 21.940551556468165,
+      "seconds": 15.664040088653564
+    },
+    {
+      "submission_id": 374258,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3172264931994506e-05,
+      "local_score_us": 21.578364543276987,
+      "seconds": 19.703027963638306
+    },
+    {
+      "submission_id": 374194,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3182909653476749e-05,
+      "local_score_us": 21.787127889061075,
+      "seconds": 19.671512842178345
+    },
+    {
+      "submission_id": 373846,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3188712667767978e-05,
+      "local_score_us": 21.677563350581764,
+      "seconds": 19.64143395423889
+    },
+    {
+      "submission_id": 384562,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3196690540371192e-05,
+      "local_score_us": 21.658361632575204,
+      "seconds": 19.717389583587646
+    },
+    {
+      "submission_id": 379887,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3199757896115011e-05,
+      "local_score_us": 21.659103366287084,
+      "seconds": 19.69368624687195
+    },
+    {
+      "submission_id": 373872,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.320208695858223e-05,
+      "local_score_us": 21.613177058192953,
+      "seconds": 19.70610499382019
+    },
+    {
+      "submission_id": 373963,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3209808295527053e-05,
+      "local_score_us": 21.633102693146327,
+      "seconds": 19.686680793762207
+    },
+    {
+      "submission_id": 373926,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3218977409067134e-05,
+      "local_score_us": 21.693584605671006,
+      "seconds": 19.83558750152588
+    },
+    {
+      "submission_id": 373947,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3221867600497705e-05,
+      "local_score_us": 21.60656900891434,
+      "seconds": 19.76887273788452
+    }
+  ],
+  "top_ok": [
+    {
+      "submission_id": 374258,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3172264931994506e-05,
+      "local_score_us": 21.578364543276987,
+      "seconds": 19.703027963638306
+    },
+    {
+      "submission_id": 373947,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3221867600497705e-05,
+      "local_score_us": 21.60656900891434,
+      "seconds": 19.76887273788452
+    },
+    {
+      "submission_id": 373872,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.320208695858223e-05,
+      "local_score_us": 21.613177058192953,
+      "seconds": 19.70610499382019
+    },
+    {
+      "submission_id": 373963,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3209808295527053e-05,
+      "local_score_us": 21.633102693146327,
+      "seconds": 19.686680793762207
+    },
+    {
+      "submission_id": 384562,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3196690540371192e-05,
+      "local_score_us": 21.658361632575204,
+      "seconds": 19.717389583587646
+    },
+    {
+      "submission_id": 379887,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3199757896115011e-05,
+      "local_score_us": 21.659103366287084,
+      "seconds": 19.69368624687195
+    },
+    {
+      "submission_id": 373846,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3188712667767978e-05,
+      "local_score_us": 21.677563350581764,
+      "seconds": 19.64143395423889
+    },
+    {
+      "submission_id": 373926,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3218977409067134e-05,
+      "local_score_us": 21.693584605671006,
+      "seconds": 19.83558750152588
+    },
+    {
+      "submission_id": 374194,
+      "status": "ok",
+      "user_name": "gau.nernst",
+      "lb697_score": 1.3182909653476749e-05,
+      "local_score_us": 21.787127889061075,
+      "seconds": 19.671512842178345
+    },
+    {
+      "submission_id": 384742,
+      "status": "ok",
+      "user_name": "guaguabear",
+      "lb697_score": 1.2901270381059116e-05,
+      "local_score_us": 21.940551556468165,
+      "seconds": 15.664040088653564
+    }
+  ]
+}

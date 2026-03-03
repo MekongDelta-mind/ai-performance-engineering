@@ -35,6 +35,7 @@ class OptimizedCutlassGemmFp8Benchmark(CudaBinaryBenchmark):
                 "dtype": "fp8_e4m3",
             },
         )
+        self._selected_backend = "cutlass_sm90"
 
     def setup(self) -> None:
         import torch
@@ -42,14 +43,19 @@ class OptimizedCutlassGemmFp8Benchmark(CudaBinaryBenchmark):
         if not torch.cuda.is_available():
             raise RuntimeError("SKIPPED: CUDA required for CUTLASS FP8")
         major, _minor = torch.cuda.get_device_capability()
-        if major != 9:
-            raise RuntimeError(
-                "SKIPPED: optimized_cutlass_gemm_fp8 uses a SM90 CUTLASS kernel and is not yet ported to SM100+."
-            )
+        if major == 9:
+            self._selected_backend = "cutlass_sm90"
+            self.binary_name = "optimized_cutlass_gemm_fp8"
+            self.friendly_name = "Optimized Cutlass Gemm Fp8"
+        else:
+            # Portable fallback until the SM90 CUTLASS FP8 kernel is ported to SM100+.
+            self._selected_backend = "cublaslt_fp8_fallback"
+            self.binary_name = "optimized_cublaslt_gemm_fp8"
+            self.friendly_name = "Optimized CuBLASLt Gemm Fp8 (fallback)"
         super().setup()
 
     def get_custom_metrics(self) -> Optional[dict]:
-        return None
+        return {"fp8_backend": self._selected_backend}
 
 
 def get_benchmark() -> BaseBenchmark:

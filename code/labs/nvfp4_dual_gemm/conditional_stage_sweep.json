@@ -1,0 +1,82 @@
+{
+  "results": [
+    {
+      "name": "base_cacheA_first",
+      "status": "ok",
+      "score_us": 21.701852415809658,
+      "seconds": 20.924161195755005,
+      "submission_file": "/tmp/dual_stage_cond_y7qfc4e2/base_cacheA_first.py"
+    },
+    {
+      "name": "n128_stage4",
+      "status": "ok",
+      "score_us": 21.622169858030684,
+      "seconds": 20.044978380203247,
+      "submission_file": "/tmp/dual_stage_cond_971kjy_1/n128_stage4.py"
+    },
+    {
+      "name": "n128_stage6",
+      "status": "fail",
+      "error": "Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.",
+      "seconds": 19.548215627670288
+    },
+    {
+      "name": "n128_stage3",
+      "status": "ok",
+      "score_us": 22.200934410613122,
+      "seconds": 19.90761947631836,
+      "submission_file": "/tmp/dual_stage_cond_op_4q6or/n128_stage3.py"
+    },
+    {
+      "name": "n64_stage6_n128_stage5",
+      "status": "ok",
+      "score_us": 21.53259887202426,
+      "seconds": 20.117706537246704,
+      "submission_file": "/tmp/dual_stage_cond_y3cjcx8o/n64_stage6_n128_stage5.py"
+    },
+    {
+      "name": "n64_stage7_n128_stage4",
+      "status": "ok",
+      "score_us": 21.52769213021301,
+      "seconds": 20.879387617111206,
+      "submission_file": "/tmp/dual_stage_cond_dqv5488g/n64_stage7_n128_stage4.py"
+    }
+  ],
+  "top_ok": [
+    {
+      "name": "n64_stage7_n128_stage4",
+      "status": "ok",
+      "score_us": 21.52769213021301,
+      "seconds": 20.879387617111206,
+      "submission_file": "/tmp/dual_stage_cond_dqv5488g/n64_stage7_n128_stage4.py"
+    },
+    {
+      "name": "n64_stage6_n128_stage5",
+      "status": "ok",
+      "score_us": 21.53259887202426,
+      "seconds": 20.117706537246704,
+      "submission_file": "/tmp/dual_stage_cond_y3cjcx8o/n64_stage6_n128_stage5.py"
+    },
+    {
+      "name": "n128_stage4",
+      "status": "ok",
+      "score_us": 21.622169858030684,
+      "seconds": 20.044978380203247,
+      "submission_file": "/tmp/dual_stage_cond_971kjy_1/n128_stage4.py"
+    },
+    {
+      "name": "base_cacheA_first",
+      "status": "ok",
+      "score_us": 21.701852415809658,
+      "seconds": 20.924161195755005,
+      "submission_file": "/tmp/dual_stage_cond_y7qfc4e2/base_cacheA_first.py"
+    },
+    {
+      "name": "n128_stage3",
+      "status": "ok",
+      "score_us": 22.200934410613122,
+      "seconds": 19.90761947631836,
+      "submission_file": "/tmp/dual_stage_cond_op_4q6or/n128_stage3.py"
+    }
+  ]
+}

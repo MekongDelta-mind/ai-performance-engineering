@@ -259,7 +259,7 @@ int main() {
     }
     
     // Problem size
-    const int N = 16 * 1024 * 1024;  // 16M elements
+    const int N = 64 * 1024 * 1024;  // 64M elements (matches baseline for fair comparison)
     const int elements_per_cluster = ELEMENTS_PER_BLOCK * CLUSTER_SIZE;
     const int num_clusters = (N + elements_per_cluster - 1) / elements_per_cluster;
     const int num_blocks = num_clusters * CLUSTER_SIZE;
@@ -403,4 +403,3 @@ int main() {
     
     return 0;
 }
-

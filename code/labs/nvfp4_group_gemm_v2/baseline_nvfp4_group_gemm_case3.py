@@ -1,7 +1,7 @@
 """Baseline NVFP4 grouped GEMM (competition case 3, v2 custom CUDA tcgen05 kernel).
 
-This baseline uses the from-scratch tcgen05/UMMA path in its most conservative configuration
-(no cluster/cta_group::2, UnrollN=1, no CUDA-graph replay) so profiling stays tractable.
+This baseline keeps the conservative kernel routing (no cluster/cta_group::2, UnrollN=1),
+but runs with the fast runtime path (fused inputs + iter-graph replay) by default.
 """
 
 from __future__ import annotations
@@ -19,6 +19,9 @@ os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_UNROLL_N", "1")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CLUSTER_DIM_X", "1")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_ENABLE_EXPERIMENTAL_CTA2", "0")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_ENABLE_TMA_MULTICAST", "0")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS_COMPRESS_LIST", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CAPTURE_ITER_GRAPH", "1")
 os.environ.setdefault(
     "AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME",
     "nvfp4_group_gemm_v2_tcgen05_baseline",
@@ -43,7 +46,7 @@ def get_benchmark() -> BaseBenchmark:
         custom_kernel=custom_kernel_v2_custom_cuda_tcgen05,
         prepare=prepare_v2_custom_cuda_tcgen05,
         inputs_per_iteration=15,
-        capture_iter_graph=False,
+        capture_iter_graph=True,
         name=f"nvfp4_group_gemm_{case.name}_baseline_v2_custom_cuda_tcgen05",
     )
     return attach_benchmark_metadata(bench, __file__)

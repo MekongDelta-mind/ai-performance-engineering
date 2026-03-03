@@ -112,7 +112,7 @@ class NvshmemIbgdaMicrobench(CudaBinaryBenchmark):
             if candidate and candidate.exists():
                 launcher = str(candidate)
 
-        if launcher is None:
+        if launcher is None and self.world_size > 1:
             raise RuntimeError("SKIPPED: nvshmemrun not found in PATH or NVSHMEM_HOME/bin")
 
         self.nvshmemrun = launcher
@@ -191,19 +191,20 @@ class NvshmemIbgdaMicrobench(CudaBinaryBenchmark):
     def _run_once(self) -> BinaryRunResult:
         if self.exec_path is None:
             raise RuntimeError("Executable path not set (build step missing)")
-        if self.nvshmemrun is None:
-            raise RuntimeError("nvshmemrun launcher not resolved")
-
         env = os.environ.copy()
         env.update(self._runtime_env())
 
-        cmd = [
-            self.nvshmemrun,
-            "-np",
-            str(self.world_size),
-            str(self.exec_path),
-            *self.run_args,
-        ]
+        if self.nvshmemrun is not None:
+            cmd = [
+                self.nvshmemrun,
+                "-np",
+                str(self.world_size),
+                str(self.exec_path),
+                *self.run_args,
+            ]
+        else:
+            # Single-GPU/single-PE fallback when nvshmemrun is unavailable.
+            cmd = [str(self.exec_path), *self.run_args]
 
         start = time.perf_counter()
         completed = subprocess.run(
@@ -234,18 +235,18 @@ class NvshmemIbgdaMicrobench(CudaBinaryBenchmark):
     def _run_verify(self) -> Optional[float]:
         if self._verify_exec_path is None:
             raise RuntimeError("Verify binary not built (call _build_binary_verify first)")
-        if self.nvshmemrun is None:
-            raise RuntimeError("nvshmemrun launcher not resolved")
-
         env = os.environ.copy()
         env.update(self._runtime_env())
-        cmd = [
-            self.nvshmemrun,
-            "-np",
-            str(self.world_size),
-            str(self._verify_exec_path),
-            *self.run_args,
-        ]
+        if self.nvshmemrun is not None:
+            cmd = [
+                self.nvshmemrun,
+                "-np",
+                str(self.world_size),
+                str(self._verify_exec_path),
+                *self.run_args,
+            ]
+        else:
+            cmd = [str(self._verify_exec_path), *self.run_args]
         completed = subprocess.run(
             cmd,
             cwd=self.chapter_dir,

@@ -7,13 +7,16 @@ Demonstrates basic vLLM v1 usage without advanced features like:
 - Prefix caching
 """
 
+import importlib
+import importlib.metadata
 import os
-import torch
-import time
-from typing import Dict, Any, List, Optional
 import random
 import sys
+import time
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import torch
 
 # Ensure the hack/numba stub is importable before vLLM touches numba.
 repo_root = Path(__file__).resolve().parents[1]
@@ -34,19 +37,100 @@ import numba  # noqa: F401
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+from core.harness.serving_stack import get_serving_stack_pins
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
+_SERVING_STACK = get_serving_stack_pins()
+
+
+def _is_vllm_abi_mismatch_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return (
+        ("undefined symbol" in text and ("vllm/_c.abi3.so" in text or "vllm._c" in text))
+        or "c10_cuda_check_implementation" in text
+    )
+
+
+def _dist_version(name: str) -> Optional[str]:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _assert_serving_stack_versions() -> None:
+    if torch.__version__ != _SERVING_STACK.torch_version:
+        raise RuntimeError(
+            "FAIL FAST: Serving stack mismatch for torch "
+            f"(expected {_SERVING_STACK.torch_version}, got {torch.__version__}). "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}."
+        )
+    vllm_version = _dist_version("vllm")
+    if vllm_version != _SERVING_STACK.vllm_version:
+        raise RuntimeError(
+            "FAIL FAST: Serving stack mismatch for vllm "
+            f"(expected {_SERVING_STACK.vllm_version}, got {vllm_version}). "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}."
+        )
+    flashinfer_version = _dist_version("flashinfer-python")
+    if flashinfer_version != _SERVING_STACK.flashinfer_version:
+        raise RuntimeError(
+            "FAIL FAST: Serving stack mismatch for flashinfer-python "
+            f"(expected {_SERVING_STACK.flashinfer_version}, got {flashinfer_version}). "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}."
+        )
+
+
+def _assert_vllm_runtime_ready(import_error: Optional[BaseException]) -> None:
+    _assert_serving_stack_versions()
+    if import_error is not None:
+        if _is_vllm_abi_mismatch_error(import_error):
+            raise RuntimeError(
+                "FAIL FAST: vLLM ABI mismatch detected while importing vLLM. "
+                f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+                "Then verify with: "
+                "`python -c \"import importlib, importlib.metadata as md, torch, vllm; "
+                "importlib.import_module('vllm._C'); "
+                "print(torch.__version__, md.version('vllm'), vllm.__version__)\"`. "
+                f"Original error: {import_error}"
+            )
+        raise RuntimeError(
+            "FAIL FAST: vLLM import failed before benchmark setup. "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+            f"Original error: {import_error}"
+        )
+    try:
+        importlib.import_module("vllm._C")
+    except Exception as exc:
+        if _is_vllm_abi_mismatch_error(exc):
+            raise RuntimeError(
+                "FAIL FAST: vLLM ABI mismatch detected while loading vllm._C. "
+                f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+                "Then verify with: "
+                "`python -c \"import importlib, importlib.metadata as md, torch, vllm; "
+                "importlib.import_module('vllm._C'); "
+                "print(torch.__version__, md.version('vllm'), vllm.__version__)\"`. "
+                f"Original error: {exc}"
+            ) from exc
+        raise RuntimeError(
+            "FAIL FAST: vllm._C failed to import. "
+            f"Remediation: pin and reinstall {_SERVING_STACK.pinned_stack_str}. "
+            f"Original error: {exc}"
+        ) from exc
 
 # Check for vLLM
 try:
     from vllm import LLM, SamplingParams
     from vllm.inputs.data import TokensPrompt
     VLLM_AVAILABLE = True
-except ImportError:
+    _IMPORT_ERROR: Optional[BaseException] = None
+except Exception as exc:
+    LLM = SamplingParams = TokensPrompt = None  # type: ignore[assignment]
     VLLM_AVAILABLE = False
-    logger.warning("vLLM not available, using simulation mode")
+    _IMPORT_ERROR = exc
+    logger.warning("vLLM import failed during module load: %s", exc)
 
 
 class BaselineVLLMV1Integration:
@@ -72,6 +156,7 @@ class BaselineVLLMV1Integration:
         random.seed(42)
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
+        _assert_vllm_runtime_ready(_IMPORT_ERROR)
         if self.use_vllm:
             import gc
             

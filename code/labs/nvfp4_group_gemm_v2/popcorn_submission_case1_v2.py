@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import builtins
 import hashlib
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -49,22 +50,28 @@ def _get_process_extension_cache() -> dict[str, object]:
 
 
 _PAYLOAD_HASH = hashlib.sha1(_KERNEL_SOURCE_B64.encode("ascii")).hexdigest()[:12]
-_DEFAULT_EXT_NAME = f"nvfp4_group_gemm_v2_popcorn_{_PAYLOAD_HASH}"
+_EXT_BASE_NAME = f"nvfp4_group_gemm_v2_popcorn_{_PAYLOAD_HASH}"
 
 
-def _extension_name() -> str:
+def _extension_base_name() -> str:
     user = os.getenv("AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME", "").strip()
     if user:
         return user
-    return _DEFAULT_EXT_NAME
+    return _EXT_BASE_NAME
+
+
+def _compile_config_hash(*, extra_cuda_cflags: list[str]) -> str:
+    payload = {
+        "kernel_payload_hash": _PAYLOAD_HASH,
+        "extra_cuda_cflags": [str(flag) for flag in extra_cuda_cflags],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha1(encoded).hexdigest()[:12]
 
 
 def load_v2_custom_cuda_nvfp4_group_gemm(*, verbose: bool = False) -> object:
     process_cache = _get_process_extension_cache()
-    ext_name = _extension_name()
-    cached = process_cache.get(ext_name)
-    if cached is not None:
-        return cached
+    ext_base = _extension_base_name()
 
     source_text = _decode_kernel_source()
     cache_root = Path(tempfile.gettempdir()) / "nvfp4_group_gemm_v2_popcorn"
@@ -119,8 +126,20 @@ def load_v2_custom_cuda_nvfp4_group_gemm(*, verbose: bool = False) -> object:
     if maxrregcount is not None and maxrregcount.strip() != "":
         extra_cuda_cflags.append(f"--maxrregcount={int(maxrregcount)}")
 
+    cfg_hash = _compile_config_hash(extra_cuda_cflags=extra_cuda_cflags)
+    ext_name = f"{ext_base}__cfg_{cfg_hash}"
+    cached = process_cache.get(ext_name)
+    if cached is not None:
+        return cached
+
     build_dir = cache_root / "build" / ext_name
     build_dir.mkdir(parents=True, exist_ok=True)
+
+    # torch cpp_extension may call sys.stdout.flush() in worker processes.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
 
     ext = load(
         name=ext_name,

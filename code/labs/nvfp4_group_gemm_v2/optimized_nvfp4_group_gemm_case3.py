@@ -26,6 +26,7 @@ os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_EPILOGUE_LD_X32", "1")
 
 # Runtime tuning knobs.
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS", "1")
+os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS_COMPRESS_LIST", "1")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CTA_ORDER", "tm_major")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_CLUSTER_DIM_X", "1")
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_V2_ENABLE_TMA_MULTICAST", "0")

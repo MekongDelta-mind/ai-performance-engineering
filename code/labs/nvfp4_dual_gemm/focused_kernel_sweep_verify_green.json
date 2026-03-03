@@ -1,0 +1,254 @@
+{
+  "results": [
+    {
+      "name": "base",
+      "status": "ok",
+      "score_us": 21.65540469314933,
+      "score_seconds": 2.1655404693149328e-05,
+      "delta_vs_top_us": 8.74200116850707,
+      "cases": {
+        "case0": 19.557999446988106,
+        "case1": 28.47599983215332,
+        "case2": 14.661999884992838,
+        "case3": 26.931999251246452
+      },
+      "seconds": 21.646916389465332
+    },
+    {
+      "name": "cache_A_first_B_first",
+      "status": "ok",
+      "score_us": 21.586720421007577,
+      "score_seconds": 2.1586720421007578e-05,
+      "delta_vs_top_us": 8.673316896365318,
+      "cases": {
+        "case0": 19.3060003221035,
+        "case1": 28.58399972319603,
+        "case2": 14.592000283300877,
+        "case3": 26.965999975800514
+      },
+      "seconds": 21.99186635017395
+    },
+    {
+      "name": "cache_A_first_B_normal",
+      "status": "ok",
+      "score_us": 21.870008357945206,
+      "score_seconds": 2.1870008357945208e-05,
+      "delta_vs_top_us": 8.956604833302947,
+      "cases": {
+        "case0": 20.395999774336815,
+        "case1": 28.541999869048595,
+        "case2": 14.694000128656626,
+        "case3": 26.743999682366848
+      },
+      "seconds": 21.713633060455322
+    },
+    {
+      "name": "cache_A_last_B_last",
+      "status": "ok",
+      "score_us": 21.854552916918518,
+      "score_seconds": 2.1854552916918516e-05,
+      "delta_vs_top_us": 8.941149392276259,
+      "cases": {
+        "case0": 20.188000053167343,
+        "case1": 28.478000313043594,
+        "case2": 14.644000213593245,
+        "case3": 27.096000500023365
+      },
+      "seconds": 21.662944078445435
+    },
+    {
+      "name": "stage_cap_6",
+      "status": "ok",
+      "score_us": 21.687382314825022,
+      "score_seconds": 2.1687382314825022e-05,
+      "delta_vs_top_us": 8.773978790182763,
+      "cases": {
+        "case0": 19.634000025689602,
+        "case1": 28.4659992903471,
+        "case2": 14.63599968701601,
+        "case3": 27.04400010406971
+      },
+      "seconds": 21.588849544525146
+    },
+    {
+      "name": "stage_cap_5",
+      "status": "ok",
+      "score_us": 21.691912644850895,
+      "score_seconds": 2.1691912644850893e-05,
+      "delta_vs_top_us": 8.778509120208636,
+      "cases": {
+        "case0": 19.60999984294176,
+        "case1": 28.37400045245886,
+        "case2": 14.775999821722507,
+        "case3": 26.929999701678753
+      },
+      "seconds": 21.602848529815674
+    },
+    {
+      "name": "stage_cap_4",
+      "status": "ok",
+      "score_us": 22.026113035687285,
+      "score_seconds": 2.2026113035687285e-05,
+      "delta_vs_top_us": 9.112709511045026,
+      "cases": {
+        "case0": 20.956000313162804,
+        "case1": 28.459999710321426,
+        "case2": 14.648000244051218,
+        "case3": 26.941999793052673
+      },
+      "seconds": 21.567100286483765
+    },
+    {
+      "name": "block_k_128",
+      "status": "fail",
+      "error": "RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasCreate(handle)`",
+      "seconds": 20.75448966026306
+    },
+    {
+      "name": "block_k_512",
+      "status": "fail",
+      "error": "ninja: build stopped: subcommand failed.",
+      "seconds": 16.936798095703125
+    },
+    {
+      "name": "block_k_128_stage_cap_4",
+      "status": "fail",
+      "error": "RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasCreate(handle)`",
+      "seconds": 22.10500931739807
+    },
+    {
+      "name": "cache_A_first_B_normal_stage_cap_5",
+      "status": "ok",
+      "score_us": 22.27563427653742,
+      "score_seconds": 2.227563427653742e-05,
+      "delta_vs_top_us": 9.362230751895162,
+      "cases": {
+        "case0": 21.367999725043774,
+        "case1": 28.50000001490116,
+        "case2": 15.058000106364489,
+        "case3": 26.850000023841858
+      },
+      "seconds": 21.025540590286255
+    }
+  ],
+  "top_ok": [
+    {
+      "name": "cache_A_first_B_first",
+      "status": "ok",
+      "score_us": 21.586720421007577,
+      "score_seconds": 2.1586720421007578e-05,
+      "delta_vs_top_us": 8.673316896365318,
+      "cases": {
+        "case0": 19.3060003221035,
+        "case1": 28.58399972319603,
+        "case2": 14.592000283300877,
+        "case3": 26.965999975800514
+      },
+      "seconds": 21.99186635017395
+    },
+    {
+      "name": "base",
+      "status": "ok",
+      "score_us": 21.65540469314933,
+      "score_seconds": 2.1655404693149328e-05,
+      "delta_vs_top_us": 8.74200116850707,
+      "cases": {
+        "case0": 19.557999446988106,
+        "case1": 28.47599983215332,
+        "case2": 14.661999884992838,
+        "case3": 26.931999251246452
+      },
+      "seconds": 21.646916389465332
+    },
+    {
+      "name": "stage_cap_6",
+      "status": "ok",
+      "score_us": 21.687382314825022,
+      "score_seconds": 2.1687382314825022e-05,
+      "delta_vs_top_us": 8.773978790182763,
+      "cases": {
+        "case0": 19.634000025689602,
+        "case1": 28.4659992903471,
+        "case2": 14.63599968701601,
+        "case3": 27.04400010406971
+      },
+      "seconds": 21.588849544525146
+    },
+    {
+      "name": "stage_cap_5",
+      "status": "ok",
+      "score_us": 21.691912644850895,
+      "score_seconds": 2.1691912644850893e-05,
+      "delta_vs_top_us": 8.778509120208636,
+      "cases": {
+        "case0": 19.60999984294176,
+        "case1": 28.37400045245886,
+        "case2": 14.775999821722507,
+        "case3": 26.929999701678753
+      },
+      "seconds": 21.602848529815674
+    },
+    {
+      "name": "cache_A_last_B_last",
+      "status": "ok",
+      "score_us": 21.854552916918518,
+      "score_seconds": 2.1854552916918516e-05,
+      "delta_vs_top_us": 8.941149392276259,
+      "cases": {
+        "case0": 20.188000053167343,
+        "case1": 28.478000313043594,
+        "case2": 14.644000213593245,
+        "case3": 27.096000500023365
+      },
+      "seconds": 21.662944078445435
+    },
+    {
+      "name": "cache_A_first_B_normal",
+      "status": "ok",
+      "score_us": 21.870008357945206,
+      "score_seconds": 2.1870008357945208e-05,
+      "delta_vs_top_us": 8.956604833302947,
+      "cases": {
+        "case0": 20.395999774336815,
+        "case1": 28.541999869048595,
+        "case2": 14.694000128656626,
+        "case3": 26.743999682366848
+      },
+      "seconds": 21.713633060455322
+    },
+    {
+      "name": "stage_cap_4",
+      "status": "ok",
+      "score_us": 22.026113035687285,
+      "score_seconds": 2.2026113035687285e-05,
+      "delta_vs_top_us": 9.112709511045026,
+      "cases": {
+        "case0": 20.956000313162804,
+        "case1": 28.459999710321426,
+        "case2": 14.648000244051218,
+        "case3": 26.941999793052673
+      },
+      "seconds": 21.567100286483765
+    },
+    {
+      "name": "cache_A_first_B_normal_stage_cap_5",
+      "status": "ok",
+      "score_us": 22.27563427653742,
+      "score_seconds": 2.227563427653742e-05,
+      "delta_vs_top_us": 9.362230751895162,
+      "cases": {
+        "case0": 21.367999725043774,
+        "case1": 28.50000001490116,
+        "case2": 15.058000106364489,
+        "case3": 26.850000023841858
+      },
+      "seconds": 21.025540590286255
+    }
+  ],
+  "settings": {
+    "warmup": 1,
+    "repeats": 2,
+    "inputs_per_repeat": 8,
+    "timeout_seconds": 420
+  }
+}

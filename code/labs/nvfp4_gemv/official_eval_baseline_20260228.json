@@ -1,0 +1,53 @@
+{
+  "submission_file": "labs/nvfp4_gemv/baseline_submission.py",
+  "official_root": "/tmp/reference-kernels-gpumode/problems/nvidia",
+  "work_dir": "/tmp/nvfp4_gemv_official_eval_r5su73he",
+  "returncode": 0,
+  "check": "pass",
+  "score_seconds": 0.00020371051952720428,
+  "score_us": 203.71051952720427,
+  "settings": {
+    "seed": null,
+    "lock_gpu_clocks": true,
+    "sm_clock_mhz": 1500,
+    "mem_clock_mhz": null
+  },
+  "cases": [
+    {
+      "index": 0,
+      "name": "case0",
+      "spec": "m: 7168; k: 16384; l: 1; seed: 1111",
+      "runs": 135,
+      "mean_ns": 119538.25409765597,
+      "mean_us": 119.53825409765597,
+      "std_ns": 1381.301710746486,
+      "err_ns": 118.88352270686566,
+      "best_ns": 116704.00202274323,
+      "worst_ns": 120863.99644613266
+    },
+    {
+      "index": 1,
+      "name": "case1",
+      "spec": "m: 4096; k: 7168; l: 8; seed: 1111",
+      "runs": 43,
+      "mean_ns": 439617.48619412264,
+      "mean_us": 439.61748619412265,
+      "std_ns": 2821.1040408077483,
+      "err_ns": 430.21433298271563,
+      "best_ns": 435680.00197410583,
+      "worst_ns": 451903.9988517761
+    },
+    {
+      "index": 2,
+      "name": "case2",
+      "spec": "m: 7168; k: 2048; l: 4; seed: 1111",
+      "runs": 237,
+      "mean_ns": 160863.8660942955,
+      "mean_us": 160.86386609429547,
+      "std_ns": 2473.189584388564,
+      "err_ns": 160.65092697814427,
+      "best_ns": 154208.0044746399,
+      "worst_ns": 166495.99373340607
+    }
+  ]
+}

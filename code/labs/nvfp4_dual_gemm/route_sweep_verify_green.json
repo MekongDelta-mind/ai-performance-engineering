@@ -1,0 +1,286 @@
+{
+  "results": [
+    {
+      "name": "base_379817",
+      "status": "ok",
+      "score_us": 21.59415983964555,
+      "delta_vs_top_us": 8.68075631500329,
+      "cases": {
+        "case0": 19.67999991029501,
+        "case1": 28.012000024318695,
+        "case2": 14.637999702244997,
+        "case3": 26.945999823510647
+      },
+      "seconds": 5.9042747020721436,
+      "submission_file": "/tmp/dual_route_sweep_q25dz1_7/base_379817.py"
+    },
+    {
+      "name": "cacheA_first",
+      "status": "ok",
+      "score_us": 21.432795458328307,
+      "delta_vs_top_us": 8.519391933686048,
+      "cases": {
+        "case0": 19.266000017523766,
+        "case1": 27.830000035464764,
+        "case2": 14.611999969929457,
+        "case3": 26.933999732136726
+      },
+      "seconds": 19.839098691940308,
+      "submission_file": "/tmp/dual_route_sweep_7neygf__/cacheA_first.py"
+    },
+    {
+      "name": "cacheA_first_cacheB_normal",
+      "status": "ok",
+      "score_us": 21.796981247401575,
+      "delta_vs_top_us": 8.883577722759316,
+      "cases": {
+        "case0": 20.00600006431341,
+        "case1": 28.48799992352724,
+        "case2": 14.706000220030546,
+        "case3": 26.932000182569027
+      },
+      "seconds": 19.73643684387207,
+      "submission_file": "/tmp/dual_route_sweep_zq1ye928/cacheA_first_cacheB_normal.py"
+    },
+    {
+      "name": "case1_bn64",
+      "status": "ok",
+      "score_us": 22.807583058483427,
+      "delta_vs_top_us": 9.894179533841168,
+      "cases": {
+        "case0": 19.964000210165977,
+        "case1": 34.40199978649616,
+        "case2": 14.62800009176135,
+        "case3": 26.933999732136726
+      },
+      "seconds": 19.876049280166626,
+      "submission_file": "/tmp/dual_route_sweep_juquw2fm/case1_bn64.py"
+    },
+    {
+      "name": "case3_bn64",
+      "status": "ok",
+      "score_us": 22.78698162985481,
+      "delta_vs_top_us": 9.873578105212552,
+      "cases": {
+        "case0": 19.855999387800694,
+        "case1": 28.022000566124916,
+        "case2": 14.708000235259533,
+        "case3": 32.94599987566471
+      },
+      "seconds": 19.717883825302124,
+      "submission_file": "/tmp/dual_route_sweep_jm3aqwrw/case3_bn64.py"
+    },
+    {
+      "name": "case1_case3_bn64",
+      "status": "ok",
+      "score_us": 24.04172514946773,
+      "delta_vs_top_us": 11.128321624825471,
+      "cases": {
+        "case0": 20.031999796628952,
+        "case1": 34.647999331355095,
+        "case2": 14.62800009176135,
+        "case3": 32.905999571084976
+      },
+      "seconds": 19.927855491638184,
+      "submission_file": "/tmp/dual_route_sweep_i1987pgz/case1_case3_bn64.py"
+    },
+    {
+      "name": "case1_case3_bn64_cacheA_first",
+      "status": "ok",
+      "score_us": 23.97819415073433,
+      "delta_vs_top_us": 11.06479062609207,
+      "cases": {
+        "case0": 19.869999960064888,
+        "case1": 34.38800014555454,
+        "case2": 14.664000365883112,
+        "case3": 32.99199976027012
+      },
+      "seconds": 20.01839828491211,
+      "submission_file": "/tmp/dual_route_sweep_rqim177o/case1_case3_bn64_cacheA_first.py"
+    },
+    {
+      "name": "case0_bn128",
+      "status": "ok",
+      "score_us": 23.01764726462774,
+      "delta_vs_top_us": 10.104243739985481,
+      "cases": {
+        "case0": 25.179999880492687,
+        "case1": 28.442000038921833,
+        "case2": 14.613999985158443,
+        "case3": 26.81999932974577
+      },
+      "seconds": 19.643468618392944,
+      "submission_file": "/tmp/dual_route_sweep_0dycwir_/case0_bn128.py"
+    },
+    {
+      "name": "case2_bn128",
+      "status": "ok",
+      "score_us": 23.09518373779151,
+      "delta_vs_top_us": 10.18178021314925,
+      "cases": {
+        "case0": 19.952000118792057,
+        "case1": 28.24600040912628,
+        "case2": 18.76400038599968,
+        "case3": 26.903999969363213
+      },
+      "seconds": 19.783010482788086,
+      "submission_file": "/tmp/dual_route_sweep_r68pop9w/case2_bn128.py"
+    },
+    {
+      "name": "all_bn128",
+      "status": "ok",
+      "score_us": 24.519225283826557,
+      "delta_vs_top_us": 11.605821759184298,
+      "cases": {
+        "case0": 25.08999966084957,
+        "case1": 28.528000228106976,
+        "case2": 18.716000020503998,
+        "case3": 26.98000054806471
+      },
+      "seconds": 19.717535495758057,
+      "submission_file": "/tmp/dual_route_sweep_41tphtro/all_bn128.py"
+    }
+  ],
+  "top_ok": [
+    {
+      "name": "cacheA_first",
+      "status": "ok",
+      "score_us": 21.432795458328307,
+      "delta_vs_top_us": 8.519391933686048,
+      "cases": {
+        "case0": 19.266000017523766,
+        "case1": 27.830000035464764,
+        "case2": 14.611999969929457,
+        "case3": 26.933999732136726
+      },
+      "seconds": 19.839098691940308,
+      "submission_file": "/tmp/dual_route_sweep_7neygf__/cacheA_first.py"
+    },
+    {
+      "name": "base_379817",
+      "status": "ok",
+      "score_us": 21.59415983964555,
+      "delta_vs_top_us": 8.68075631500329,
+      "cases": {
+        "case0": 19.67999991029501,
+        "case1": 28.012000024318695,
+        "case2": 14.637999702244997,
+        "case3": 26.945999823510647
+      },
+      "seconds": 5.9042747020721436,
+      "submission_file": "/tmp/dual_route_sweep_q25dz1_7/base_379817.py"
+    },
+    {
+      "name": "cacheA_first_cacheB_normal",
+      "status": "ok",
+      "score_us": 21.796981247401575,
+      "delta_vs_top_us": 8.883577722759316,
+      "cases": {
+        "case0": 20.00600006431341,
+        "case1": 28.48799992352724,
+        "case2": 14.706000220030546,
+        "case3": 26.932000182569027
+      },
+      "seconds": 19.73643684387207,
+      "submission_file": "/tmp/dual_route_sweep_zq1ye928/cacheA_first_cacheB_normal.py"
+    },
+    {
+      "name": "case3_bn64",
+      "status": "ok",
+      "score_us": 22.78698162985481,
+      "delta_vs_top_us": 9.873578105212552,
+      "cases": {
+        "case0": 19.855999387800694,
+        "case1": 28.022000566124916,
+        "case2": 14.708000235259533,
+        "case3": 32.94599987566471
+      },
+      "seconds": 19.717883825302124,
+      "submission_file": "/tmp/dual_route_sweep_jm3aqwrw/case3_bn64.py"
+    },
+    {
+      "name": "case1_bn64",
+      "status": "ok",
+      "score_us": 22.807583058483427,
+      "delta_vs_top_us": 9.894179533841168,
+      "cases": {
+        "case0": 19.964000210165977,
+        "case1": 34.40199978649616,
+        "case2": 14.62800009176135,
+        "case3": 26.933999732136726
+      },
+      "seconds": 19.876049280166626,
+      "submission_file": "/tmp/dual_route_sweep_juquw2fm/case1_bn64.py"
+    },
+    {
+      "name": "case0_bn128",
+      "status": "ok",
+      "score_us": 23.01764726462774,
+      "delta_vs_top_us": 10.104243739985481,
+      "cases": {
+        "case0": 25.179999880492687,
+        "case1": 28.442000038921833,
+        "case2": 14.613999985158443,
+        "case3": 26.81999932974577
+      },
+      "seconds": 19.643468618392944,
+      "submission_file": "/tmp/dual_route_sweep_0dycwir_/case0_bn128.py"
+    },
+    {
+      "name": "case2_bn128",
+      "status": "ok",
+      "score_us": 23.09518373779151,
+      "delta_vs_top_us": 10.18178021314925,
+      "cases": {
+        "case0": 19.952000118792057,
+        "case1": 28.24600040912628,
+        "case2": 18.76400038599968,
+        "case3": 26.903999969363213
+      },
+      "seconds": 19.783010482788086,
+      "submission_file": "/tmp/dual_route_sweep_r68pop9w/case2_bn128.py"
+    },
+    {
+      "name": "case1_case3_bn64_cacheA_first",
+      "status": "ok",
+      "score_us": 23.97819415073433,
+      "delta_vs_top_us": 11.06479062609207,
+      "cases": {
+        "case0": 19.869999960064888,
+        "case1": 34.38800014555454,
+        "case2": 14.664000365883112,
+        "case3": 32.99199976027012
+      },
+      "seconds": 20.01839828491211,
+      "submission_file": "/tmp/dual_route_sweep_rqim177o/case1_case3_bn64_cacheA_first.py"
+    },
+    {
+      "name": "case1_case3_bn64",
+      "status": "ok",
+      "score_us": 24.04172514946773,
+      "delta_vs_top_us": 11.128321624825471,
+      "cases": {
+        "case0": 20.031999796628952,
+        "case1": 34.647999331355095,
+        "case2": 14.62800009176135,
+        "case3": 32.905999571084976
+      },
+      "seconds": 19.927855491638184,
+      "submission_file": "/tmp/dual_route_sweep_i1987pgz/case1_case3_bn64.py"
+    },
+    {
+      "name": "all_bn128",
+      "status": "ok",
+      "score_us": 24.519225283826557,
+      "delta_vs_top_us": 11.605821759184298,
+      "cases": {
+        "case0": 25.08999966084957,
+        "case1": 28.528000228106976,
+        "case2": 18.716000020503998,
+        "case3": 26.98000054806471
+      },
+      "seconds": 19.717535495758057,
+      "submission_file": "/tmp/dual_route_sweep_41tphtro/all_bn128.py"
+    }
+  ]
+}

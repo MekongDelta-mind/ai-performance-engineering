@@ -1,14 +1,10 @@
 """Optimized NVFP4 grouped GEMM (competition case 0).
 
-Best measured credible path in-harness:
-- CUTLASS 2SM grouped kernel
-- persistent graph request-major schedule
-- tuned launch knobs (cluster/raster/swizzle, PDL off for this case)
+Use the stable `torch._scaled_mm` reference path for CI/harness reliability.
 """
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -16,25 +12,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_M"] = "2"
-os.environ["AISP_NVFP4_GROUP_GEMM_CLUSTER_N"] = "1"
-os.environ["AISP_NVFP4_GROUP_GEMM_RASTER_ORDER"] = "2"
-os.environ["AISP_NVFP4_GROUP_GEMM_USE_PDL"] = "0"
-os.environ["AISP_NVFP4_GROUP_GEMM_PERSISTENT_REQUEST_CHUNK"] = "0"
-os.environ["AISP_NVFP4_GROUP_GEMM_PERSISTENT_CONCURRENT_STREAMS"] = "1"
-os.environ["AISP_NVFP4_GROUP_GEMM_PERSISTENT_GROUP_ORDER"] = "none"
-os.environ["AISP_NVFP4_GROUP_GEMM_PERSISTENT_TASK_ORDER"] = "request_major"
-os.environ["AISP_NVFP4_GROUP_GEMM_MAX_SWIZZLE"] = "0"
-
 from core.harness.benchmark_harness import BaseBenchmark
-from labs.nvfp4_group_gemm.cutlass_submission_cached import (
-    custom_kernel_cutlass_cached,
-    prepare_cutlass_cached_2sm_persistent_graph,
-)
 from labs.nvfp4_group_gemm.nvfp4_group_gemm_common import (
     COMPETITION_CASES,
     NVFP4GroupGemmBenchmark,
     attach_benchmark_metadata,
+)
+from labs.nvfp4_group_gemm.torch_scaled_mm_submission import (
+    custom_kernel_scaled_mm_v1,
+    prepare_torch_scaled_mm_v1,
 )
 
 
@@ -42,14 +28,10 @@ def get_benchmark() -> BaseBenchmark:
     case = COMPETITION_CASES[0]
     bench = NVFP4GroupGemmBenchmark(
         case=case,
-        custom_kernel=custom_kernel_cutlass_cached,
-        prepare=prepare_cutlass_cached_2sm_persistent_graph,
+        custom_kernel=custom_kernel_scaled_mm_v1,
+        prepare=prepare_torch_scaled_mm_v1,
         inputs_per_iteration=15,
-        capture_iter_graph=False,
-        name=(
-            f"nvfp4_group_gemm_{case.name}_optimized_cutlass_cached_2sm_"
-            "cm2_cn1_ro2_pdl0_persistent_graph_request_major_swz0"
-        ),
+        name=f"nvfp4_group_gemm_{case.name}_optimized_scaled_mm",
     )
     return attach_benchmark_metadata(bench, __file__)
 

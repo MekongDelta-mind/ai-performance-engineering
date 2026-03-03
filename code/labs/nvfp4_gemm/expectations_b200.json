@@ -1,0 +1,60 @@
+{
+  "examples": {
+    "nvfp4_gemm_cuda": {
+      "example": "nvfp4_gemm",
+      "metadata": {
+        "best_memory_savings_pct": -0.00032930700633586676,
+        "best_memory_savings_ratio": 0.9999967069407809,
+        "best_optimization": "optimized_nvfp4_gemm",
+        "best_optimization_file": "optimized_nvfp4_gemm.py",
+        "best_optimization_memory_mb": 148.27587890625,
+        "best_optimization_speedup": 1.4859579244385897,
+        "best_optimization_technique": "optimized_nvfp4_gemm",
+        "best_optimization_time_ms": 0.0128293,
+        "optimization_goal": "speed"
+      },
+      "metrics": {
+        "baseline_memory_mb": 148.275390625,
+        "baseline_p75_ms": 0.0190638,
+        "baseline_throughput.bytes_per_s": null,
+        "baseline_throughput.custom_unit_name": null,
+        "baseline_throughput.custom_unit_per_s": null,
+        "baseline_throughput.goodput": null,
+        "baseline_throughput.latency_ms": 0.0190638,
+        "baseline_throughput.requests_per_s": 52455.43910448075,
+        "baseline_throughput.samples_per_s": null,
+        "baseline_throughput.schemaVersion": "1.0",
+        "baseline_throughput.tokens_per_s": null,
+        "baseline_time_ms": 0.0190638,
+        "best_memory_savings_pct": -0.00032930700633586676,
+        "best_memory_savings_ratio": 0.9999967069407809,
+        "best_optimized_memory_mb": 148.27587890625,
+        "best_optimized_p75_ms": 0.0128293,
+        "best_optimized_speedup": 1.4859579244385897,
+        "best_optimized_throughput.bytes_per_s": null,
+        "best_optimized_throughput.custom_unit_name": null,
+        "best_optimized_throughput.custom_unit_per_s": null,
+        "best_optimized_throughput.goodput": null,
+        "best_optimized_throughput.latency_ms": 0.0128293,
+        "best_optimized_throughput.requests_per_s": 77946.57541720905,
+        "best_optimized_throughput.samples_per_s": null,
+        "best_optimized_throughput.schemaVersion": "1.0",
+        "best_optimized_throughput.tokens_per_s": null,
+        "best_optimized_time_ms": 0.0128293,
+        "best_speedup": 1.4859579244385897,
+        "is_regression": false
+      },
+      "provenance": {
+        "git_commit": "d6e32769490215d76082ab3082f04d94f3556ef7",
+        "hardware_key": "b200",
+        "iterations": 1,
+        "profile_name": "none",
+        "timestamp": "2026-03-01T14:52:05.674458",
+        "warmup_iterations": 5
+      },
+      "type": "cuda"
+    }
+  },
+  "hardware_key": "b200",
+  "schema_version": 2
+}

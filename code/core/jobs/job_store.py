@@ -82,7 +82,7 @@ class JobStore:
             expired: List[str] = []
             for job_id, record in list(self._store.items()):
                 status = record.get("status")
-                if status == "running":
+                if status in {"running", "queued"}:
                     continue
                 ts = record.get("finished_at") or record.get("submitted_at") or 0.0
                 try:
@@ -99,7 +99,7 @@ class JobStore:
             completed: List[Tuple[float, str]] = []
             for job_id, record in self._store.items():
                 status = record.get("status")
-                if status == "running":
+                if status in {"running", "queued"}:
                     continue
                 ts = record.get("finished_at") or record.get("submitted_at") or 0.0
                 try:
@@ -127,7 +127,7 @@ class JobStore:
         record: JobRecord = {
             "job_id": job_id,
             "tool": tool_name,
-            "status": "running",
+            "status": "queued",
             "submitted_at": submitted_at,
             "arguments": arguments or {},
         }
@@ -145,6 +145,14 @@ class JobStore:
             self._store[job_id] = record
 
         def _runner():
+            started_at = time.time()
+            with self._lock:
+                record.update(
+                    {
+                        "status": "running",
+                        "started_at": started_at,
+                    }
+                )
             try:
                 result = runner()
                 result_is_error = (
@@ -171,7 +179,7 @@ class JobStore:
         self._executor.submit(_runner)
         ticket = JobTicket(
             job_id=job_id,
-            status="started",
+            status="queued",
             tool=tool_name,
             submitted_at=submitted_at,
             note="Poll job status to track completion.",

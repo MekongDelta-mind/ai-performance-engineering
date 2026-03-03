@@ -318,6 +318,7 @@ try:
         generate_markdown_report,
         BenchmarkEventLogger,
         emit_event,
+        _preflight_target_coverage_and_assets,
     )
 
     BENCHMARK_AVAILABLE = True
@@ -482,6 +483,28 @@ def _execute_benchmarks(
         chapter_dirs, chapter_filters = resolve_target_chapters(targets, bench_root=active_bench_root)
     except (ValueError, FileNotFoundError) as exc:
         logger.error(str(exc))
+        sys.exit(1)
+    explicit_targets = bool(targets) and not all(
+        str(target).strip().lower() == "all" for target in targets
+    )
+    preflight_issues = _preflight_target_coverage_and_assets(
+        chapter_dirs,
+        chapter_filters,
+        only_cuda=bool(only_cuda),
+        only_python=bool(only_python),
+        target_extra_args=parsed_extra_args,
+    )
+    if preflight_issues:
+        for issue in preflight_issues:
+            logger.error("PREFLIGHT FAILED: %s", issue)
+        emit_event(
+            event_logger,
+            logger,
+            "run_end",
+            preflight_failed=True,
+            issues=preflight_issues,
+        )
+        event_logger.close()
         sys.exit(1)
 
     def _classify_target_dir(path: Path) -> str:
@@ -860,6 +883,7 @@ def _execute_benchmarks(
             llm_patch_retries=llm_patch_retries,
             use_llm_cache=use_llm_cache,
             llm_explain=llm_explain,
+            fail_on_no_benchmarks=explicit_targets,
             event_logger=event_logger,
         )
         all_results.append(result)
@@ -897,7 +921,21 @@ def _execute_benchmarks(
         generate_markdown_report(all_results, output_md, bench_root=active_bench_root)
         logger.info(f"Markdown report saved to: {output_md}")
 
-    total_failed = sum(r.get("summary", {}).get("failed", 0) for r in all_results)
+    def _failed_count(summary: Dict[str, Any]) -> int:
+        summary_failed = int(summary.get("failed", 0) or 0)
+        derived_failed = sum(
+            int(summary.get(key, 0) or 0)
+            for key in (
+                "failed_error",
+                "failed_verification",
+                "failed_regression",
+                "failed_generic",
+                "failed_other",
+            )
+        )
+        return max(summary_failed, derived_failed)
+
+    total_failed = sum(_failed_count(r.get("summary", {})) for r in all_results)
     total_successful = sum(r.get("summary", {}).get("successful", 0) for r in all_results)
     total_skipped = sum(r.get("summary", {}).get("total_skipped", 0) for r in all_results)
     emit_event(

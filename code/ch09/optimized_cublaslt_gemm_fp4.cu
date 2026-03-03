@@ -210,26 +210,24 @@ int main() {
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_A_SCALE_MODE, &scaleMode, sizeof(scaleMode)));
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_B_SCALE_MODE, &scaleMode, sizeof(scaleMode)));
 
-    // Set scale pointers
-    void* d_A_scales_ptr = d_A_scales;
-    void* d_B_scales_ptr = d_B_scales;
+    // We intentionally use the same col-major reinterpretation strategy as the FP8 path:
+    // operand A uses original B storage, operand B uses original A storage.
+    // Scale pointers must follow that logical operand mapping.
+    void* d_A_scales_ptr = d_B_scales;
+    void* d_B_scales_ptr = d_A_scales;
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_A_SCALE_POINTER, &d_A_scales_ptr, sizeof(d_A_scales_ptr)));
     CUBLASLT_CHECK(cublasLtMatmulDescSetAttribute(matmulDesc, CUBLASLT_MATMUL_DESC_B_SCALE_POINTER, &d_B_scales_ptr, sizeof(d_B_scales_ptr)));
 
-    // Matrix layouts (row-major)
+    // Matrix layouts (col-major reinterpretation, consistent with optimized_cublaslt_gemm_fp8.cu).
     // Note: Leading dimensions / batch strides are expressed in elements (nibbles for FP4), not bytes.
     cublasLtMatrixLayout_t layoutA, layoutB, layoutC;
-    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutA, CUDA_R_4F_E2M1, M, K, K));
-    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutB, CUDA_R_4F_E2M1, K, N, N));
-    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutC, CUDA_R_16F, M, N, N));
-    cublasLtOrder_t order = CUBLASLT_ORDER_ROW;
-    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutA, CUBLASLT_MATRIX_LAYOUT_ORDER, &order, sizeof(order)));
-    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutB, CUBLASLT_MATRIX_LAYOUT_ORDER, &order, sizeof(order)));
-    CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutC, CUBLASLT_MATRIX_LAYOUT_ORDER, &order, sizeof(order)));
+    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutA, CUDA_R_4F_E2M1, N, K, N));  // logical A = B_row
+    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutB, CUDA_R_4F_E2M1, K, M, K));  // logical B = A_row
+    CUBLASLT_CHECK(cublasLtMatrixLayoutCreate(&layoutC, CUDA_R_16F, N, M, N));       // C_row as C_col (NxM)
 
     const int batch_count = kBatchCount;
-    const long long strideA = static_cast<long long>(M) * K;
-    const long long strideB = static_cast<long long>(K) * N;
+    const long long strideA = static_cast<long long>(K) * N;
+    const long long strideB = static_cast<long long>(M) * K;
     const long long strideC = static_cast<long long>(M) * N;
     CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutA, CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET, &strideA, sizeof(strideA)));
     CUBLASLT_CHECK(cublasLtMatrixLayoutSetAttribute(layoutB, CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET, &strideB, sizeof(strideB)));
@@ -293,8 +291,8 @@ int main() {
         NVTX_RANGE("compute_math:ltmatmul");
         CUBLASLT_CHECK(cublasLtMatmul(ltHandle, matmulDesc,
                                        &alpha,
-                                       d_A, layoutA,
-                                       d_B, layoutB,
+                                       d_B, layoutA,
+                                       d_A, layoutB,
                                        &beta,
                                        d_C, layoutC,
                                        d_C, layoutC,
@@ -314,8 +312,8 @@ int main() {
         NVTX_RANGE("compute_math:ltmatmul");
         CUBLASLT_CHECK(cublasLtMatmul(ltHandle, matmulDesc,
                                        &alpha,
-                                       d_A, layoutA,
-                                       d_B, layoutB,
+                                       d_B, layoutA,
+                                       d_A, layoutB,
                                        &beta,
                                        d_C, layoutC,
                                        d_C, layoutC,

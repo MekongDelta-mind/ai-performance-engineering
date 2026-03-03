@@ -10,6 +10,8 @@ incrementally once the IO contract is stable.
 from __future__ import annotations
 
 import builtins
+import hashlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -25,7 +27,6 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 _EXT_BASE_NAME = "nvfp4_group_gemm_v2_custom_cuda_scalar_v2"
-_EXT_NAME = os.getenv("AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME", _EXT_BASE_NAME).strip() or _EXT_BASE_NAME
 _EXT: Optional[object] = None
 
 
@@ -83,6 +84,16 @@ def _select_kernel_variant() -> tuple[str, str]:
 
 def _active_kernel_variant_token() -> str:
     return _env_str("AISP_NVFP4_GROUP_GEMM_V2_KERNEL_VARIANT", "").strip().lower()
+
+
+def _compile_config_hash(*, source_file: str, extra_cuda_cflags: Sequence[str]) -> str:
+    """Stable short hash for compile-time config to avoid stale extension reuse."""
+    payload = {
+        "source_file": str(source_file),
+        "extra_cuda_cflags": [str(flag) for flag in extra_cuda_cflags],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha1(encoded).hexdigest()[:12]
 
 
 def _build_ab_tma_descs_compat(
@@ -156,31 +167,15 @@ def load_v2_custom_cuda_nvfp4_group_gemm(*, verbose: bool = False) -> object:
 
     Optional build namespace override:
       - ``AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME=<name>``
-        Useful when running concurrent benchmark/profiling jobs to avoid
-        colliding torch-extension build directories.
+        Useful when running concurrent benchmark/profiling jobs.
+        The effective extension name appends a deterministic compile-config hash.
     """
     global _EXT
 
     source_file, ext_suffix = _select_kernel_variant()
-    ext_base = os.getenv("AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME", _EXT_BASE_NAME).strip() or _EXT_BASE_NAME
-    ext_name = f"{ext_base}{ext_suffix}"
-
-    if _EXT is not None and getattr(_EXT, "__name__", None) == ext_name:
-        return _EXT
-
-    process_cache = _get_process_extension_cache()
-    cached = process_cache.get(ext_name)
-    if cached is not None:
-        _EXT = cached
-        return _EXT
-    if ext_name in sys.modules:
-        _EXT = sys.modules[ext_name]
-        process_cache[ext_name] = _EXT
-        return _EXT
 
     lab_dir = Path(__file__).resolve().parent
     source = lab_dir / source_file
-    build_dir = REPO_ROOT / ".torch_extensions" / ext_name
 
     extra_cuda_cflags = [
         "--std=c++17",
@@ -206,8 +201,8 @@ def load_v2_custom_cuda_nvfp4_group_gemm(*, verbose: bool = False) -> object:
                 f"(second N128 half was zero) for mxf4nvf4.block_scale.block16. Use UnrollN=2 with two N128 UMMA ops."
             )
     # Compile-time tuning knobs (kept explicit to avoid global default drift).
-    # These control constexprs in `custom_cuda_group_gemm_kernel.cu`, so changing them requires
-    # rebuilding the extension under a new `AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME`.
+    # These control constexprs in `custom_cuda_group_gemm_kernel.cu`; compile-config hashing in
+    # `ext_name` below ensures knob changes trigger a distinct extension build automatically.
     pipeline_stages = os.getenv("AISP_NVFP4_GROUP_GEMM_V2_PIPELINE_STAGES")
     if pipeline_stages is not None and pipeline_stages.strip() != "":
         extra_cuda_cflags.append(f"-DNVFP4_GROUP_GEMM_V2_PIPELINE_STAGES={int(pipeline_stages)}")
@@ -363,6 +358,25 @@ def load_v2_custom_cuda_nvfp4_group_gemm(*, verbose: bool = False) -> object:
     maxrregcount = os.getenv("AISP_NVFP4_GROUP_GEMM_V2_MAXRREGCOUNT")
     if maxrregcount is not None and maxrregcount.strip() != "":
         extra_cuda_cflags.append(f"--maxrregcount={int(maxrregcount)}")
+
+    ext_base = os.getenv("AISP_NVFP4_GROUP_GEMM_V2_EXT_NAME", _EXT_BASE_NAME).strip() or _EXT_BASE_NAME
+    cfg_hash = _compile_config_hash(source_file=source_file, extra_cuda_cflags=extra_cuda_cflags)
+    ext_name = f"{ext_base}{ext_suffix}__cfg_{cfg_hash}"
+    build_dir = REPO_ROOT / ".torch_extensions" / ext_name
+
+    if _EXT is not None and getattr(_EXT, "__name__", None) == ext_name:
+        return _EXT
+
+    process_cache = _get_process_extension_cache()
+    cached = process_cache.get(ext_name)
+    if cached is not None:
+        _EXT = cached
+        return _EXT
+    if ext_name in sys.modules:
+        _EXT = sys.modules[ext_name]
+        process_cache[ext_name] = _EXT
+        return _EXT
+
     _EXT = load_cuda_extension(
         extension_name=ext_name,
         cuda_source_file=str(source),
@@ -896,8 +910,8 @@ def prepare_v2_custom_cuda_tcgen05(data_list: Sequence[input_t]) -> Optional[Seq
     # Optional launch optimization: fuse the full inputs-per-iteration request set into one
     # grouped tcgen05 launch. Workload is unchanged (same requests and same tensors), but
     # per-iteration launch overhead is reduced by issuing one large grouped kernel.
-    if _env_flag("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS", 0) and len(prepared) > 1:
-        compress_fused_inputs = _env_flag("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS_COMPRESS_LIST", 0)
+    if _env_flag("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS", 1) and len(prepared) > 1:
+        compress_fused_inputs = _env_flag("AISP_NVFP4_GROUP_GEMM_V2_FUSE_INPUTS_COMPRESS_LIST", 1)
         grouped_ctxs = [entry[4]["grouped_ctx"] for entry in prepared]
         cat_keys = (
             "a_ptrs",

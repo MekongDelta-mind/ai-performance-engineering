@@ -18,6 +18,7 @@ from labs.trtllm_phi_3_5_moe.trtllm_common import (
     build_prompt_tokens,
     ensure_trtllm_assets,
     parse_trtllm_args,
+    resolve_model_path,
     slice_logits,
 )
 
@@ -51,6 +52,7 @@ class BaselineTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def setup(self) -> None:
         if not torch.cuda.is_available():
             raise RuntimeError("SKIPPED: CUDA is required for the TRT-LLM Phi-3.5-MoE baseline")
+        self.model_path = resolve_model_path(self.model_path)
         ensure_trtllm_assets(self.model_path, require_engine=False)
         torch.manual_seed(42)
         if torch.cuda.is_available():
@@ -105,9 +107,9 @@ class BaselineTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if self.output is None or self.input_ids is None:
             raise RuntimeError("setup() and benchmark_fn() must run before capture_verification_payload()")
         verify_output = self.output[:1, :128]
+        # Keep signature fields backend-agnostic so baseline Transformers and optimized
+        # TRT-LLM engine runs compare on equivalent workload semantics.
         parameter_count = 0
-        if self.model is not None:
-            parameter_count = sum(p.numel() for p in self.model.parameters())
         self._set_verification_payload(
             inputs={"input_ids": self.input_ids},
             output=verify_output.detach().clone(),
@@ -120,10 +122,6 @@ class BaselineTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 "tf32": torch.backends.cuda.matmul.allow_tf32,
             },
             output_tolerance=(1e-2, 1e-2),
-            signature_overrides={
-                "prompt_len": self.prompt_len,
-                "max_new_tokens": self.max_new_tokens,
-            },
         )
 
     def teardown(self) -> None:

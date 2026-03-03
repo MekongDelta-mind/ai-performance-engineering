@@ -2977,6 +2977,7 @@ def _test_chapter_impl(
     llm_explain: bool = False,
     progress_recorder: Optional[ProgressRecorder] = None,
     event_logger: Optional["BenchmarkEventLogger"] = None,
+    fail_on_no_benchmarks: bool = False,
 ) -> Dict[str, Any]:
     """Test all benchmarks in a chapter and return results.
     
@@ -3240,6 +3241,19 @@ def _test_chapter_impl(
     total_benchmarks = len(python_pairs) + len(cuda_pairs)
     logger.info(f"  Benchmark counts -> python: {len(python_pairs)}, cuda: {len(cuda_pairs)}, total: {total_benchmarks}")
     if not total_benchmarks:
+        if fail_on_no_benchmarks:
+            return {
+                'chapter': chapter_name,
+                'status': 'failed_no_benchmarks',
+                'reason': 'No baseline/optimized pairs found for explicitly requested target',
+                'benchmarks': [],
+                'summary': {
+                    'total_benchmarks': 0,
+                    'successful': 0,
+                    'failed': 1,
+                    'failed_generic': 1,
+                }
+            }
         return {
             'chapter': chapter_name,
             'status': 'no_benchmarks',
@@ -8756,6 +8770,7 @@ def test_chapter(
     llm_explain: bool = False,
     progress_recorder: Optional[ProgressRecorder] = None,
     event_logger: Optional["BenchmarkEventLogger"] = None,
+    fail_on_no_benchmarks: bool = False,
 ) -> Dict[str, Any]:
     return _test_chapter_impl(
         chapter_dir,
@@ -8807,6 +8822,7 @@ def test_chapter(
         llm_explain=llm_explain,
         progress_recorder=progress_recorder,
         event_logger=event_logger,
+        fail_on_no_benchmarks=fail_on_no_benchmarks,
     )
 
 
@@ -8833,6 +8849,7 @@ def generate_markdown_report(
         completed = sum(1 for r in results if r['status'] == 'completed')
         skipped = sum(1 for r in results if r['status'] == 'skipped')
         no_benchmarks = sum(1 for r in results if r['status'] == 'no_benchmarks')
+        failed_chapters = sum(1 for r in results if str(r.get('status', '')).startswith('failed'))
         
         total_benchmarks = sum(r['summary']['total_benchmarks'] for r in results)
         total_successful = sum(r['summary']['successful'] for r in results)
@@ -8850,6 +8867,7 @@ def generate_markdown_report(
         f.write("## Overall Summary\n\n")
         f.write(f"- **Chapters tested:** {completed}/{total_chapters}\n")
         f.write(f"- **Chapters skipped:** {skipped} (CUDA unavailable)\n")
+        f.write(f"- **Chapters failed:** {failed_chapters}\n")
         f.write(f"- **Chapters with no benchmarks:** {no_benchmarks}\n")
         total_skipped_hw = sum(r['summary'].get('skipped_hardware', 0) for r in results)
         total_informational = sum(r['summary'].get('informational', 0) for r in results)
@@ -8926,6 +8944,7 @@ def generate_markdown_report(
                 'completed': 'PASS',
                 'skipped': 'SKIP',
                 'no_benchmarks': 'WARN',
+                'failed_no_benchmarks': 'FAIL',
             }.get(r['status'], 'UNKNOWN')
             
             summary = r['summary']
@@ -9123,6 +9142,142 @@ def generate_markdown_report(
                 f.write("\n")
             
             f.write("\n")
+
+
+def _extract_cli_flag_value(argv: List[str], flag: str) -> Optional[str]:
+    for idx, token in enumerate(argv):
+        if token == flag:
+            if idx + 1 < len(argv):
+                return argv[idx + 1]
+            return None
+        if token.startswith(f"{flag}="):
+            return token.split("=", 1)[1]
+    return None
+
+
+def _resolve_target_override_path(
+    target_extra_args: Dict[str, List[str]],
+    *,
+    chapter_name: str,
+    flag: str,
+) -> Optional[Path]:
+    for target_key, argv in target_extra_args.items():
+        chapter_token = target_key.split(":", 1)[0].replace("\\", "/")
+        normalized = chapter_token.replace("/", "_")
+        if normalized != chapter_name:
+            continue
+        value = _extract_cli_flag_value(list(argv), flag)
+        if value and value.strip():
+            return Path(value.strip()).expanduser()
+    return None
+
+
+def _preflight_target_coverage_and_assets(
+    chapter_dirs: List[Path],
+    chapter_filters: Dict[str, Set[str]],
+    *,
+    only_cuda: bool,
+    only_python: bool,
+    target_extra_args: Dict[str, List[str]],
+) -> List[str]:
+    issues: List[str] = []
+    include_alias_pairs = os.environ.get("AISP_INCLUDE_ALIAS_BENCHMARKS", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+    def _is_cuda_wrapper_pair(pair: Tuple[Path, List[Path], str]) -> bool:
+        baseline_path = pair[0]
+        try:
+            text = baseline_path.read_text(encoding="utf-8")
+        except Exception:
+            return False
+        # Match the harness wrapper contract used across chapter/lab CUDA wrappers.
+        return "CudaBinaryBenchmark" in text and "cuda_binary_path" in text
+
+    for chapter_dir in chapter_dirs:
+        chapter_id = chapter_slug(chapter_dir, repo_root)
+        chapter_name = chapter_id.replace("/", "_")
+        example_filters = chapter_filters.get(chapter_id)
+
+        python_pairs = discover_benchmarks(chapter_dir, warn_missing=False)
+        if example_filters:
+            python_pairs = [pair for pair in python_pairs if pair[2] in example_filters]
+        if not example_filters and not include_alias_pairs:
+            python_pairs = [
+                pair
+                for pair in python_pairs
+                if pair[2] == pair[0].stem.replace("baseline_", "", 1)
+            ]
+        python_pairs, _ = _canonicalize_optimized_variants_for_full_sweep(
+            chapter_id,
+            python_pairs,
+            include_alias_pairs=include_alias_pairs,
+            example_filters=example_filters,
+        )
+        if only_cuda or only_python:
+            cuda_wrapped_pairs = [pair for pair in python_pairs if _is_cuda_wrapper_pair(pair)]
+            if only_cuda:
+                python_pairs = cuda_wrapped_pairs
+            elif only_python:
+                python_pairs = [pair for pair in python_pairs if pair not in cuda_wrapped_pairs]
+
+        cuda_pairs = discover_cuda_benchmarks(chapter_dir)
+        if example_filters:
+            cuda_pairs = [pair for pair in cuda_pairs if pair[2] in example_filters]
+        if only_python:
+            cuda_pairs = []
+
+        total = len(python_pairs) + len(cuda_pairs)
+        if total == 0:
+            examples = ", ".join(sorted(example_filters)) if example_filters else "<all>"
+            issues.append(
+                f"{chapter_name}: no runnable benchmark pairs discovered "
+                f"(requested examples={examples}, only_cuda={only_cuda}, only_python={only_python})."
+            )
+
+        if chapter_name == "labs_trtllm_phi_3_5_moe" and not only_cuda:
+            model_override = _resolve_target_override_path(
+                target_extra_args,
+                chapter_name=chapter_name,
+                flag="--model-path",
+            )
+            engine_override = _resolve_target_override_path(
+                target_extra_args,
+                chapter_name=chapter_name,
+                flag="--engine-path",
+            )
+
+            env_model = os.environ.get("AISP_PHI35_MOE_MODEL_PATH", "").strip()
+            env_engine = os.environ.get("AISP_PHI35_MOE_ENGINE_PATH", "").strip()
+
+            model_path = model_override or (Path(env_model).expanduser() if env_model else None)
+            if model_path is None:
+                model_path = repo_root / "phi-3.5-moe" / "original"
+            if not model_path.exists():
+                issues.append(
+                    "labs_trtllm_phi_3_5_moe: missing model assets at "
+                    f"{model_path}. Remediation: set AISP_PHI35_MOE_MODEL_PATH or pass "
+                    "--target-extra-arg labs/trtllm_phi_3_5_moe:optimized_trtllm_phi_3_5_moe=\"--model-path /path/to/model\"."
+                )
+
+            engine_path = engine_override or (Path(env_engine).expanduser() if env_engine else None)
+            if engine_path is None:
+                issues.append(
+                    "labs_trtllm_phi_3_5_moe: missing TensorRT-LLM engine path. "
+                    "Remediation: set AISP_PHI35_MOE_ENGINE_PATH or pass "
+                    "--target-extra-arg labs/trtllm_phi_3_5_moe:optimized_trtllm_phi_3_5_moe=\"--engine-path /path/to/engine.plan\"."
+                )
+            elif not engine_path.exists():
+                issues.append(
+                    "labs_trtllm_phi_3_5_moe: configured TensorRT-LLM engine path does not exist at "
+                    f"{engine_path}. Remediation: rebuild/provide a valid engine and update "
+                    "AISP_PHI35_MOE_ENGINE_PATH (or --engine-path)."
+                )
+
+    return issues
 
 
 def main():
@@ -9391,6 +9546,33 @@ def main():
         memory_clock_mhz=gpu_state.get("memory_clock_mhz"),
     )
 
+    # Determine chapters to test and fail fast on unresolved target requirements.
+    try:
+        chapter_dirs, chapter_filters = resolve_target_chapters(args.targets, bench_root=active_bench_root)
+    except (ValueError, FileNotFoundError) as exc:
+        logger.error(f"ERROR: {exc}")
+        event_logger.close()
+        sys.exit(1)
+    preflight_issues = _preflight_target_coverage_and_assets(
+        chapter_dirs,
+        chapter_filters,
+        only_cuda=bool(args.only_cuda),
+        only_python=bool(args.only_python),
+        target_extra_args=extra_arg_map,
+    )
+    if preflight_issues:
+        for issue in preflight_issues:
+            logger.error("PREFLIGHT FAILED: %s", issue)
+        emit_event(
+            event_logger,
+            logger,
+            "run_end",
+            preflight_failed=True,
+            issues=preflight_issues,
+        )
+        event_logger.close()
+        return 1
+
     dump_environment_and_capabilities()
     logger.info("")
     
@@ -9435,13 +9617,6 @@ def main():
     if result.stderr:
         logger.warning(result.stderr)
     logger.info("")
-    
-    # Determine chapters to test
-    try:
-        chapter_dirs, chapter_filters = resolve_target_chapters(args.targets, bench_root=active_bench_root)
-    except (ValueError, FileNotFoundError) as exc:
-        logger.error(f"ERROR: {exc}")
-        sys.exit(1)
 
     profile_output_root = None
     if args.profile != "none":
@@ -9454,6 +9629,9 @@ def main():
     
     # Test all chapters
     all_results = []
+    explicit_targets = bool(
+        args.targets and not any(str(token).strip().lower() == "all" for token in args.targets)
+    )
     for chapter_idx, chapter_dir in enumerate(chapter_dirs):
         if not chapter_dir.exists():
             continue
@@ -9510,6 +9688,7 @@ def main():
             only_python=bool(args.only_python),
             force_synchronize=bool(args.force_sync),
             event_logger=event_logger,
+            fail_on_no_benchmarks=explicit_targets,
         )
         all_results.append(result)
         if args.format in ['json', 'both']:

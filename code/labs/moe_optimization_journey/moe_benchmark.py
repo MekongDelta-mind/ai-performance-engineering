@@ -213,6 +213,9 @@ class MoEJourneyBenchmark(VerificationPayloadMixin, BaseBenchmark):
         return BenchmarkConfig(
             iterations=self.ITERATIONS,
             warmup=self.WARMUP,
+            # This lab can hit intermittent subprocess exit -11 on some hosts
+            # during process teardown; run in-process for stability.
+            use_subprocess=False,
         )
     
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

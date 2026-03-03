@@ -33,6 +33,11 @@ def _decode_kernel_source() -> str:
 
 
 def load_cuda_extension(*, extension_name: str, cuda_source_file: str, build_dir: Path, extra_cuda_cflags: list[str], extra_ldflags: list[str], verbose: bool = False) -> object:
+    # torch cpp_extension may call sys.stdout.flush() in worker processes.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
     build_dir.mkdir(parents=True, exist_ok=True)
     return load(
         name=extension_name,
@@ -943,8 +948,12 @@ __all__ = [
 
 
 # Popcorn entrypoint wrapper
-_PREPARED_CACHE: dict[int, tuple[Any, ...]] = {}
-_GRAPH_CACHE: dict[int, torch.cuda.CUDAGraph] = {}
+# Identity-safe single-slot cache:
+# official leaderboard semantics regenerate fresh input objects during recheck;
+# using id(data) as a key can alias across lifetimes and replay stale pointers.
+_LAST_DATA_REF: Any = None
+_LAST_PREPARED: tuple[Any, ...] | None = None
+_LAST_GRAPH: torch.cuda.CUDAGraph | None = None
 
 
 def _set_popcorn_defaults() -> None:
@@ -968,22 +977,24 @@ def _set_popcorn_defaults() -> None:
 
 
 def custom_kernel(data):
+    global _LAST_DATA_REF, _LAST_PREPARED, _LAST_GRAPH
     if not torch.cuda.is_available():
         raise RuntimeError("NVFP4 submission requires CUDA")
 
     _set_popcorn_defaults()
 
-    cache_key = id(data)
-    prepared = _PREPARED_CACHE.get(cache_key)
-    if prepared is None:
+    prepared = _LAST_PREPARED
+    if (_LAST_DATA_REF is not data) or (prepared is None):
         prepared = prepare_v2_custom_cuda_tcgen05([data])[0]
-        _PREPARED_CACHE[cache_key] = prepared
+        _LAST_DATA_REF = data
+        _LAST_PREPARED = prepared
+        _LAST_GRAPH = None
 
     use_graph = _env_flag("AISP_NVFP4_GROUP_GEMM_V2_USE_CUDA_GRAPH", 1)
     if not use_graph:
         return custom_kernel_v2_custom_cuda_tcgen05(prepared)
 
-    graph = _GRAPH_CACHE.get(cache_key)
+    graph = _LAST_GRAPH
     if graph is None:
         # Warm up once before capture so extension init and kernel setup are out of the capture window.
         custom_kernel_v2_custom_cuda_tcgen05(prepared)
@@ -992,7 +1003,7 @@ def custom_kernel(data):
         with torch.cuda.graph(graph):
             custom_kernel_v2_custom_cuda_tcgen05(prepared)
         torch.cuda.synchronize()
-        _GRAPH_CACHE[cache_key] = graph
+        _LAST_GRAPH = graph
 
     graph.replay()
     return prepared[4]["output_refs"]

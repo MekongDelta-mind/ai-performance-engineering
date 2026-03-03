@@ -21,6 +21,19 @@ ENGINE_PATH_ENV = "AISP_PHI35_MOE_ENGINE_PATH"
 PROMPT_TEXT = "Explain GPU kernel fusion in one sentence."
 
 
+def resolve_model_path(model_path: Path) -> Path:
+    """Require an explicit local model path for deterministic TRT-LLM validation."""
+    if model_path.exists():
+        return model_path
+
+    raise RuntimeError(
+        "SKIPPED: TRT-LLM baseline model assets unavailable "
+        f"(requested model_path={model_path}). "
+        f"Remediation: provide --model-path (or ${MODEL_PATH_ENV}) pointing to a local "
+        "Phi-3.5-MoE model checkout."
+    )
+
+
 def ensure_trtllm_assets(
     model_path: Path,
     *,

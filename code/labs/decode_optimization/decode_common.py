@@ -30,6 +30,7 @@ except Exception:  # pragma: no cover - defensive import
     enable_tf32 = None  # type: ignore
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin  # noqa: E402
+from core.benchmark.verification import PrecisionFlags, simple_signature  # noqa: E402
 from core.harness.hardware_capabilities import detect_capabilities  # noqa: E402
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig  # noqa: E402
 
@@ -122,6 +123,7 @@ class DecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self._fp4_enabled: bool = False
         self._graph_error: Optional[str] = None
         self._compile_error: Optional[str] = None
+        self._tf32_enabled: bool = False
         self.sdpa_ctx_factory = prefer_sdpa_backends if prefer_sdpa_backends is not None else nullcontext
         self.fp8_recipe = None
         self.output: Optional[torch.Tensor] = None
@@ -221,6 +223,15 @@ class DecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
             enable_tf32(set_global_precision=True)
         else:
             torch.set_float32_matmul_precision("high")
+        # Pin TF32 backend flags explicitly for deterministic verification payloads.
+        try:
+            if hasattr(torch.backends.cuda, "matmul") and hasattr(torch.backends.cuda.matmul, "allow_tf32"):
+                torch.backends.cuda.matmul.allow_tf32 = True
+            if hasattr(torch.backends, "cudnn") and hasattr(torch.backends.cudnn, "allow_tf32"):
+                torch.backends.cudnn.allow_tf32 = True
+            self._tf32_enabled = bool(getattr(torch.backends.cuda.matmul, "allow_tf32", True))
+        except Exception:
+            self._tf32_enabled = True
         if self.cfg.use_copy_stream:
             self.copy_stream = torch.cuda.Stream()
         if self.cfg.use_compute_stream:
@@ -784,9 +795,33 @@ class DecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 "fp16": self.dtype == torch.float16,
                 "bf16": self.dtype == torch.bfloat16,
                 "fp8": bool(self._fp8_enabled),
-                "tf32": torch.backends.cuda.matmul.allow_tf32,
+                "tf32": bool(self._tf32_enabled),
             },
             output_tolerance=(0.1, 1.0),
+        )
+
+    def get_input_signature(self):
+        """Return a deterministic workload signature for strict input equivalence.
+
+        Keep this independent of implementation toggles (streams/graphs/compile)
+        so baseline vs optimized comparisons validate the same logical workload.
+        """
+        effective_batch = int(self.cfg.batch_size * self.cfg.prefetch_batches)
+        return simple_signature(
+            batch_size=effective_batch,
+            dtype=self.dtype,
+            precision_flags=PrecisionFlags(
+                fp16=bool(self.dtype == torch.float16),
+                bf16=bool(self.dtype == torch.bfloat16),
+                fp8=bool(self._fp8_enabled),
+                # Force deterministic TF32 signature independent of ambient backend globals.
+                tf32=True,
+            ),
+            prompt_tokens=int(self.cfg.prompt_tokens),
+            decode_tokens=int(self.cfg.decode_tokens),
+            hidden_size=int(self.cfg.hidden_size),
+            vocab_size=int(self.cfg.vocab_size),
+            host_payload_mb=int(self.cfg.host_payload_mb),
         )
 
     def validate_result(self) -> Optional[str]:
@@ -845,6 +880,7 @@ class DecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
             iterations=self.cfg.iterations,
             warmup=self.cfg.warmup,
             percentiles=[50, 90, 99],
+            use_subprocess=False,
         )
 
 

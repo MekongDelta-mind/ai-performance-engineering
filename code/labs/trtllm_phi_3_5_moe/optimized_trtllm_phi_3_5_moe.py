@@ -19,6 +19,7 @@ from labs.trtllm_phi_3_5_moe.trtllm_common import (
     ensure_trtllm_assets,
     load_trtllm_runtime,
     parse_trtllm_args,
+    resolve_model_path,
     slice_logits,
 )
 
@@ -37,6 +38,7 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.vocab_slice = args.vocab_slice
         self.runner = None
         self.tokenizer = None
+        self.sampling_config = None
         self.input_ids: Optional[torch.Tensor] = None
         self.attention_mask: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
@@ -53,11 +55,7 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def setup(self) -> None:
         if not torch.cuda.is_available():
             raise RuntimeError("SKIPPED: CUDA is required for the TRT-LLM Phi-3.5-MoE benchmark")
-        ensure_trtllm_assets(
-            self.model_path,
-            engine_path=self.engine_path,
-            require_engine=True,
-        )
+        self.model_path = resolve_model_path(self.model_path)
         torch.manual_seed(42)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(42)
@@ -65,12 +63,6 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
             from transformers import AutoTokenizer
         except ImportError as exc:
             raise RuntimeError("SKIPPED: transformers is required for tokenizer support") from exc
-        try:
-            runtime = load_trtllm_runtime()
-        except Exception as exc:
-            raise RuntimeError("SKIPPED: TensorRT-LLM runtime is not importable for the optimized benchmark") from exc
-        ModelRunner = runtime.ModelRunner
-        SamplingConfig = runtime.SamplingConfig
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
         input_ids, attention_mask = build_prompt_tokens(
@@ -80,14 +72,22 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         )
         self.input_ids = input_ids.to(self.device)
         self.attention_mask = attention_mask.to(self.device)
-
+        ensure_trtllm_assets(
+            self.model_path,
+            engine_path=self.engine_path,
+            require_engine=True,
+        )
+        runtime = load_trtllm_runtime()
+        ModelRunner = runtime.ModelRunner
+        SamplingConfig = runtime.SamplingConfig
+        if self.engine_path is None:
+            raise RuntimeError("SKIPPED: TensorRT-LLM engine_path is required")
         if self.engine_path.is_dir():
             if not hasattr(ModelRunner, "from_dir"):
-                raise RuntimeError("ModelRunner.from_dir is not available; provide an engine file path")
+                raise RuntimeError("SKIPPED: ModelRunner.from_dir is unavailable; provide an engine file path")
             self.runner = ModelRunner.from_dir(str(self.engine_path))
         else:
             self.runner = ModelRunner.from_engine(str(self.engine_path))
-
         self.sampling_config = SamplingConfig(
             end_id=int(self.tokenizer.eos_token_id),
             pad_id=int(self.tokenizer.pad_token_id),
@@ -100,8 +100,10 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self._synchronize()
 
     def benchmark_fn(self) -> None:
-        if self.runner is None or self.input_ids is None:
+        if self.input_ids is None:
             raise RuntimeError("Benchmark not initialized")
+        if self.runner is None or self.sampling_config is None:
+            raise RuntimeError("TensorRT-LLM backend not initialized")
         with self._nvtx_range("optimized_trtllm_phi_3_5_moe"):
             batch_inputs = [self.input_ids[i] for i in range(self.batch_size)]
             outputs = self.runner.generate(
@@ -124,6 +126,8 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if self.output is None or self.input_ids is None:
             raise RuntimeError("setup() and benchmark_fn() must run before capture_verification_payload()")
         verify_output = self.output[:1, :128]
+        # Keep signature fields backend-agnostic so baseline Transformers and optimized
+        # TRT-LLM engine runs compare on equivalent workload semantics.
         self._set_verification_payload(
             inputs={"input_ids": self.input_ids},
             output=verify_output.detach().clone(),
@@ -136,15 +140,12 @@ class OptimizedTrtLlmPhi35MoeBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 "tf32": torch.backends.cuda.matmul.allow_tf32,
             },
             output_tolerance=(1e-2, 1e-2),
-            signature_overrides={
-                "prompt_len": self.prompt_len,
-                "max_new_tokens": self.max_new_tokens,
-            },
         )
 
     def teardown(self) -> None:
         self.runner = None
         self.tokenizer = None
+        self.sampling_config = None
         self.input_ids = None
         self.attention_mask = None
         self.output = None

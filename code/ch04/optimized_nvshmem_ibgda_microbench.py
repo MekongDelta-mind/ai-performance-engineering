@@ -22,15 +22,16 @@ _DEFAULT_KWARGS = dict(
 
 
 class OptimizedNvshmemIbgdaMicrobenchSingle(NvshmemIbgdaMicrobench):
-    multi_gpu_required = False
+    # NVSHMEM IBGDA behavior is defined for PE-to-PE communication; require >=2 GPUs.
+    multi_gpu_required = True
 
     def __init__(self) -> None:
-        super().__init__(enable_ibgda=True, world_size=1, ibgda_batch=16, **_DEFAULT_KWARGS)
+        super().__init__(enable_ibgda=True, world_size=2, ibgda_batch=16, **_DEFAULT_KWARGS)
 
     def get_config(self) -> BenchmarkConfig:
         config = super().get_config()
-        config.multi_gpu_required = False
-        config.single_gpu = True
+        config.multi_gpu_required = True
+        config.single_gpu = False
         return config
 
 

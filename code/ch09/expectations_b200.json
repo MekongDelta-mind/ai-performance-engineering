@@ -556,6 +556,60 @@
       },
       "type": "cuda"
     },
+    "cutlass_gemm_fp8_cuda": {
+      "example": "cutlass_gemm_fp8",
+      "metadata": {
+        "best_memory_savings_pct": 0.0,
+        "best_memory_savings_ratio": 1.0,
+        "best_optimization": "optimized_cutlass_gemm_fp8",
+        "best_optimization_file": "optimized_cutlass_gemm_fp8.py",
+        "best_optimization_memory_mb": 147.275390625,
+        "best_optimization_speedup": 320.64210386566845,
+        "best_optimization_technique": "optimized_cutlass_gemm_fp8",
+        "best_optimization_time_ms": 0.0692972,
+        "optimization_goal": "speed"
+      },
+      "metrics": {
+        "baseline_memory_mb": 147.275390625,
+        "baseline_p75_ms": 22.2196,
+        "baseline_throughput.bytes_per_s": null,
+        "baseline_throughput.custom_unit_name": null,
+        "baseline_throughput.custom_unit_per_s": null,
+        "baseline_throughput.goodput": null,
+        "baseline_throughput.latency_ms": 22.2196,
+        "baseline_throughput.requests_per_s": 45.005310626653944,
+        "baseline_throughput.samples_per_s": null,
+        "baseline_throughput.schemaVersion": "1.0",
+        "baseline_throughput.tokens_per_s": null,
+        "baseline_time_ms": 22.2196,
+        "best_memory_savings_pct": 0.0,
+        "best_memory_savings_ratio": 1.0,
+        "best_optimized_memory_mb": 147.275390625,
+        "best_optimized_p75_ms": 0.0692972,
+        "best_optimized_speedup": 320.64210386566845,
+        "best_optimized_throughput.bytes_per_s": null,
+        "best_optimized_throughput.custom_unit_name": null,
+        "best_optimized_throughput.custom_unit_per_s": null,
+        "best_optimized_throughput.goodput": null,
+        "best_optimized_throughput.latency_ms": 0.0692972,
+        "best_optimized_throughput.requests_per_s": 14430.597484458247,
+        "best_optimized_throughput.samples_per_s": null,
+        "best_optimized_throughput.schemaVersion": "1.0",
+        "best_optimized_throughput.tokens_per_s": null,
+        "best_optimized_time_ms": 0.0692972,
+        "best_speedup": 320.64210386566845,
+        "is_regression": false
+      },
+      "provenance": {
+        "git_commit": "d796b861cbabb1c2a286918f95e616319dafe75c",
+        "hardware_key": "b200",
+        "iterations": 20,
+        "profile_name": "none",
+        "timestamp": "2026-03-02T12:23:04.129719",
+        "warmup_iterations": 5
+      },
+      "type": "cuda"
+    },
     "fused_l2norm_cuda": {
       "example": "fused_l2norm_cuda",
       "metadata": {

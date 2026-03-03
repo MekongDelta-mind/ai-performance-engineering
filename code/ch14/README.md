@@ -12,7 +12,7 @@ Highlights compiler-driven acceleration: `torch.compile` workflows, Triton kerne
 ## Directory Layout
 | Path | Description |
 | --- | --- |
-| `baseline_model_eager.py`, `optimized_model_eager.py`, `torch_compile_large_model.py`, `torch_compiler_examples.py`, `training_large_model_1_5x.py` | Model-scale examples showcasing compile modes, guard rails, and large-model sanity tests. |
+| `baseline_model_eager.py`, `optimized_model_eager.py`, `baseline_graph_break_control_flow.py`, `optimized_graph_break_control_flow.py`, `torch_compile_large_model.py`, `torch_compiler_examples.py`, `training_large_model_1_5x.py` | Model-scale examples showcasing compile modes, graph-break mitigation (`if` vs tensorized branch), guard rails, and large-model sanity tests. |
 | `baseline_cutlass.py`, `optimized_cutlass.py`, `triton_examples.py`, `triton_tma_blackwell.py`, `triton_fp8_advanced.py`, `triton_nvshmem_example.py` | CUTLASS vs Triton comparisons plus advanced TMA/NVSHMEM Triton kernels. |
 | `baseline_flex_attention.py`, `optimized_flex_attention.py`, `baseline_flex_attention_sparse.py`, `optimized_flex_attention_sparse.py`, `flex_attention_sparse_demo.py` | FlexAttention workloads that validate custom score mods, masks, sparsity, and compile speedups. |
 | `baseline_nccl_quantization.py`, `optimized_nccl_quantization.py`, `deepseek_innovation_l2_bypass.py` | Quantization-aware communication and the DeepSeek-inspired L2 bypass experiment. |
@@ -32,6 +32,7 @@ python -m cli.aisp bench run --targets ch14 --profile minimal
 
 ## Validation Checklist
 - `python optimized_model_eager.py --profile minimal` produces compile-time summaries followed by steady-state throughput gains vs the baseline.
+- `python compare.py --examples graph_break_control_flow --profile none` demonstrates graph-break-prone Python control flow (`if`) versus tensorized control flow (`torch.where`) under `torch.compile`.
 - `python triton_tma_blackwell.py --validate` compares Triton and CUDA outputs to double-check TMA scheduling logic.
 - `python compare.py --examples flex_attention` shows the compiled path significantly reducing kernel launch count without changing accuracy.
 

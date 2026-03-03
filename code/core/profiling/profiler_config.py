@@ -379,7 +379,7 @@ def resolve_ncu_metrics(metric_set: str, chapter: Optional[int] = None) -> List[
 NCU_SET_BY_METRIC = {
     "deep_dive": "full",
     "roofline": "roofline",
-    "minimal": "speed-of-light",
+    "minimal": "basic",
     "comprehensive": "full",
     "stalls": "full",
     "tensor_core": "full",
@@ -534,7 +534,7 @@ class ProfilerConfig:
             )
             metrics_set = set(metrics or [])
             if metrics_set and metrics_set.issubset(minimal_allow):
-                ncu_set = "speed-of-light"
+                ncu_set = "basic"
             elif metrics_set and metrics_set.issubset(set(ROOFLINE_METRICS)):
                 ncu_set = "roofline"
             else:

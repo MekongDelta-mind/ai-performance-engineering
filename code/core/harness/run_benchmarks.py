@@ -517,12 +517,21 @@ def start_progress_watchdog(
     ping_every = max(30.0, ping_every)
     warn_after = max(ping_every * 2.0, warn_after)
 
+    def _phase_warn_after_seconds(note: str) -> float:
+        note_l = (note or "").lower()
+        if "ncu profiling" in note_l:
+            return max(warn_after, 1800.0)
+        if "nsys profiling" in note_l or "torch profiling" in note_l:
+            return max(warn_after, 900.0)
+        return warn_after
+
     def heartbeat() -> None:
         while not stop_event.wait(ping_every):
             if not state["active"]:
                 break
             elapsed = time.time() - state["last_progress"]
-            if elapsed >= warn_after:
+            warn_after_for_phase = _phase_warn_after_seconds(state["last_note"])
+            if elapsed >= warn_after_for_phase:
                 if not state["warned"]:
                     logger.warning(
                         "    ⏱️ No benchmark progress in %s for %.0fs (last completed: %s)",
@@ -1896,22 +1905,41 @@ def _harden_profile_env(
     chapter_dir: Optional[Path] = None,
 ) -> Dict[str, str]:
     env = dict(base_env or os.environ.copy())
+    force_no_user_site = str(env.get("AISP_PROFILE_NO_USER_SITE", "")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    include_user_site = not force_no_user_site
     pythonpath_entries = [str(repo_root)]
     if chapter_dir is not None:
         pythonpath_entries.append(str(chapter_dir))
+    user_site: Optional[str] = None
     try:
         import site
+        user_site = site.getusersitepackages()
+        # Match default interpreter import precedence used by benchmark timing paths:
+        # user-site packages precede dist-packages unless explicitly disabled.
+        if include_user_site and user_site:
+            pythonpath_entries.append(user_site)
         for site_path in site.getsitepackages():
             if site_path:
                 pythonpath_entries.append(site_path)
-        user_site = site.getusersitepackages()
-        if user_site:
-            pythonpath_entries.append(user_site)
     except Exception:
         pass
     existing = env.get("PYTHONPATH")
     if existing:
-        pythonpath_entries.append(existing)
+        for entry in existing.split(os.pathsep):
+            if not entry:
+                continue
+            if (
+                not include_user_site
+                and user_site
+                and os.path.normpath(entry) == os.path.normpath(user_site)
+            ):
+                continue
+            pythonpath_entries.append(entry)
     deduped: List[str] = []
     seen = set()
     for entry in pythonpath_entries:
@@ -1920,6 +1948,13 @@ def _harden_profile_env(
         seen.add(entry)
         deduped.append(entry)
     env["PYTHONPATH"] = os.pathsep.join(deduped)
+    if force_no_user_site:
+        env["PYTHONNOUSERSITE"] = "1"
+    else:
+        env.pop("PYTHONNOUSERSITE", None)
+    # Avoid expensive/fragile addr2line symbolization in profiler subprocesses.
+    # PyTorch itself recommends this when Module.cpp symbolization warnings appear.
+    env.setdefault("TORCH_DISABLE_ADDR2LINE", "1")
     return env
 
 
@@ -2056,7 +2091,11 @@ with lock_ctx:
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
-    benchmark.teardown()
+    # TensorRT-LLM can crash in execution-context deallocation under Nsight
+    # teardown/finalization paths. Profiling subprocesses can hard-exit safely
+    # after synchronized work is complete.
+    import os as _os
+    _os._exit(0)
 """)
         wrapper_script.close()
         
@@ -2253,7 +2292,7 @@ def profile_python_benchmark_ncu(
         chapter_num = int(chapter_name[2:])
     metric_set = str(getattr(config, "ncu_metric_set", "auto") or "auto").lower()
     # "auto" follows the active profiling preset:
-    # - minimal -> MINIMAL_METRICS (speed-of-light)
+    # - minimal -> MINIMAL_METRICS (basic set)
     # - roofline -> ROOFLINE_METRICS
     # - deep_dive -> chapter-specific metrics (when available)
     if metric_set == "auto":
@@ -2344,7 +2383,11 @@ with lock_ctx:
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
-    benchmark.teardown()
+    # TensorRT-LLM can crash in execution-context deallocation under Nsight
+    # teardown/finalization paths. Profiling subprocesses can hard-exit safely
+    # after synchronized work is complete.
+    import os as _os
+    _os._exit(0)
 """)
         wrapper_script.close()
         
@@ -2553,27 +2596,13 @@ def profile_python_benchmark_torch(
     """
     if not TORCH_PROFILER_AVAILABLE:
         return None
-    
-    try:
-        import torch.profiler
-    except ImportError:
-        return None
-    
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Create output filename based on benchmark name
     benchmark_name = output_stem or benchmark_path.stem
     torch_output = output_dir / f"{benchmark_name}__{variant}_torch_trace.json"
-    
     log_base = output_dir / f"{benchmark_name}__{variant}__torch"
-
-    from contextlib import nullcontext
-
-    from core.harness.benchmark_harness import ReadOnlyBenchmarkConfigView, lock_gpu_clocks, ramp_gpu_clocks
-
-    # The main harness may have executed timing in a subprocess, so this in-memory
-    # benchmark instance has not necessarily been setup() yet. Always setup/teardown
-    # for torch profiler captures.
     existing_cfg = getattr(benchmark, "_config", None)
     validity_profile = str(getattr(existing_cfg, "validity_profile", "strict")).strip().lower()
     if validity_profile not in {"strict", "portable"}:
@@ -2581,70 +2610,136 @@ def profile_python_benchmark_torch(
     lock_gpu_clocks_flag = bool(getattr(existing_cfg, "lock_gpu_clocks", True))
     if validity_profile != "strict":
         lock_gpu_clocks_flag = False
-    profiling_config = BenchmarkConfig(
-        enable_profiling=True,
-        enable_nvtx=True,
-        validity_profile=validity_profile,
-        lock_gpu_clocks=lock_gpu_clocks_flag,
-        gpu_sm_clock_mhz=getattr(existing_cfg, "gpu_sm_clock_mhz", None),
-        gpu_mem_clock_mhz=getattr(existing_cfg, "gpu_mem_clock_mhz", None),
+    profile_timeout_seconds = 900
+    if existing_cfg is not None and hasattr(existing_cfg, "get_effective_timeout"):
+        try:
+            maybe_timeout = existing_cfg.get_effective_timeout("torch")
+            if maybe_timeout:
+                profile_timeout_seconds = int(maybe_timeout)
+        except Exception:
+            pass
+
+    # Run torch profiling in an isolated subprocess so a profiler-side hang
+    # cannot wedge the parent benchmark sweep.
+    repo_root = Path(__file__).resolve().parents[2]
+    wrapper_script = tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False)
+    wrapper_path = Path(wrapper_script.name)
+    wrapper_script.write(
+        f"""
+import sys
+from pathlib import Path
+from contextlib import nullcontext
+
+sys.path.insert(0, r"{repo_root}")
+sys.path.insert(0, r"{chapter_dir}")
+
+from {benchmark_path.stem} import get_benchmark
+from core.harness.benchmark_harness import (
+    BenchmarkConfig,
+    ReadOnlyBenchmarkConfigView,
+    lock_gpu_clocks,
+    ramp_gpu_clocks,
+)
+import torch
+import torch.profiler
+
+benchmark = get_benchmark()
+profiling_config = BenchmarkConfig(
+    enable_profiling=True,
+    enable_nvtx=True,
+    validity_profile={validity_profile!r},
+    lock_gpu_clocks={lock_gpu_clocks_flag!r},
+    gpu_sm_clock_mhz={getattr(existing_cfg, "gpu_sm_clock_mhz", None)!r},
+    gpu_mem_clock_mhz={getattr(existing_cfg, "gpu_mem_clock_mhz", None)!r},
+)
+benchmark._config = ReadOnlyBenchmarkConfigView.from_config(profiling_config)
+
+lock_ctx = (
+    lock_gpu_clocks(
+        device=0,
+        sm_clock_mhz=getattr(profiling_config, "gpu_sm_clock_mhz", None),
+        mem_clock_mhz=getattr(profiling_config, "gpu_mem_clock_mhz", None),
     )
-    benchmark._config = ReadOnlyBenchmarkConfigView.from_config(profiling_config)
+    if getattr(profiling_config, "lock_gpu_clocks", False) and torch.cuda.is_available()
+    else nullcontext()
+)
 
-    # Keep torch-profiler lightweight; nsys/ncu cover the deep dives.
-    profile_kwargs = {
-        "record_shapes": False,
-        "profile_memory": False,
-        "with_stack": False,
-        "with_flops": False,
-        "with_modules": False,
-    }
-
+with lock_ctx:
+    if torch.cuda.is_available():
+        ramp_gpu_clocks(device=0)
+    benchmark.setup()
+    benchmark.benchmark_fn()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
     activities = [torch.profiler.ProfilerActivity.CPU]
     if torch.cuda.is_available():
         activities.append(torch.profiler.ProfilerActivity.CUDA)
-
-    lock_ctx = (
-        lock_gpu_clocks(
-            device=0,
-            sm_clock_mhz=getattr(profiling_config, "gpu_sm_clock_mhz", None),
-            mem_clock_mhz=getattr(profiling_config, "gpu_mem_clock_mhz", None),
-        )
-        if getattr(profiling_config, "lock_gpu_clocks", False) and torch.cuda.is_available()
-        else nullcontext()
+    with torch.profiler.profile(
+        activities=activities,
+        record_shapes=False,
+        profile_memory=False,
+        with_stack=False,
+        with_flops=False,
+        with_modules=False,
+    ) as prof:
+        benchmark.benchmark_fn()
+        prof.step()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    benchmark.teardown()
+prof.export_chrome_trace(r"{torch_output}")
+print(r"{torch_output}")
+"""
     )
+    wrapper_script.close()
 
+    cmd = [sys.executable, str(wrapper_path)]
+    env = _harden_profile_env(None, repo_root=repo_root, chapter_dir=chapter_dir)
+
+    stdout_log = log_base.with_suffix(".stdout.log")
+    stderr_log = log_base.with_suffix(".stderr.log")
+
+    with stdout_log.open("w") as stdout_handle, stderr_log.open("w") as stderr_handle:
+        process = subprocess.Popen(
+            cmd,
+            cwd=str(chapter_dir),
+            stdout=stdout_handle,
+            stderr=stderr_handle,
+            text=True,
+            start_new_session=True,
+            env=env,
+        )
+
+    timed_out = False
     try:
-        with lock_ctx:
-            if torch.cuda.is_available():
-                ramp_gpu_clocks(device=0)
-            benchmark.setup()
-
-            # Small warmup so the trace focuses on steady-state kernels.
-            benchmark.benchmark_fn()
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-
-            with torch.profiler.profile(
-                activities=activities,
-                **profile_kwargs,
-            ) as prof:
-                benchmark.benchmark_fn()
-                prof.step()
-
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            benchmark.teardown()
-
-        prof.export_chrome_trace(str(torch_output))
-        return torch_output if torch_output.exists() else None
-    except Exception as exc:
+        process.wait(timeout=profile_timeout_seconds)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        _terminate_process_group(
+            process,
+            f"{benchmark_name}__{variant}__torch",
+            timeout_seconds=float(profile_timeout_seconds),
+        )
         try:
-            benchmark.teardown()
+            process.wait(timeout=2)
         except Exception:
             pass
-        log_base.with_suffix(".stderr.log").write_text(f"torch profiler failed: {exc}\n")
+    except Exception:
+        _terminate_process_group(process, f"{benchmark_name}__{variant}__torch")
+    finally:
+        wrapper_path.unlink(missing_ok=True)
+
+    stdout_text = _safe_read_text(stdout_log) or ""
+    stderr_text = _safe_read_text(stderr_log) or ""
+    log_base.with_suffix(".command.json").write_text(json.dumps({"command": cmd}, indent=2))
+
+    if timed_out:
+        with stderr_log.open("a") as handle:
+            handle.write(f"\ntorch profiler timed out after {profile_timeout_seconds}s\n")
         return None
+    if process.returncode != 0:
+        return None
+    return torch_output if torch_output.exists() else None
 
 
 def ensure_cuda_executables_built(chapter_dir: Path) -> Tuple[bool, Optional[str]]:
@@ -3471,6 +3566,9 @@ def _test_chapter_impl(
         percent_override: Optional[float] = None,
     ) -> None:
         nonlocal progress_ok
+        if watchdog_record:
+            # Keep watchdog phase-aware so long profiler phases don't trigger false hang warnings.
+            watchdog_record(step_detail or step or phase)
         if not progress_recorder or not progress_ok:
             return
         phase_index = PROGRESS_PHASES.get(phase, 0)

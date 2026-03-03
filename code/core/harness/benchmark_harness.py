@@ -2386,6 +2386,8 @@ class BenchmarkHarness:
                     logger.info("ENVIRONMENT DETAILS: %s", env_result.details)
             for warning in env_result.warnings:
                 logger.warning("ENVIRONMENT WARNING: %s", warning)
+            for notice in env_result.notices:
+                logger.info("ENVIRONMENT NOTICE: %s", notice)
         if env_result.errors:
             message = _format_environment_invalid_message(env_result.errors, config)
             enforce_env = bool(getattr(config, "enforce_environment_validation", True))
@@ -3281,6 +3283,8 @@ class BenchmarkHarness:
         if LOGGER_AVAILABLE:
             for warning in env_result.warnings:
                 logger.warning("ENVIRONMENT WARNING: %s", warning)
+            for notice in env_result.notices:
+                logger.info("ENVIRONMENT NOTICE: %s", notice)
         if env_result.errors:
             message = _format_environment_invalid_message(env_result.errors, config)
             enforce_env = bool(getattr(config, "enforce_environment_validation", True))
@@ -4206,6 +4210,9 @@ class BenchmarkHarness:
         for warning in env_result.warnings:
             import warnings as warn_module
             warn_module.warn(f"ENVIRONMENT WARNING: {warning}", RuntimeWarning)
+        if LOGGER_AVAILABLE:
+            for notice in env_result.notices:
+                logger.info("ENVIRONMENT NOTICE: %s", notice)
         if env_result.errors:
             message = _format_environment_invalid_message(env_result.errors, config)
             enforce_env = bool(getattr(config, "enforce_environment_validation", True))

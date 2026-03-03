@@ -23,6 +23,7 @@ LEGACY_ENGINE_PATH = REPO_ROOT / "phi-3.5-moe" / "trtllm_engine"
 MODEL_PATH_ENV = "AISP_PHI35_MOE_MODEL_PATH"
 ENGINE_PATH_ENV = "AISP_PHI35_MOE_ENGINE_PATH"
 PROMPT_TEXT = "Explain GPU kernel fusion in one sentence."
+_ACCELERATE_IMPORT_PATCHED = False
 
 
 def _suppress_optional_vllm_plugin_warning() -> None:
@@ -50,7 +51,8 @@ def disable_accelerate_transformer_engine() -> None:
     We also hide torchvision so text-only model loads do not trip host-specific
     torchvision/torch ABI mismatches in profiler child processes.
     """
-    if os.environ.get("AISP_DISABLE_ACCELERATE_TE_PATCHED", "0") == "1":
+    global _ACCELERATE_IMPORT_PATCHED
+    if _ACCELERATE_IMPORT_PATCHED:
         return
 
     te_packages = {
@@ -63,7 +65,6 @@ def disable_accelerate_transformer_engine() -> None:
 
     original_find_spec = importlib.util.find_spec
     original_metadata = importlib.metadata.metadata
-
     def _normalize_package_name(name: str) -> str:
         return str(name).replace("-", "_").lower()
 
@@ -80,7 +81,7 @@ def disable_accelerate_transformer_engine() -> None:
 
     importlib.util.find_spec = _patched_find_spec
     importlib.metadata.metadata = _patched_metadata
-    os.environ["AISP_DISABLE_ACCELERATE_TE_PATCHED"] = "1"
+    _ACCELERATE_IMPORT_PATCHED = True
 
 
 def resolve_default_engine_path() -> Path:

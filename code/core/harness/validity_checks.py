@@ -510,6 +510,7 @@ class EnvironmentValidationResult:
     errors: List[str]
     warnings: List[str]
     details: Dict[str, Any]
+    notices: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -598,21 +599,33 @@ def validate_environment(
     probe = probe or EnvironmentProbe()
     errors: List[str] = []
     warnings_list: List[str] = []
+    notices_list: List[str] = []
     details: Dict[str, Any] = {
         "platform": sys.platform,
     }
 
     if not sys.platform.startswith("linux"):
         errors.append(f"Non-Linux platform '{sys.platform}' is not supported for benchmark validity checks.")
-        return EnvironmentValidationResult(False, errors, warnings_list, details)
+        return EnvironmentValidationResult(False, errors, warnings_list, details, notices_list)
 
     # Resolve device expectation
     if device is None:
         if torch is None:
             errors.append("PyTorch is not available; cannot validate benchmark environment.")
-            return EnvironmentValidationResult(False, errors, warnings_list, details)
+            return EnvironmentValidationResult(False, errors, warnings_list, details, notices_list)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     details["device_type"] = device.type
+
+    # Virtualization detection (used by multiple validity checks)
+    cpuinfo = _read_optional(probe, "/proc/cpuinfo")
+    product_name = _read_optional(probe, "/sys/devices/virtual/dmi/id/product_name")
+    details["dmi_product_name"] = product_name
+    is_virtualized = False
+    if cpuinfo is not None and "hypervisor" in cpuinfo.lower():
+        is_virtualized = True
+    if product_name is not None and any(tag in product_name.lower() for tag in ("qemu", "kvm", "vmware", "virtualbox", "hyper-v")):
+        is_virtualized = True
+    details["virtualized"] = is_virtualized
 
     # CUDA availability (required if running on CUDA device)
     if device.type == "cuda":
@@ -653,7 +666,10 @@ def validate_environment(
                 except Exception:
                     warnings_list.append(f"Failed to read CPU governor at {gov_path}.")
     if not governors:
-        warnings_list.append("CPU governor not exposed via cpufreq sysfs; cannot validate governor lock.")
+        if is_virtualized:
+            details["cpu_governor_validation"] = "skipped_virtualized"
+        else:
+            warnings_list.append("CPU governor not exposed via cpufreq sysfs; cannot validate governor lock.")
     else:
         details["cpu_governors"] = dict(governors)
         non_perf = {k: v for k, v in governors.items() if v != "performance"}
@@ -747,16 +763,7 @@ def validate_environment(
                         "Pin to a single NUMA node for tighter benchmark variance."
                     )
 
-    # Virtualization detection (Virtualization Overhead)
-    cpuinfo = _read_optional(probe, "/proc/cpuinfo")
-    product_name = _read_optional(probe, "/sys/devices/virtual/dmi/id/product_name")
-    details["dmi_product_name"] = product_name
-    is_virtualized = False
-    if cpuinfo is not None and "hypervisor" in cpuinfo.lower():
-        is_virtualized = True
-    if product_name is not None and any(tag in product_name.lower() for tag in ("qemu", "kvm", "vmware", "virtualbox", "hyper-v")):
-        is_virtualized = True
-    details["virtualized"] = is_virtualized
+    # Virtualization warning policy (Virtualization Overhead)
     if is_virtualized:
         product_hint = f" (dmi_product_name={product_name!r})" if product_name else ""
         message = (
@@ -770,8 +777,8 @@ def validate_environment(
                 f"{message} Compatibility mode active (validity_profile=portable)."
             )
         else:
-            warnings_list.append(
-                "!!! STRICT VALIDITY WARNING [VIRTUALIZATION] !!! "
+            notices_list.append(
+                "!!! STRICT VALIDITY NOTICE [VIRTUALIZATION] !!! "
                 f"{message} Strict mode will continue because virtualization alone is non-fatal. "
                 "Treat these numbers as non-canonical and re-run on bare metal before publishing."
             )
@@ -786,7 +793,7 @@ def validate_environment(
         warnings_list.append("Failed to inspect torch._dynamo config for suppress_errors.")
 
     is_valid = len(errors) == 0
-    return EnvironmentValidationResult(is_valid, errors, warnings_list, details)
+    return EnvironmentValidationResult(is_valid, errors, warnings_list, details, notices_list)
 
 
 # =============================================================================

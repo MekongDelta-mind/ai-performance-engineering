@@ -144,7 +144,9 @@ class NsightAutomation:
             "roofline": ["roofline"],
             # Nsight versions vary: some expose speed-of-light, others expose basic.
             "speed-of-light": ["speed-of-light", "basic"],
-            "minimal": ["speed-of-light", "basic"],
+            # Prefer `basic` first for minimal runs; it is substantially lower
+            # overhead while still providing SpeedOfLight-derived signals.
+            "minimal": ["basic", "speed-of-light"],
             "basic": ["basic", "speed-of-light"],
         }
         if metric_set_norm not in alias_candidates:
@@ -256,7 +258,10 @@ class NsightAutomation:
         text = str(error_text or "").lower()
         return (
             "error in sitecustomize" in text
+            or "error in usercustomize" in text
             or "no module named 'asyncio'" in text
+            or "no module named '_posixsubprocess'" in text
+            or ("libth_common.so" in text and "pyobjectslotd1ev" in text)
             or "could not find `transformer-engine` pypi package" in text
             or "could not find `transformer-engine` pypi package.".lower() in text
         )

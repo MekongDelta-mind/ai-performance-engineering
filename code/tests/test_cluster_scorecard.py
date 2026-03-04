@@ -100,3 +100,156 @@ def test_cluster_scorecard_detects_memory_bound(tmp_path: Path) -> None:
     assert payload["bottleneck"]["bottleneck_type"] == "memory-bound"
     assert payload["summary"]["gpu_stream_to_hbm_ratio"] < 0.55
     assert payload["summary"]["vllm_rate_max_total_tok_s"] == 210.0
+
+
+def test_cluster_scorecard_ingests_distributed_reliability_metrics(tmp_path: Path) -> None:
+    run_id = "2026-03-04_scorecard_distributed"
+    label = "node1"
+    structured = tmp_path / "structured"
+    structured.mkdir(parents=True, exist_ok=True)
+
+    # Minimal base inputs to allow scorecard generation.
+    (structured / f"{run_id}_{label}_gemm_gpu_sanity.csv").write_text(
+        "label,m,n,k,dtype,iters,avg_ms,p50_ms,p99_ms,avg_tflops,p50_tflops,p99_tflops\n"
+        f"{label}_gpu0,8192,8192,8192,bf16,20,4.0,4.0,4.2,600.0,590.0,560.0\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        structured / f"{run_id}_{label}_nvbandwidth.json",
+        {
+            "status": "ok",
+            "key_sum_gbps": {
+                "device_to_device_memcpy_read_ce": 2000.0,
+                "device_to_device_memcpy_write_ce": 1950.0,
+                "host_to_device_memcpy_ce": 40.0,
+                "device_to_host_memcpy_ce": 39.0,
+            },
+        },
+    )
+
+    # New modern distributed reliability artifacts.
+    _write_json(
+        structured / f"{run_id}_allreduce_stability.json",
+        {
+            "summary": {
+                "busbw_mean_gbps": 780.0,
+                "busbw_cv_pct": 6.5,
+                "p99_p50_ratio": 1.22,
+                "jitter_assessment": "high_jitter",
+            }
+        },
+    )
+    _write_json(
+        structured / f"{run_id}_nccl_algo_comparison.json",
+        {
+            "algorithms_tested": [
+                {"algo": "auto", "status": "ok", "peak_busbw_gbps": 610.0},
+                {"algo": "Ring", "status": "ok", "peak_busbw_gbps": 650.0},
+                {"algo": "Tree", "status": "ok", "peak_busbw_gbps": 590.0},
+            ]
+        },
+    )
+
+    out_json = structured / f"{run_id}_cluster_scorecard.json"
+    out_md = structured / f"{run_id}_cluster_scorecard.md"
+    cmd = [
+        sys.executable,
+        "cluster/analysis/build_cluster_scorecard.py",
+        "--run-id",
+        run_id,
+        "--structured-dir",
+        str(structured),
+        "--output-json",
+        str(out_json),
+        "--output-md",
+        str(out_md),
+    ]
+    proc = subprocess.run(cmd, cwd=Path(__file__).resolve().parents[1], check=False, capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+
+    payload = json.loads(out_json.read_text(encoding="utf-8"))
+    summary = payload["summary"]
+    assert summary["allreduce_busbw_cv_pct"] == 6.5
+    assert summary["allreduce_p99_p50_ratio"] == 1.22
+    assert summary["allreduce_jitter_assessment"] == "high_jitter"
+    assert summary["nccl_algo_best"] == "Ring"
+    assert summary["nccl_algo_peak_busbw_gbps"] == 650.0
+    assert summary["nccl_algo_auto_gap_pct"] > 0
+
+
+def test_cluster_scorecard_marks_single_rank_comm_metrics_not_applicable(tmp_path: Path) -> None:
+    run_id = "2026-03-04_scorecard_single_rank"
+    label = "node1"
+    structured = tmp_path / "structured"
+    structured.mkdir(parents=True, exist_ok=True)
+
+    (structured / f"{run_id}_{label}_gemm_gpu_sanity.csv").write_text(
+        "label,m,n,k,dtype,iters,avg_ms,p50_ms,p99_ms,avg_tflops,p50_tflops,p99_tflops\n"
+        f"{label}_gpu0,8192,8192,8192,bf16,20,4.0,4.0,4.2,600.0,590.0,560.0\n",
+        encoding="utf-8",
+    )
+
+    _write_json(
+        structured / f"{run_id}_{label}_nvbandwidth.json",
+        {
+            "status": "ok",
+            "key_sum_gbps": {
+                "device_to_device_memcpy_read_ce": 2000.0,
+                "device_to_device_memcpy_write_ce": 1950.0,
+                "host_to_device_memcpy_ce": 40.0,
+                "device_to_host_memcpy_ce": 39.0,
+            },
+        },
+    )
+
+    # Presence of these artifacts on single-rank runs should render comm stability/algo
+    # metrics as not-applicable rather than misleading zeros.
+    _write_json(
+        structured / f"{run_id}_allreduce_stability.json",
+        {
+            "world_size": 1,
+            "summary": {
+                "busbw_mean_gbps": 123.0,
+                "busbw_cv_pct": 9.0,
+                "p99_p50_ratio": 1.5,
+                "jitter_assessment": "high_jitter",
+            },
+        },
+    )
+    _write_json(
+        structured / f"{run_id}_nccl_algo_comparison.json",
+        {
+            "total_ranks": 1,
+            "algorithms_tested": [
+                {"algo": "auto", "status": "ok", "peak_busbw_gbps": 610.0},
+                {"algo": "Ring", "status": "ok", "peak_busbw_gbps": 650.0},
+            ],
+        },
+    )
+
+    out_json = structured / f"{run_id}_cluster_scorecard.json"
+    out_md = structured / f"{run_id}_cluster_scorecard.md"
+    cmd = [
+        sys.executable,
+        "cluster/analysis/build_cluster_scorecard.py",
+        "--run-id",
+        run_id,
+        "--structured-dir",
+        str(structured),
+        "--output-json",
+        str(out_json),
+        "--output-md",
+        str(out_md),
+    ]
+    proc = subprocess.run(cmd, cwd=Path(__file__).resolve().parents[1], check=False, capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+
+    payload = json.loads(out_json.read_text(encoding="utf-8"))
+    summary = payload["summary"]
+    assert summary["allreduce_applicable"] is False
+    assert summary["allreduce_busbw_cv_pct"] is None
+    assert summary["allreduce_p99_p50_ratio"] is None
+    assert str(summary["allreduce_jitter_assessment"]).startswith("n/a")
+    assert summary["nccl_algo_applicable"] is False
+    assert str(summary["nccl_algo_best"]).startswith("n/a")
+    assert summary["nccl_algo_peak_busbw_gbps"] is None

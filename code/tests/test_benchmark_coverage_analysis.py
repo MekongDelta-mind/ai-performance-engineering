@@ -43,3 +43,7 @@ def test_benchmark_coverage_analysis_detects_missing_subsystems(tmp_path: Path) 
     assert cov["gpu_gpu_communication"] is False
     assert cov["gpu_cpu_transfer"] is False
     assert cov["ai_workloads"] is False
+    advanced = payload["advanced_coverage"]
+    assert advanced["vllm_request_rate_sweep"] is False
+    assert advanced["allreduce_stability"] is False
+    assert advanced["nccl_algo_comparison"] is False

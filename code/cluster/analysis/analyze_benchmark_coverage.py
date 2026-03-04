@@ -45,6 +45,8 @@ def _build_coverage(structured_dir: Path, run_id: str, labels: List[str]) -> Dic
     has_vllm_rate = any(_exists(structured_dir / f"{run_id}_{label}_vllm_serve_request_rate_sweep.csv") for label in labels)
     has_nccl_single = _exists(structured_dir / f"{run_id}_node1_nccl.json")
     has_nccl_multi = _exists(structured_dir / f"{run_id}_2nodes_nccl.json")
+    has_allreduce_stability = _exists(structured_dir / f"{run_id}_allreduce_stability.json")
+    has_nccl_algo_comparison = _exists(structured_dir / f"{run_id}_nccl_algo_comparison.json")
 
     subsystem = {
         "sm_compute": has_gemm,
@@ -57,6 +59,13 @@ def _build_coverage(structured_dir: Path, run_id: str, labels: List[str]) -> Dic
     missing = [name for name, ok in subsystem.items() if not ok]
     score = int(round((sum(1 for ok in subsystem.values() if ok) / len(subsystem)) * 100))
 
+    advanced = {
+        "vllm_request_rate_sweep": has_vllm_rate,
+        "allreduce_stability": has_allreduce_stability,
+        "nccl_algo_comparison": has_nccl_algo_comparison,
+    }
+    advanced_score = int(round((sum(1 for ok in advanced.values() if ok) / len(advanced)) * 100))
+
     recommendations: List[str] = []
     if not subsystem["sm_compute"]:
         recommendations.append("Run Benchmark C GEMM sanity to establish compute baseline.")
@@ -68,6 +77,10 @@ def _build_coverage(structured_dir: Path, run_id: str, labels: List[str]) -> Dic
         recommendations.append("Enable nvbandwidth to capture PCIe host-device transfer metrics.")
     if not subsystem["ai_workloads"]:
         recommendations.append("Run vLLM serving sweep (concurrency and request-rate for SLO capacity).")
+    if not advanced["allreduce_stability"]:
+        recommendations.append("Run allreduce stability profile to track per-iteration jitter and tail behavior.")
+    if not advanced["nccl_algo_comparison"]:
+        recommendations.append("Run NCCL algorithm comparison (Ring/Tree/NVLS/auto) to identify best collective policy.")
 
     maturity = "high" if score >= 80 else "medium" if score >= 50 else "low"
     return {
@@ -78,6 +91,8 @@ def _build_coverage(structured_dir: Path, run_id: str, labels: List[str]) -> Dic
         "coverage_score_pct": score,
         "coverage_maturity": maturity,
         "missing_subsystems": missing,
+        "advanced_coverage": advanced,
+        "advanced_coverage_score_pct": advanced_score,
         "recommendations": recommendations,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -94,6 +109,7 @@ def _to_markdown(payload: Dict[str, Any]) -> str:
     lines.append(f"| Labels | `{', '.join(payload.get('labels', []))}` |")
     lines.append(f"| Coverage score | `{payload.get('coverage_score_pct', 0)}%` |")
     lines.append(f"| Maturity | `{payload.get('coverage_maturity', 'low')}` |")
+    lines.append(f"| Advanced coverage score | `{payload.get('advanced_coverage_score_pct', 0)}%` |")
     lines.append("")
     lines.append("## Subsystem Coverage")
     lines.append("")
@@ -104,6 +120,13 @@ def _to_markdown(payload: Dict[str, Any]) -> str:
     lines.append("")
     missing = payload.get("missing_subsystems") or []
     lines.append(f"Missing: `{', '.join(missing) if missing else 'none'}`")
+    lines.append("")
+    lines.append("## Advanced Coverage")
+    lines.append("")
+    lines.append("| Advanced signal | Covered |")
+    lines.append("|---|---|")
+    for name, ok in (payload.get("advanced_coverage") or {}).items():
+        lines.append(f"| `{name}` | `{'yes' if ok else 'no'}` |")
     lines.append("")
     lines.append("## Recommended Next Runs")
     lines.append("")

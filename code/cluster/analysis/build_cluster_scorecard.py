@@ -66,6 +66,77 @@ def _peak_nccl(path: Path) -> Dict[str, float]:
     return {"peak_algbw_gbps": peak_algbw, "peak_busbw_gbps": peak_busbw}
 
 
+def _allreduce_stability_metrics(path: Path) -> Dict[str, Any]:
+    base: Dict[str, Any] = {
+        "allreduce_applicable": False,
+        "allreduce_busbw_mean_gbps": None,
+        "allreduce_busbw_cv_pct": None,
+        "allreduce_p99_p50_ratio": None,
+        "allreduce_jitter_assessment": "n/a",
+    }
+    if not path.exists():
+        return base
+    payload = _load_json(path)
+    world_size_raw = payload.get("world_size")
+    if world_size_raw is not None and int(_float(world_size_raw, 0.0)) <= 1:
+        return {**base, "allreduce_jitter_assessment": "n/a (world_size<=1)"}
+    summary = payload.get("summary") or {}
+    return {
+        "allreduce_applicable": True,
+        "allreduce_busbw_mean_gbps": _float(summary.get("busbw_mean_gbps")),
+        "allreduce_busbw_cv_pct": _float(summary.get("busbw_cv_pct")),
+        "allreduce_p99_p50_ratio": _float(summary.get("p99_p50_ratio")),
+        "allreduce_jitter_assessment": str(summary.get("jitter_assessment") or "unknown"),
+    }
+
+
+def _nccl_algo_metrics(path: Path) -> Dict[str, Any]:
+    base: Dict[str, Any] = {
+        "nccl_algo_applicable": False,
+        "nccl_algo_best": None,
+        "nccl_algo_peak_busbw_gbps": None,
+        "nccl_algo_spread_pct": None,
+        "nccl_algo_auto_gap_pct": None,
+    }
+    if not path.exists():
+        return base
+    payload = _load_json(path)
+    total_ranks_raw = payload.get("total_ranks")
+    if total_ranks_raw is not None and int(_float(total_ranks_raw, 0.0)) <= 1:
+        return {**base, "nccl_algo_best": "n/a (single-rank)"}
+    rows = payload.get("algorithms_tested") or []
+    ok_rows = [r for r in rows if str(r.get("status", "")).lower() == "ok"]
+    if not ok_rows:
+        return {**base, "nccl_algo_applicable": True}
+    peaks: List[Tuple[str, float]] = []
+    for row in ok_rows:
+        algo = str(row.get("algo") or "")
+        peak = _float(row.get("peak_busbw_gbps"))
+        if algo and peak > 0:
+            peaks.append((algo, peak))
+    if not peaks:
+        return {**base, "nccl_algo_applicable": True}
+    peaks.sort(key=lambda x: x[1], reverse=True)
+    best_algo, best_peak = peaks[0]
+    worst_peak = peaks[-1][1]
+    spread_pct = ((best_peak - worst_peak) / best_peak * 100.0) if best_peak > 0 else 0.0
+
+    auto_peak = 0.0
+    for algo, peak in peaks:
+        if algo.lower() == "auto":
+            auto_peak = peak
+            break
+    auto_gap_pct = ((best_peak - auto_peak) / best_peak * 100.0) if best_peak > 0 and auto_peak > 0 else 0.0
+
+    return {
+        "nccl_algo_applicable": True,
+        "nccl_algo_best": best_algo,
+        "nccl_algo_peak_busbw_gbps": best_peak,
+        "nccl_algo_spread_pct": spread_pct,
+        "nccl_algo_auto_gap_pct": auto_gap_pct,
+    }
+
+
 def _label_metrics(structured_dir: Path, run_id: str, label: str) -> Dict[str, Any]:
     out: Dict[str, Any] = {"label": label}
 
@@ -185,8 +256,38 @@ def _classify_bottleneck(summary: Dict[str, Any]) -> Dict[str, Any]:
     gemm_tflops = _float(summary.get("gemm_max_tflops"))
     pcie_h2d = _float(summary.get("nvbandwidth_pcie_h2d_gbps"))
     goodput_eff = _float(summary.get("vllm_goodput_efficiency_tok_ratio"))
+    allreduce_applicable = bool(summary.get("allreduce_applicable"))
+    allreduce_cv = _float(summary.get("allreduce_busbw_cv_pct"))
+    allreduce_p99_p50 = _float(summary.get("allreduce_p99_p50_ratio"))
+    nccl_algo_applicable = bool(summary.get("nccl_algo_applicable"))
+    nccl_algo_spread = _float(summary.get("nccl_algo_spread_pct"))
+    nccl_algo_auto_gap = _float(summary.get("nccl_algo_auto_gap_pct"))
 
-    if comm_scale > 0 and comm_scale < 0.65:
+    if allreduce_applicable and (allreduce_cv >= 5.0 or allreduce_p99_p50 >= 1.15):
+        bottleneck_type = "communication-bound"
+        confidence = "high" if allreduce_cv >= 5.0 else "medium"
+        reasons.append(
+            f"All-reduce stability indicates high jitter (CV={allreduce_cv:.2f}%, p99/p50={allreduce_p99_p50:.3f})."
+        )
+        recommendations.extend(
+            [
+                "Stabilize interconnect pathing (NIC affinity, routing, congestion controls) and rerun stability profile.",
+                "Track per-iteration collective jitter during peak workload windows.",
+            ]
+        )
+    elif nccl_algo_applicable and ((nccl_algo_spread >= 8.0) or (nccl_algo_auto_gap >= 5.0)):
+        bottleneck_type = "communication-bound"
+        confidence = "medium"
+        reasons.append(
+            f"NCCL algorithm sensitivity is high (spread={nccl_algo_spread:.2f}%, auto gap={nccl_algo_auto_gap:.2f}%)."
+        )
+        recommendations.extend(
+            [
+                "Pin the winning NCCL algorithm for production profile and validate across message-size bands.",
+                "Investigate topology- or transport-specific algorithm regressions.",
+            ]
+        )
+    elif comm_scale > 0 and comm_scale < 0.65:
         bottleneck_type = "communication-bound"
         confidence = "high"
         reasons.append(
@@ -269,8 +370,15 @@ def _classify_bottleneck(summary: Dict[str, Any]) -> Dict[str, Any]:
 def _fmt(v: Any, prec: int = 2) -> str:
     f = _float(v, default=float("nan"))
     if f != f:  # NaN
-        return ""
+        return "n/a"
     return f"{f:.{prec}f}"
+
+
+def _fmt_text(v: Any) -> str:
+    if v is None:
+        return "n/a"
+    s = str(v).strip()
+    return s if s else "n/a"
 
 
 def _build_markdown(payload: Dict[str, Any]) -> str:
@@ -292,6 +400,12 @@ def _build_markdown(payload: Dict[str, Any]) -> str:
     lines.append(f"| Communication | NCCL single-node peak busbw GB/s | `{_fmt(summary.get('nccl_single_peak_busbw_gbps'), 1)}` |")
     lines.append(f"| Communication | NCCL multi-node peak busbw GB/s | `{_fmt(summary.get('nccl_multi_peak_busbw_gbps'), 1)}` |")
     lines.append(f"| Communication | Multi/single busbw ratio | `{_fmt(summary.get('nccl_multi_to_single_busbw_ratio'), 2)}` |")
+    lines.append(f"| Communication | NCCL algo winner | `{_fmt_text(summary.get('nccl_algo_best'))}` |")
+    lines.append(f"| Communication | NCCL algo spread % | `{_fmt(summary.get('nccl_algo_spread_pct'), 2)}` |")
+    lines.append(f"| Communication | NCCL auto gap % | `{_fmt(summary.get('nccl_algo_auto_gap_pct'), 2)}` |")
+    lines.append(f"| Communication | Allreduce stability CV % | `{_fmt(summary.get('allreduce_busbw_cv_pct'), 2)}` |")
+    lines.append(f"| Communication | Allreduce stability p99/p50 | `{_fmt(summary.get('allreduce_p99_p50_ratio'), 3)}` |")
+    lines.append(f"| Communication | Allreduce jitter assessment | `{_fmt_text(summary.get('allreduce_jitter_assessment'))}` |")
     lines.append(f"| Host transfer | nvbandwidth H2D GB/s | `{_fmt(summary.get('nvbandwidth_pcie_h2d_gbps'), 1)}` |")
     lines.append(f"| Workload | vLLM throughput gain ratio | `{_fmt(summary.get('vllm_throughput_gain_ratio'), 2)}` |")
     lines.append(f"| Workload | vLLM p99 TTFT ratio | `{_fmt(summary.get('vllm_p99_ttft_ratio'), 2)}` |")
@@ -357,6 +471,8 @@ def main() -> int:
 
     single_nccl = _peak_nccl(structured_dir / f"{run_id}_node1_nccl.json")
     multi_nccl = _peak_nccl(structured_dir / f"{run_id}_2nodes_nccl.json")
+    allreduce_stability = _allreduce_stability_metrics(structured_dir / f"{run_id}_allreduce_stability.json")
+    nccl_algo = _nccl_algo_metrics(structured_dir / f"{run_id}_nccl_algo_comparison.json")
     nccl_ratio = 0.0
     if single_nccl["peak_busbw_gbps"] > 0:
         nccl_ratio = multi_nccl["peak_busbw_gbps"] / single_nccl["peak_busbw_gbps"]
@@ -378,6 +494,16 @@ def main() -> int:
         "nccl_multi_peak_algbw_gbps": multi_nccl["peak_algbw_gbps"],
         "nccl_multi_peak_busbw_gbps": multi_nccl["peak_busbw_gbps"],
         "nccl_multi_to_single_busbw_ratio": nccl_ratio if nccl_ratio > 0 else 0.0,
+        "allreduce_applicable": bool(allreduce_stability.get("allreduce_applicable")),
+        "allreduce_busbw_mean_gbps": allreduce_stability.get("allreduce_busbw_mean_gbps"),
+        "allreduce_busbw_cv_pct": allreduce_stability.get("allreduce_busbw_cv_pct"),
+        "allreduce_p99_p50_ratio": allreduce_stability.get("allreduce_p99_p50_ratio"),
+        "allreduce_jitter_assessment": allreduce_stability.get("allreduce_jitter_assessment"),
+        "nccl_algo_applicable": bool(nccl_algo.get("nccl_algo_applicable")),
+        "nccl_algo_best": nccl_algo.get("nccl_algo_best"),
+        "nccl_algo_peak_busbw_gbps": nccl_algo.get("nccl_algo_peak_busbw_gbps"),
+        "nccl_algo_spread_pct": nccl_algo.get("nccl_algo_spread_pct"),
+        "nccl_algo_auto_gap_pct": nccl_algo.get("nccl_algo_auto_gap_pct"),
         "vllm_throughput_gain_ratio": _float(primary_row.get("vllm_throughput_gain_ratio")),
         "vllm_p99_ttft_ratio": _float(primary_row.get("vllm_p99_ttft_ratio")),
         "vllm_max_goodput_tok_s": _float(primary_row.get("vllm_slo_max_goodput_tok_s")),

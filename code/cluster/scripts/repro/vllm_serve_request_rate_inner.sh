@@ -16,6 +16,38 @@ REQUEST_RATE_RANGE="$@"
 export VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8=1
 VLLM_SERVE_ENFORCE_EAGER="${VLLM_SERVE_ENFORCE_EAGER:-1}"
 VLLM_KV_CACHE_MEMORY_BYTES="${VLLM_KV_CACHE_MEMORY_BYTES:-}"
+VLLM_GPU_MEMORY_UTILIZATION="${VLLM_GPU_MEMORY_UTILIZATION:-0.8}"
+VLLM_SWEEP_STRICT_POINT_VALIDATION="${VLLM_SWEEP_STRICT_POINT_VALIDATION:-1}"
+
+if ! python3 - "$VLLM_GPU_MEMORY_UTILIZATION" <<'PY'
+import sys
+v = float(sys.argv[1])
+if v <= 0.0 or v > 1.0:
+    raise SystemExit(1)
+PY
+then
+  echo "ERROR: VLLM_GPU_MEMORY_UTILIZATION must be in (0, 1], got '${VLLM_GPU_MEMORY_UTILIZATION}'." >&2
+  exit 2
+fi
+
+effective_gpu_mem_util="$VLLM_GPU_MEMORY_UTILIZATION"
+total_mem_mib="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 | tr -d ' ')"
+free_mem_mib="$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits | head -n1 | tr -d ' ')"
+if [[ "$total_mem_mib" =~ ^[0-9]+$ ]] && [[ "$free_mem_mib" =~ ^[0-9]+$ ]] && [[ "$total_mem_mib" -gt 0 ]]; then
+  effective_gpu_mem_util="$(python3 - "$VLLM_GPU_MEMORY_UTILIZATION" "$free_mem_mib" "$total_mem_mib" <<'PY'
+import sys
+requested = float(sys.argv[1])
+free_mib = float(sys.argv[2])
+total_mib = float(sys.argv[3])
+headroom_mib = 3072.0
+safe = max(0.05, min(0.95, ((free_mib - headroom_mib) / total_mib) * 0.995))
+print(f"{min(requested, safe):.4f}")
+PY
+)"
+  if [[ "$effective_gpu_mem_util" != "$VLLM_GPU_MEMORY_UTILIZATION" ]]; then
+    echo "Lowering --gpu-memory-utilization from ${VLLM_GPU_MEMORY_UTILIZATION} to ${effective_gpu_mem_util} based on free VRAM (${free_mem_mib} MiB / ${total_mem_mib} MiB)."
+  fi
+fi
 
 if [[ "$MODEL" == *"gpt-oss"* ]]; then
   export VLLM_MXFP4_USE_MARLIN=1
@@ -36,34 +68,54 @@ SUMMARY_JSONL="${SWEEP_DIR}/rate_sweep_summary.jsonl"
 cleanup() {
   if [[ -n "${SERVER_PID:-}" ]]; then
     kill "$SERVER_PID" 2>/dev/null || true
+    for _ in $(seq 1 30); do
+      if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+        break
+      fi
+      sleep 1
+    done
+    if kill -0 "$SERVER_PID" 2>/dev/null; then
+      kill -9 "$SERVER_PID" 2>/dev/null || true
+    fi
     wait "$SERVER_PID" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT
+
+ensure_server_healthy() {
+  local context="$1"
+  if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "ERROR: vLLM server process is not running (${context})." >&2
+    tail -120 "$SERVER_LOG" || true
+    exit 3
+  fi
+  if ! curl -sf "http://localhost:${PORT}/health" >/dev/null 2>&1; then
+    echo "ERROR: vLLM server health check failed (${context})." >&2
+    tail -120 "$SERVER_LOG" || true
+    exit 3
+  fi
+  if grep -qE "Engine core proc .* died unexpectedly|EngineDeadError" "$SERVER_LOG"; then
+    echo "ERROR: vLLM engine death detected in server log (${context})." >&2
+    tail -120 "$SERVER_LOG" || true
+    exit 3
+  fi
+}
 
 echo "=== Starting vLLM Server (request-rate sweep) ==="
 SERVE_ARGS=(
   "$MODEL"
   --host 0.0.0.0
   --port "$PORT"
-  --gpu-memory-utilization 0.9
+  --gpu-memory-utilization "$effective_gpu_mem_util"
   --tensor-parallel-size "$TP"
   --max-model-len "$MAX_MODEL_LEN"
   --max-num-seqs 1024
   --disable-log-requests
 )
 
-if [[ -z "$VLLM_KV_CACHE_MEMORY_BYTES" ]]; then
-  total_mem_mib="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 | tr -d ' ')"
-  if [[ "$total_mem_mib" =~ ^[0-9]+$ ]]; then
-    kv_cache_mib=$(( total_mem_mib * 70 / 100 ))
-    if [[ "$kv_cache_mib" -lt 512 ]]; then
-      kv_cache_mib=512
-    fi
-    VLLM_KV_CACHE_MEMORY_BYTES=$(( kv_cache_mib * 1024 * 1024 ))
-  fi
-fi
 if [[ -n "$VLLM_KV_CACHE_MEMORY_BYTES" ]]; then
+  # Optional explicit override. By default we let vLLM size KV cache from
+  # --gpu-memory-utilization to avoid stale fixed-byte OOM failures.
   echo "Using --kv-cache-memory-bytes=${VLLM_KV_CACHE_MEMORY_BYTES}"
   SERVE_ARGS+=(--kv-cache-memory-bytes "$VLLM_KV_CACHE_MEMORY_BYTES")
 fi
@@ -131,6 +183,8 @@ for RATE in $REQUEST_RATE_RANGE; do
   RESULT_JSON="rate${RATE}_isl${ISL}_osl${OSL}_tp${TP}.json"
   RESULT_TXT="rate${RATE}_bench.txt"
 
+  ensure_server_healthy "before request_rate=${RATE}"
+
   set +e
   vllm bench serve \
     --model "$MODEL" \
@@ -150,13 +204,17 @@ for RATE in $REQUEST_RATE_RANGE; do
 
   if [[ "$BENCH_RC" -ne 0 ]]; then
     echo "ERROR: vllm bench serve failed for request-rate ${RATE} (rc=${BENCH_RC})" >&2
+    tail -120 "$SERVER_LOG" || true
     exit "$BENCH_RC"
   fi
 
+  ensure_server_healthy "after request_rate=${RATE}"
+
+  set +e
   python3 - <<'PY' \
     "$MODEL" "$TP" "$ISL" "$OSL" "$RATE" "$MAX_CONCURRENCY" "$NUM_PROMPTS" \
     "${SWEEP_DIR}/${RESULT_JSON}" \
-    "$SUMMARY_CSV" "$SUMMARY_JSONL" "$SUMMARY_FILE"
+    "$SUMMARY_CSV" "$SUMMARY_JSONL" "$SUMMARY_FILE" "$VLLM_SWEEP_STRICT_POINT_VALIDATION"
 import json
 import sys
 from pathlib import Path
@@ -166,6 +224,7 @@ result_path = Path(sys.argv[8])
 csv_out = Path(sys.argv[9])
 jsonl_out = Path(sys.argv[10])
 summary_txt = Path(sys.argv[11])
+strict = (sys.argv[12] or "").strip() != "0"
 
 data = json.loads(result_path.read_text())
 
@@ -190,6 +249,20 @@ row = {
     "failed": int(data.get("failed", 0) or 0),
     "result_json": str(result_path),
 }
+
+if strict:
+    if row["completed"] <= 0:
+        raise SystemExit(
+            f"Invalid request-rate point {row['request_rate']:.6f}: completed={row['completed']} (must be > 0)."
+        )
+    if row["failed"] > 0:
+        raise SystemExit(
+            f"Invalid request-rate point {row['request_rate']:.6f}: failed={row['failed']} (must be 0)."
+        )
+    if row["total_token_throughput"] <= 0.0:
+        raise SystemExit(
+            f"Invalid request-rate point {row['request_rate']:.6f}: total_token_throughput={row['total_token_throughput']:.6f} (must be > 0)."
+        )
 
 with jsonl_out.open("a", encoding="utf-8") as f:
     f.write(json.dumps(row, sort_keys=True) + "\n")
@@ -227,6 +300,13 @@ with summary_txt.open("a", encoding="utf-8") as f:
         f"{row['mean_ttft_ms']:<9.2f} | {row['mean_tpot_ms']:<9.3f} | {row['p99_ttft_ms']:<8.2f} | {row['p99_tpot_ms']:<8.3f}\n"
     )
 PY
+  POINT_RC=$?
+  set -e
+  if [[ "$POINT_RC" -ne 0 ]]; then
+    echo "ERROR: invalid vLLM request-rate sweep point at request_rate=${RATE}" >&2
+    tail -120 "$SERVER_LOG" || true
+    exit "$POINT_RC"
+  fi
 
   echo
   echo "Results saved to:"

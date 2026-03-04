@@ -19,10 +19,14 @@ Options:
   --isl <n>                  Input sequence length (default: 1024)
   --osl <n>                  Output sequence length (default: 1024)
   --concurrency-range "..."  Space-separated concurrencies (default: "32 64 128 256 512")
+  --repeats <n>              Number of full sweep repetitions (default: 1)
   --port <port>              (default: 8888)
   --image <docker_image>     (default: auto by architecture)
   --detach                   Start the sweep container in detached mode.
                              (Default: run attached and stream logs.)
+  --allow-existing-vllm-procs
+                             Allow pre-existing VLLM::EngineCore GPU processes.
+                             (Default: fail-fast for canonical benchmark hygiene.)
 
 Env:
   HF_TOKEN can be set to enable gated model downloads.
@@ -40,7 +44,9 @@ ISL="${ISL:-1024}"
 OSL="${OSL:-1024}"
 PORT="${PORT:-8888}"
 CONCURRENCY_RANGE="${CONCURRENCY_RANGE:-32 64 128 256 512}"
+REPEATS="${REPEATS:-1}"
 DETACH=0
+ALLOW_EXISTING_VLLM_PROCS=0
 
 ORIG_ARGS=("$@")
 while [[ $# -gt 0 ]]; do
@@ -52,9 +58,11 @@ while [[ $# -gt 0 ]]; do
     --isl) ISL="$2"; shift 2 ;;
     --osl) OSL="$2"; shift 2 ;;
     --concurrency-range) CONCURRENCY_RANGE="$2"; shift 2 ;;
+    --repeats) REPEATS="$2"; shift 2 ;;
     --port) PORT="$2"; shift 2 ;;
     --image) CONTAINER_IMAGE="$2"; shift 2 ;;
     --detach) DETACH=1; shift ;;
+    --allow-existing-vllm-procs) ALLOW_EXISTING_VLLM_PROCS=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -63,6 +71,10 @@ done
 if ! command -v docker >/dev/null 2>&1; then
   echo "ERROR: docker not found" >&2
   exit 1
+fi
+if ! [[ "$REPEATS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --repeats must be a positive integer (got: ${REPEATS})" >&2
+  exit 2
 fi
 
 ARCH="$(uname -m)"
@@ -108,6 +120,44 @@ if [[ ! -S "/run/nvidia-persistenced/socket" ]]; then
   exit 1
 fi
 
+if [[ "$ALLOW_EXISTING_VLLM_PROCS" -ne 1 ]]; then
+  preexisting_vllm="$(python3 - <<'PY'
+import subprocess
+
+try:
+    out = subprocess.check_output(
+        [
+            "nvidia-smi",
+            "--query-compute-apps=pid,process_name,used_memory",
+            "--format=csv,noheader,nounits",
+        ],
+        text=True,
+    )
+except Exception:
+    raise SystemExit(0)
+
+rows = []
+for line in out.splitlines():
+    parts = [p.strip() for p in line.split(",")]
+    if len(parts) < 3:
+        continue
+    pid, name, used_mem = parts[0], parts[1], parts[2]
+    if name == "VLLM::EngineCore":
+        rows.append(f"pid={pid} used_memory_mib={used_mem}")
+
+if rows:
+    print("\n".join(rows))
+PY
+)"
+  if [[ -n "$preexisting_vllm" ]]; then
+    echo "ERROR: detected pre-existing VLLM::EngineCore GPU processes before vLLM sweep." >&2
+    echo "$preexisting_vllm" >&2
+    echo "Fix: terminate stale processes (for example: pkill -f VLLM::EngineCore) and rerun." >&2
+    echo "Override this guard only when intentionally co-running workloads: --allow-existing-vllm-procs" >&2
+    exit 3
+  fi
+fi
+
 # Enforce strict GPU clock locking for the entire sweep (server + benchmarks).
 if [[ "${AISP_CLOCK_LOCKED:-}" != "1" ]]; then
   export RUN_ID LABEL
@@ -137,6 +187,12 @@ HF_MOUNT=()
 if [[ -n "${HF_TOKEN:-}" ]]; then
   HF_MOUNT+=(-e "HF_TOKEN=${HF_TOKEN}" -e "HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}")
 fi
+VLLM_ENV=()
+for k in VLLM_SERVE_ENFORCE_EAGER VLLM_KV_CACHE_MEMORY_BYTES VLLM_GPU_MEMORY_UTILIZATION; do
+  if [[ -n "${!k:-}" ]]; then
+    VLLM_ENV+=(-e "${k}=${!k}")
+  fi
+done
 
 read -r -a CONC_ARR <<<"$CONCURRENCY_RANGE"
 
@@ -154,6 +210,7 @@ echo "ISL: $ISL"
 echo "OSL: $OSL"
 echo "Max model len: $MAX_MODEL_LEN"
 echo "Concurrency range: ${CONC_ARR[*]}"
+echo "Repeats: $REPEATS"
 echo "Output dir: $OUT_DIR"
 echo ""
 
@@ -171,6 +228,16 @@ if [[ ! -f "$INNER" ]]; then
 fi
 
 LOG_PATH="${OUT_DIR}/sweep_log.txt"
+AGG_CSV="${OUT_DIR}/sweep_summary.csv"
+AGG_JSONL="${OUT_DIR}/sweep_summary.jsonl"
+AGG_SUMMARY_TXT="${OUT_DIR}/summary.txt"
+AGG_STABILITY_JSON="${OUT_DIR}/sweep_stability.json"
+REPEAT_CSVS=()
+
+if [[ "$DETACH" -eq 1 && "$REPEATS" -gt 1 ]]; then
+  echo "ERROR: --detach is only supported with --repeats 1." >&2
+  exit 2
+fi
 
 DOCKER_ARGS=(
   --gpus all
@@ -180,59 +247,98 @@ DOCKER_ARGS=(
   --network host
   -e TIKTOKEN_RS_CACHE_DIR=/root/.cache/tiktoken_rs
   "${HF_MOUNT[@]}"
+  "${VLLM_ENV[@]}"
   -v "$INNER":/sweep.sh:ro
-  -v "$OUT_DIR":/results
   -v "$HF_CACHE_DIR":/root/.cache/huggingface
   -v "$TIKTOKEN_CACHE":/root/.cache/tiktoken_rs
   -v "$VLLM_CACHE_DIR":/root/.cache/vllm
   -v "$FLASHINFER_CACHE_DIR":/root/.cache/flashinfer
   --entrypoint bash
-  "$CONTAINER_IMAGE"
 )
 
-if [[ "$DETACH" -eq 1 ]]; then
-  safe_name="$(echo "vllm_sweep_${RUN_ID}_${LABEL}" | tr -c '[:alnum:]_.' '_' )_$(date +%s)"
-  echo "Starting detached container (will still wait to keep GPU clocks locked): ${safe_name}"
-  docker run -d --name "$safe_name" \
-    "${DOCKER_ARGS[@]}" \
-    -lc "/sweep.sh \"$MODEL\" \"$TP\" \"$ISL\" \"$OSL\" \"$MAX_MODEL_LEN\" \"$PORT\" \"/results\" ${CONC_ARR[*]} > /results/sweep_log.txt 2>&1"
-  echo "Detached sweep started."
-  echo "  container: ${safe_name}"
-  echo "  log file:  ${LOG_PATH}"
-  echo "  summary:   ${OUT_DIR}/summary.txt (written on completion)"
+rm -f "$LOG_PATH"
 
-  # The container redirects stdout/stderr to a file under /results, so docker logs
-  # is not useful here. Tail the on-disk log instead.
-  tail -n +1 -F "$LOG_PATH" &
-  TAIL_PID=$!
-  rc="$(docker wait "$safe_name")"
-  kill "$TAIL_PID" 2>/dev/null || true
-  wait "$TAIL_PID" 2>/dev/null || true
-  docker rm "$safe_name" >/dev/null 2>&1 || true
-  if [[ "$rc" -ne 0 ]]; then
-    echo "ERROR: vLLM sweep container exited with code ${rc}" >&2
-    exit "$rc"
+for rep in $(seq 1 "$REPEATS"); do
+  REP_DIR="${OUT_DIR}/repeat_${rep}"
+  mkdir -p "$REP_DIR"
+  REP_LOG="${REP_DIR}/sweep_log.txt"
+  if [[ "$DETACH" -eq 1 ]]; then
+    safe_name="$(echo "vllm_sweep_${RUN_ID}_${LABEL}_r${rep}" | tr -c '[:alnum:]_.' '_' )_$(date +%s)"
+    echo "Starting detached container (repeat ${rep}/${REPEATS}): ${safe_name}"
+    docker run -d --name "$safe_name" \
+      "${DOCKER_ARGS[@]}" \
+      -v "$REP_DIR":/results \
+      "$CONTAINER_IMAGE" \
+      -lc "/sweep.sh \"$MODEL\" \"$TP\" \"$ISL\" \"$OSL\" \"$MAX_MODEL_LEN\" \"$PORT\" \"/results\" ${CONC_ARR[*]} > /results/sweep_log.txt 2>&1"
+    tail -n +1 -F "$REP_LOG" &
+    TAIL_PID=$!
+    rc="$(docker wait "$safe_name")"
+    kill "$TAIL_PID" 2>/dev/null || true
+    wait "$TAIL_PID" 2>/dev/null || true
+    docker rm "$safe_name" >/dev/null 2>&1 || true
+    if [[ "$rc" -ne 0 ]]; then
+      echo "ERROR: vLLM sweep container exited with code ${rc} on repeat ${rep}" >&2
+      exit "$rc"
+    fi
+  else
+    echo "=== Repeat ${rep}/${REPEATS}: vLLM concurrency sweep ==="
+    set +e
+    docker run --rm \
+      "${DOCKER_ARGS[@]}" \
+      -v "$REP_DIR":/results \
+      "$CONTAINER_IMAGE" \
+      /sweep.sh \
+        "$MODEL" "$TP" "$ISL" "$OSL" "$MAX_MODEL_LEN" "$PORT" \
+        "/results" "${CONC_ARR[@]}" 2>&1 | tee "$REP_LOG"
+    rc=${PIPESTATUS[0]}
+    set -e
+    if [[ "$rc" -ne 0 ]]; then
+      echo "ERROR: vLLM sweep container failed on repeat ${rep} (rc=${rc})." >&2
+      if [[ -f "${REP_DIR}/server.log" ]]; then
+        echo "---- ${REP_DIR}/server.log (last 120 lines) ----" >&2
+        tail -n 120 "${REP_DIR}/server.log" >&2 || true
+      fi
+      exit "$rc"
+    fi
   fi
-fi
 
-if [[ "$DETACH" -ne 1 ]]; then
-  docker run --rm "${DOCKER_ARGS[@]}" \
-    /sweep.sh \
-      "$MODEL" "$TP" "$ISL" "$OSL" "$MAX_MODEL_LEN" "$PORT" \
-      "/results" "${CONC_ARR[@]}" 2>&1 | tee "$LOG_PATH"
-fi
+  if [[ ! -f "${REP_DIR}/sweep_summary.csv" ]]; then
+    echo "ERROR: missing repeat CSV output: ${REP_DIR}/sweep_summary.csv" >&2
+    exit 1
+  fi
+  REPEAT_CSVS+=("${REP_DIR}/sweep_summary.csv")
+  {
+    echo "========================================"
+    echo "Repeat ${rep}/${REPEATS}"
+    echo "========================================"
+    cat "$REP_LOG"
+    echo
+  } >>"$LOG_PATH"
+done
 
-if [[ -f "$OUT_DIR/summary.txt" ]]; then
-  cp -f "$OUT_DIR/summary.txt" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_concurrency_sweep_summary.txt"
+python3 "${ROOT_DIR}/analysis/aggregate_vllm_repeat_csv.py" \
+  --mode concurrency \
+  --inputs "${REPEAT_CSVS[@]}" \
+  --output-csv "$AGG_CSV" \
+  --output-jsonl "$AGG_JSONL" \
+  --output-stability-json "$AGG_STABILITY_JSON" \
+  --output-summary-txt "$AGG_SUMMARY_TXT"
+
+if [[ -f "$AGG_SUMMARY_TXT" ]]; then
+  cp -f "$AGG_SUMMARY_TXT" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_concurrency_sweep_summary.txt"
   echo "Wrote ${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_concurrency_sweep_summary.txt"
 fi
-if [[ -f "$OUT_DIR/sweep_summary.csv" ]]; then
-  cp -f "$OUT_DIR/sweep_summary.csv" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep.csv"
+if [[ -f "$AGG_CSV" ]]; then
+  cp -f "$AGG_CSV" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep.csv"
   echo "Wrote ${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep.csv"
 fi
-if [[ -f "$OUT_DIR/sweep_summary.jsonl" ]]; then
-  cp -f "$OUT_DIR/sweep_summary.jsonl" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep.jsonl"
+if [[ -f "$AGG_JSONL" ]]; then
+  cp -f "$AGG_JSONL" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep.jsonl"
   echo "Wrote ${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep.jsonl"
+fi
+if [[ -f "$AGG_STABILITY_JSON" ]]; then
+  cp -f "$AGG_STABILITY_JSON" "${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep_stability.json"
+  echo "Wrote ${STRUCT_DIR}/${RUN_ID}_${LABEL}_vllm_serve_sweep_stability.json"
 fi
 
 echo "Wrote ${LOG_PATH}"

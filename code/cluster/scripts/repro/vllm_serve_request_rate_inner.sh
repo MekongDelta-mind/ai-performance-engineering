@@ -15,12 +15,13 @@ REQUEST_RATE_RANGE="$@"
 
 export VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8=1
 VLLM_SERVE_ENFORCE_EAGER="${VLLM_SERVE_ENFORCE_EAGER:-1}"
+VLLM_KV_CACHE_MEMORY_BYTES="${VLLM_KV_CACHE_MEMORY_BYTES:-}"
 
 if [[ "$MODEL" == *"gpt-oss"* ]]; then
   export VLLM_MXFP4_USE_MARLIN=1
 fi
 
-if ! vllm bench serve --help 2>/dev/null | grep -q -- "--request-rate"; then
+if ! vllm bench serve --help=all 2>/dev/null | grep -q -- "--request-rate"; then
   echo "ERROR: installed vLLM does not support '--request-rate' for bench serve." >&2
   exit 2
 fi
@@ -52,6 +53,21 @@ SERVE_ARGS=(
   --disable-log-requests
 )
 
+if [[ -z "$VLLM_KV_CACHE_MEMORY_BYTES" ]]; then
+  total_mem_mib="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 | tr -d ' ')"
+  if [[ "$total_mem_mib" =~ ^[0-9]+$ ]]; then
+    kv_cache_mib=$(( total_mem_mib * 70 / 100 ))
+    if [[ "$kv_cache_mib" -lt 512 ]]; then
+      kv_cache_mib=512
+    fi
+    VLLM_KV_CACHE_MEMORY_BYTES=$(( kv_cache_mib * 1024 * 1024 ))
+  fi
+fi
+if [[ -n "$VLLM_KV_CACHE_MEMORY_BYTES" ]]; then
+  echo "Using --kv-cache-memory-bytes=${VLLM_KV_CACHE_MEMORY_BYTES}"
+  SERVE_ARGS+=(--kv-cache-memory-bytes "$VLLM_KV_CACHE_MEMORY_BYTES")
+fi
+
 if [[ "$VLLM_SERVE_ENFORCE_EAGER" == "1" ]]; then
   echo "Enabling --enforce-eager for startup robustness."
   SERVE_ARGS+=(--enforce-eager)
@@ -67,6 +83,11 @@ echo "Waiting for server to be ready..."
 MAX_WAIT=1200
 WAITED=0
 while ! curl -s "http://localhost:${PORT}/health" >/dev/null 2>&1; do
+  if [[ -f "$SERVER_LOG" ]] && grep -qE "Engine core initialization failed|AssertionError: Error in memory profiling|RuntimeError: Engine core initialization failed" "$SERVER_LOG"; then
+    echo "ERROR: Server reported a fatal initialization error before becoming healthy"
+    tail -120 "$SERVER_LOG" || true
+    exit 1
+  fi
   if ! kill -0 "$SERVER_PID" 2>/dev/null; then
     echo "ERROR: Server died before becoming healthy"
     tail -100 "$SERVER_LOG" || true

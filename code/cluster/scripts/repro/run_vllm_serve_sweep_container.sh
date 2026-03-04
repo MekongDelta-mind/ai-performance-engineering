@@ -157,8 +157,12 @@ echo "Concurrency range: ${CONC_ARR[*]}"
 echo "Output dir: $OUT_DIR"
 echo ""
 
-echo "Pulling container (best-effort)..."
-docker pull "$CONTAINER_IMAGE" 2>/dev/null || echo "Using cached container"
+if docker image inspect "$CONTAINER_IMAGE" >/dev/null 2>&1; then
+  echo "Using cached container image: ${CONTAINER_IMAGE}"
+else
+  echo "Pulling container (best-effort)..."
+  docker pull "$CONTAINER_IMAGE" 2>/dev/null || echo "WARNING: docker pull failed; attempting to continue with local cache"
+fi
 
 INNER="${ROOT_DIR}/scripts/repro/vllm_serve_sweep_inner.sh"
 if [[ ! -f "$INNER" ]]; then

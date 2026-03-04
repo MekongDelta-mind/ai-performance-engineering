@@ -236,10 +236,15 @@ python3 scripts/write_manifest.py --run-id <run_id> --hosts node1,node2 --includ
 - `results/structured/<run_id>_<label>_nvbandwidth.json` (when running `scripts/repro/run_nvbandwidth_bundle.sh`)
 - `results/structured/<run_id>_<label>_nvbandwidth_sums.csv` (when running `scripts/repro/run_nvbandwidth_bundle.sh`)
 - `results/structured/<run_id>_<label>_nvbandwidth_clock_lock.json` (when running `scripts/repro/run_nvbandwidth_bundle.sh`)
+- `results/structured/<run_id>_<label>_gpu_stream.json` (when GPU STREAM benchmark is enabled)
+- `results/structured/<run_id>_<label>_gpu_stream.csv` (when GPU STREAM benchmark is enabled)
+- `results/structured/<run_id>_<label>_gpu_stream_clock_lock.json` (when GPU STREAM benchmark is enabled)
 - `results/structured/<run_id>_<label>_gemm_gpu_sanity.csv`
 - `results/structured/<run_id>_<label>_fio.json`
 - `results/structured/<run_id>_node_parity_summary.json`
 - `results/structured/<run_id>_<label>_nvlink_topology.json`
+- `results/structured/<run_id>_cluster_scorecard.json`
+- `results/structured/<run_id>_cluster_scorecard.md`
 - `results/structured/<run_id>_fp4_attestation_consistency.json` (when FP4 checks are enabled)
 
 ## Documentation Map

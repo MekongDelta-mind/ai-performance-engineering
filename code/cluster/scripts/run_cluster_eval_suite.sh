@@ -18,17 +18,18 @@ Runs a reusable "field report" eval suite:
   9) Benchmark B: vLLM online serving sweep (containerized, single-node)
   10) Optional: vLLM multinode serving benchmark (Ray, 2-node; auto-on for multi-node runs)
   11) Benchmark C: BF16 GEMM per-GPU sanity (all nodes)
-  12) Optional FP4 checks: DeepGEMM FP8xFP4 smoke + grouped GEMM (all nodes)
-  13) Optional high-impact extras (ml-engineering parity):
+  12) Benchmark D: GPU STREAM-style memory behavior probe (all nodes)
+  13) Optional FP4 checks: DeepGEMM FP8xFP4 smoke + grouped GEMM (all nodes)
+  14) Optional high-impact extras (ml-engineering parity):
      MAMF, all-reduce stability, all-reduce latency comp,
      all_gather_object control-plane comparison, NCCL algo comparison
-  14) Optional: CPU<->GPU C2C memcpy benchmark (local)
-  15) Optional: NUMA memory-bandwidth probe (all nodes)
-  16) Optional: end-to-end transformer train-step benchmark (single-node + multi-node)
-  17) Optional: checkpoint-like I/O benchmark (all nodes)
-  18) Storage: fio (all nodes)
-  19) Optional: nvbandwidth bundle (all nodes; auto-on for multi-node runs)
-  20) Plots (includes NVLink topology) + manifest refresh + artifact validation
+  15) Optional: CPU<->GPU C2C memcpy benchmark (local)
+  16) Optional: NUMA memory-bandwidth probe (all nodes)
+  17) Optional: end-to-end transformer train-step benchmark (single-node + multi-node)
+  18) Optional: checkpoint-like I/O benchmark (all nodes)
+  19) Storage: fio (all nodes)
+  20) Optional: nvbandwidth bundle (all nodes; auto-on for multi-node runs)
+  21) Plots (includes NVLink topology) + scorecard + manifest refresh + artifact validation
 
 Notes:
   - GPU benchmarks are strict: they FAIL if GPU clock lock cannot be acquired.
@@ -147,6 +148,14 @@ Options:
                                           (default: cfregly/cluster_perf_orig_parity:latest)
   --nvbandwidth-bin <path>                nvbandwidth executable for runtime=host (default: nvbandwidth)
   --nvbandwidth-quick      Use reduced nvbandwidth testcase subset
+
+  --run-gpu-stream         Force-enable GPU STREAM-style benchmark (all nodes; default: on)
+  --skip-gpu-stream        Force-disable GPU STREAM-style benchmark
+  --gpu-stream-device <n>  CUDA device index for STREAM benchmark (default: 0)
+  --gpu-stream-size-mb <n> STREAM benchmark vector size in MB (default: 1024)
+  --gpu-stream-iters <n>   STREAM benchmark measured iterations per op (default: 40)
+  --gpu-stream-warmup <n>  STREAM benchmark warmup iterations per op (default: 10)
+  --gpu-stream-dtype <d>   STREAM benchmark dtype: fp32|fp16|bf16 (default: fp32)
 
   --health-suite <mode>    Optional multi-node diagnostics:
                            off|collectives|base|extended (default: collectives)
@@ -323,6 +332,13 @@ NVBANDWIDTH_RUNTIME="host"
 NVBANDWIDTH_IMAGE="cfregly/cluster_perf_orig_parity:latest"
 NVBANDWIDTH_BIN="nvbandwidth"
 NVBANDWIDTH_QUICK=0
+RUN_GPU_STREAM_MODE="on"
+RUN_GPU_STREAM=1
+GPU_STREAM_DEVICE="0"
+GPU_STREAM_SIZE_MB="1024"
+GPU_STREAM_ITERS="40"
+GPU_STREAM_WARMUP="10"
+GPU_STREAM_DTYPE="fp32"
 
 HEALTH_SUITE_MODE="collectives"
 HEALTH_GDR=0
@@ -488,6 +504,13 @@ while [[ $# -gt 0 ]]; do
     --nvbandwidth-image) NVBANDWIDTH_IMAGE="$2"; shift 2 ;;
     --nvbandwidth-bin) NVBANDWIDTH_BIN="$2"; shift 2 ;;
     --nvbandwidth-quick) NVBANDWIDTH_QUICK=1; shift ;;
+    --run-gpu-stream) RUN_GPU_STREAM_MODE="on"; shift ;;
+    --skip-gpu-stream) RUN_GPU_STREAM_MODE="off"; shift ;;
+    --gpu-stream-device) GPU_STREAM_DEVICE="$2"; shift 2 ;;
+    --gpu-stream-size-mb) GPU_STREAM_SIZE_MB="$2"; shift 2 ;;
+    --gpu-stream-iters) GPU_STREAM_ITERS="$2"; shift 2 ;;
+    --gpu-stream-warmup) GPU_STREAM_WARMUP="$2"; shift 2 ;;
+    --gpu-stream-dtype) GPU_STREAM_DTYPE="$2"; shift 2 ;;
 
     --health-suite) HEALTH_SUITE_MODE="$2"; shift 2 ;;
     --health-gdr) HEALTH_GDR=1; shift ;;
@@ -598,12 +621,36 @@ if [[ "$RUN_NVBANDWIDTH_MODE" != "auto" && "$RUN_NVBANDWIDTH_MODE" != "on" && "$
   echo "ERROR: invalid nvbandwidth mode: ${RUN_NVBANDWIDTH_MODE}" >&2
   exit 2
 fi
+if [[ "$RUN_GPU_STREAM_MODE" != "on" && "$RUN_GPU_STREAM_MODE" != "off" ]]; then
+  echo "ERROR: invalid GPU STREAM mode: ${RUN_GPU_STREAM_MODE}" >&2
+  exit 2
+fi
 if [[ "$NVBANDWIDTH_RUNTIME" != "host" && "$NVBANDWIDTH_RUNTIME" != "container" ]]; then
   echo "ERROR: --nvbandwidth-runtime must be host or container (got: ${NVBANDWIDTH_RUNTIME})" >&2
   exit 2
 fi
 if [[ "$NVBANDWIDTH_RUNTIME" == "container" && -z "$NVBANDWIDTH_IMAGE" ]]; then
   echo "ERROR: --nvbandwidth-image is required when --nvbandwidth-runtime=container" >&2
+  exit 2
+fi
+if ! [[ "$GPU_STREAM_DEVICE" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: --gpu-stream-device must be a non-negative integer (got: ${GPU_STREAM_DEVICE})" >&2
+  exit 2
+fi
+if ! [[ "$GPU_STREAM_SIZE_MB" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --gpu-stream-size-mb must be a positive integer (got: ${GPU_STREAM_SIZE_MB})" >&2
+  exit 2
+fi
+if ! [[ "$GPU_STREAM_ITERS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: --gpu-stream-iters must be a positive integer (got: ${GPU_STREAM_ITERS})" >&2
+  exit 2
+fi
+if ! [[ "$GPU_STREAM_WARMUP" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: --gpu-stream-warmup must be >= 0 (got: ${GPU_STREAM_WARMUP})" >&2
+  exit 2
+fi
+if [[ "$GPU_STREAM_DTYPE" != "fp32" && "$GPU_STREAM_DTYPE" != "fp16" && "$GPU_STREAM_DTYPE" != "bf16" ]]; then
+  echo "ERROR: --gpu-stream-dtype must be fp32, fp16, or bf16 (got: ${GPU_STREAM_DTYPE})" >&2
   exit 2
 fi
 
@@ -777,6 +824,12 @@ elif [[ "${#HOST_ARR[@]}" -gt 1 ]]; then
   RUN_NVBANDWIDTH=1
 else
   RUN_NVBANDWIDTH=0
+fi
+
+if [[ "$RUN_GPU_STREAM_MODE" == "on" ]]; then
+  RUN_GPU_STREAM=1
+else
+  RUN_GPU_STREAM=0
 fi
 
 if [[ "$RUN_VLLM_MULTINODE_MODE" == "on" && "${#HOST_ARR[@]}" -lt 2 ]]; then
@@ -1088,6 +1141,40 @@ PY
     done
   fi
 
+  if [[ "$RUN_GPU_STREAM" -eq 1 ]]; then
+    for idx in "${!HOST_ARR[@]}"; do
+      label="$(label_for_index "$idx")"
+      for suffix in "_gpu_stream.json" "_gpu_stream.csv" "_gpu_stream_clock_lock.json"; do
+        path="${ROOT_DIR}/results/structured/${RUN_ID}_${label}${suffix}"
+        if [[ ! -f "$path" ]]; then
+          echo "ERROR: missing required gpu_stream artifact: ${path}" >&2
+          missing=1
+        fi
+      done
+      path="${ROOT_DIR}/results/structured/${RUN_ID}_${label}_gpu_stream.json"
+      if [[ -f "$path" ]]; then
+        if ! python3 - "$path" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if payload.get("status") != "ok":
+    raise SystemExit(f"gpu_stream status is not ok: {payload.get('status')}")
+ops = payload.get("operations") or []
+if not ops:
+    raise SystemExit("gpu_stream operations are empty")
+if max(float(op.get("bandwidth_gbps", 0.0)) for op in ops) <= 0:
+    raise SystemExit("gpu_stream bandwidth values are non-positive")
+PY
+        then
+          echo "ERROR: invalid gpu_stream summary: ${path}" >&2
+          missing=1
+        fi
+      fi
+    done
+  fi
+
   if [[ "$RUN_VLLM_MULTINODE" -eq 1 ]]; then
     local leader_label worker_label
     leader_label="$(label_for_index 0)"
@@ -1183,6 +1270,17 @@ PY
     fi
   fi
 
+  path="${ROOT_DIR}/results/structured/${RUN_ID}_cluster_scorecard.json"
+  if [[ ! -f "$path" ]]; then
+    echo "ERROR: missing required scorecard artifact: ${path}" >&2
+    missing=1
+  fi
+  path="${ROOT_DIR}/results/structured/${RUN_ID}_cluster_scorecard.md"
+  if [[ ! -f "$path" ]]; then
+    echo "ERROR: missing required scorecard artifact: ${path}" >&2
+    missing=1
+  fi
+
   if [[ "$missing" -ne 0 ]]; then
     return 1
   fi
@@ -1223,6 +1321,11 @@ if [[ "$RUN_NVBANDWIDTH" -eq 1 ]]; then
   echo "nvbandwidth: enabled mode=${RUN_NVBANDWIDTH_MODE} runtime=${NVBANDWIDTH_RUNTIME} quick=${NVBANDWIDTH_QUICK}"
 else
   echo "nvbandwidth: disabled mode=${RUN_NVBANDWIDTH_MODE}"
+fi
+if [[ "$RUN_GPU_STREAM" -eq 1 ]]; then
+  echo "gpu_stream: enabled mode=${RUN_GPU_STREAM_MODE} device=${GPU_STREAM_DEVICE} size_mb=${GPU_STREAM_SIZE_MB} iters=${GPU_STREAM_ITERS} warmup=${GPU_STREAM_WARMUP} dtype=${GPU_STREAM_DTYPE}"
+else
+  echo "gpu_stream: disabled mode=${RUN_GPU_STREAM_MODE}"
 fi
 echo "health_suite: ${HEALTH_SUITE_MODE}"
 if [[ "$HEALTH_GDR" -eq 1 ]]; then
@@ -1584,6 +1687,27 @@ if [[ -n "$SSH_KEY" ]]; then
   gemm_args+=(--ssh-key "$SSH_KEY")
 fi
 run_step "gemm_sanity" "${ROOT_DIR}/scripts/run_gemm_sanity_all_nodes.sh" "${gemm_args[@]}"
+
+# Benchmark D: GPU STREAM-style memory behavior (all nodes)
+if [[ "$RUN_GPU_STREAM" -eq 1 ]]; then
+  gpu_stream_args=(
+    --run-id "$RUN_ID"
+    --hosts "$HOSTS"
+    --ssh-user "$SSH_USER"
+    --device "$GPU_STREAM_DEVICE"
+    --size-mb "$GPU_STREAM_SIZE_MB"
+    --iters "$GPU_STREAM_ITERS"
+    --warmup "$GPU_STREAM_WARMUP"
+    --dtype "$GPU_STREAM_DTYPE"
+  )
+  if [[ -n "$LABELS" ]]; then
+    gpu_stream_args+=(--labels "$LABELS")
+  fi
+  if [[ -n "$SSH_KEY" ]]; then
+    gpu_stream_args+=(--ssh-key "$SSH_KEY")
+  fi
+  run_step "gpu_stream_all_nodes" "${ROOT_DIR}/scripts/run_gpu_stream_bench_all_nodes.sh" "${gpu_stream_args[@]}"
+fi
 
 # Optional FP4 checks: DeepGEMM FP8xFP4 smoke + grouped GEMM benchmark.
 if [[ "$ENABLE_FP4" -eq 1 ]]; then
@@ -2040,6 +2164,18 @@ if [[ "$RUN_NVBANDWIDTH" -eq 1 ]]; then
   done
 fi
 
+if [[ "$RUN_GPU_STREAM" -eq 1 ]]; then
+  shopt -s nullglob
+  gpu_stream_inputs=( "${ROOT_DIR}/results/structured/${RUN_ID}_"*_gpu_stream.json )
+  shopt -u nullglob
+  for gpu_stream_json in "${gpu_stream_inputs[@]}"; do
+    gpu_stream_base="$(basename "$gpu_stream_json" .json)"
+    run_step "plot_gpu_stream_${gpu_stream_base}" python3 "${ROOT_DIR}/analysis/plot_gpu_stream.py" \
+      --input "$gpu_stream_json" \
+      --out "${ROOT_DIR}/docs/figures/${gpu_stream_base}.png"
+  done
+fi
+
 if [[ -f "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_c2c_memcpy.json" ]]; then
   run_step "plot_c2c_memcpy" python3 "${ROOT_DIR}/analysis/plot_c2c_memcpy.py" \
     --input "${ROOT_DIR}/results/structured/${RUN_ID}_${PRIMARY_LABEL}_c2c_memcpy.json" \
@@ -2115,6 +2251,10 @@ if [[ "$RUN_QUICK_FRICTION" -eq 1 || "$RUN_MONITORING_EXPECTATIONS" -eq 1 ]]; th
     --fig-out "${ROOT_DIR}/docs/figures/${RUN_ID}_operator_checks_dashboard.png" \
     --summary-out "${ROOT_DIR}/results/structured/${RUN_ID}_operator_checks_dashboard.json"
 fi
+
+run_step "build_cluster_scorecard" python3 "${ROOT_DIR}/analysis/build_cluster_scorecard.py" \
+  --run-id "${RUN_ID}" \
+  --structured-dir "${ROOT_DIR}/results/structured"
 
 run_step "validate_required_artifacts" validate_required_artifacts
 

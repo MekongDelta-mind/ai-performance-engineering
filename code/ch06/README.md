@@ -3,6 +3,52 @@
 ## Summary
 Moves from Python into CUDA C++: write first kernels, reason about occupancy, control memory layouts, and experiment with ILP, launch bounds, and unified memory on Blackwell devices.
 
+## Problem
+Chapter 6 is where kernel mechanics stop being theoretical. The real question is which low-level changes register pressure, vector width, launch bounds, ILP, and memory layout actually show up as measured improvement under the harness.
+
+## Baseline Path
+- simple kernels with minimal attention to occupancy or memory layout
+- scalar or poorly amortized execution paths
+- examples that surface launch and memory inefficiency clearly
+
+## Optimized Path
+- vectorized and parallelized kernels
+- ILP- and launch-bound-aware variants
+- autotuned or occupancy-tuned schedules where the hardware payoff is visible
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `add` | `172.202 ms` | `0.044 ms` | `3881.04x` | naive add path replaced with a true CUDA implementation |
+| `attention_ilp` | `140.603 ms` | `0.529 ms` | `265.82x` | ILP and vectorization collapse the slow path |
+| `autotuning` | `63.881 ms` | `16.310 ms` | `3.92x` | schedule selection finds a materially better kernel config |
+
+This chapter has the biggest synthetic-looking wins in the repo because many baselines are intentionally pedagogical. They are still useful, but they should be read as controlled teaching deltas, not production uplift guarantees.
+
+## Profiler Evidence
+This is a profiler-heavy chapter by design. Use deep-dive runs when you want to connect the wall-clock delta to occupancy, memory throughput, and launch behavior:
+
+```bash
+python -m cli.aisp bench run --targets ch06:add --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch06:attention_ilp --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch06:autotuning --profile deep_dive --single-gpu
+```
+
+Expected profiler story:
+- `add`: removal of pure-framework overhead and better GPU utilization
+- `attention_ilp`: higher effective work per thread and less wasted issue bandwidth
+- `autotuning`: better schedule choice rather than different math
+
+## Repro Commands
+```bash
+python -m ch06.compare
+python -m cli.aisp bench list-targets --chapter ch06
+python -m cli.aisp bench run --targets ch06 --profile minimal
+python -m cli.aisp bench run --targets ch06:attention_ilp --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Write and launch custom kernels that mirror the harness workloads.
 - Understand how occupancy, launch bounds, and register pressure interact.

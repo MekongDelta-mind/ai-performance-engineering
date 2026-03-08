@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import math
+import statistics
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -191,7 +192,9 @@ def build_tier1_suite_summary(
             "skipped": skipped,
             "missing": missing,
             "avg_speedup": (sum(speedups) / len(speedups)) if speedups else 0.0,
+            "median_speedup": statistics.median(speedups) if speedups else 0.0,
             "geomean_speedup": _geometric_mean(speedups),
+            "representative_speedup": _geometric_mean(speedups),
             "max_speedup": max(speedups) if speedups else 0.0,
         },
     }

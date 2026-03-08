@@ -128,6 +128,8 @@ def test_build_tier1_suite_summary_and_history_artifacts(tmp_path: Path) -> None
     assert summary["summary"]["target_count"] == 6
     assert summary["summary"]["succeeded"] == 6
     assert summary["summary"]["missing"] == 0
+    assert summary["summary"]["median_speedup"] > 0
+    assert summary["summary"]["representative_speedup"] == summary["summary"]["geomean_speedup"]
 
     block_scaling = next(target for target in summary["targets"] if target["key"] == "block_scaling")
     assert block_scaling["best_speedup"] == 1.45
@@ -154,11 +156,15 @@ def test_build_tier1_suite_summary_and_history_artifacts(tmp_path: Path) -> None
     assert updated_index["suite_name"] == "tier1"
     assert len(updated_index["runs"]) == 1
     assert updated_index["runs"][0]["regression_json_path"] == str(regression_json_path)
+    assert updated_index["runs"][0]["median_speedup"] == summary["summary"]["median_speedup"]
+    assert updated_index["runs"][0]["representative_speedup"] == summary["summary"]["representative_speedup"]
 
     trend = build_trend_snapshot(updated_index)
     assert trend["run_count"] == 1
     assert trend["latest_run_id"] == "tier1_run_a"
     assert trend["best_speedup_seen"] == summary["summary"]["max_speedup"]
+    assert trend["representative_speedup"] == summary["summary"]["representative_speedup"]
+    assert trend["avg_median_speedup"] == summary["summary"]["median_speedup"]
 
 
 def test_compare_suite_summaries_detects_speedup_regression_and_new_targets(tmp_path: Path) -> None:

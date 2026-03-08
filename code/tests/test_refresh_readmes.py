@@ -13,6 +13,11 @@ from core.scripts.refresh_readmes import (
 
 
 PRIORITY_EVIDENCE_DOCS = (
+    "ch01",
+    "ch02",
+    "ch03",
+    "ch05",
+    "ch06",
     "ch07",
     "ch08",
     "ch09",
@@ -52,6 +57,11 @@ def test_root_readme_preserves_evidence_first_sections() -> None:
 
 
 def test_ch10_and_priority_labs_render_custom_evidence_sections() -> None:
+    ch01_markdown = _format_markdown(ENTRIES["ch01"])
+    ch02_markdown = _format_markdown(ENTRIES["ch02"])
+    ch03_markdown = _format_markdown(ENTRIES["ch03"])
+    ch05_markdown = _format_markdown(ENTRIES["ch05"])
+    ch06_markdown = _format_markdown(ENTRIES["ch06"])
     ch04_markdown = _format_markdown(ENTRIES["ch04"])
     ch07_markdown = _format_markdown(ENTRIES["ch07"])
     ch08_markdown = _format_markdown(ENTRIES["ch08"])
@@ -71,7 +81,28 @@ def test_ch10_and_priority_labs_render_custom_evidence_sections() -> None:
     kv_markdown = _format_markdown(ENTRIES["labs/kv_optimization"])
     models_markdown = _format_markdown(ENTRIES["labs/real_world_models"])
 
-    for markdown in (ch04_markdown, ch07_markdown, ch08_markdown, ch09_markdown, ch10_markdown, ch11_markdown, ch12_markdown, ch13_markdown, ch14_markdown, ch15_markdown, ch16_markdown, ch17_markdown, ch18_markdown, ch19_markdown, ch20_markdown):
+    for markdown in (
+        ch01_markdown,
+        ch02_markdown,
+        ch03_markdown,
+        ch04_markdown,
+        ch05_markdown,
+        ch06_markdown,
+        ch07_markdown,
+        ch08_markdown,
+        ch09_markdown,
+        ch10_markdown,
+        ch11_markdown,
+        ch12_markdown,
+        ch13_markdown,
+        ch14_markdown,
+        ch15_markdown,
+        ch16_markdown,
+        ch17_markdown,
+        ch18_markdown,
+        ch19_markdown,
+        ch20_markdown,
+    ):
         assert "## Problem" in markdown
         assert "## Baseline Path" in markdown
         assert "## Optimized Path" in markdown
@@ -112,6 +143,12 @@ def test_current_representative_deltas_prefer_tier1_history_when_available(tmp_p
     summary_path = history_root / "summary.json"
     summary_payload = {
         "run_id": "20260308_070000_manual",
+        "summary": {
+            "avg_speedup": 5.0,
+            "median_speedup": 5.0,
+            "geomean_speedup": 4.0,
+            "representative_speedup": 4.0,
+        },
         "targets": [
             {
                 "target": "labs/block_scaling:block_scaling",
@@ -147,6 +184,7 @@ def test_current_representative_deltas_prefer_tier1_history_when_available(tmp_p
     body = _render_current_representative_deltas_body(tmp_path)
 
     assert "latest canonical tier-1 history summary" in body
+    assert "Representative suite speedup" in body
     assert "`labs/block_scaling:block_scaling`" in body
     assert "`0.200 ms`" in body
     assert "`0.100 ms`" in body

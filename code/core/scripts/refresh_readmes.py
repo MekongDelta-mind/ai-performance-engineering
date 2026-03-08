@@ -164,15 +164,35 @@ def _render_current_representative_deltas_body(repo_root: Optional[Path] = None)
     targets = summary.get("targets", [])
     if not isinstance(targets, list):
         return _fallback_body()
+    summary_metrics = summary.get("summary", {}) if isinstance(summary.get("summary"), dict) else {}
+    representative_speedup = float(summary_metrics.get("representative_speedup", summary_metrics.get("geomean_speedup", 0.0)) or 0.0)
+    median_speedup = float(summary_metrics.get("median_speedup", 0.0) or 0.0)
+    avg_speedup = float(summary_metrics.get("avg_speedup", 0.0) or 0.0)
 
     lines = [
         "These numbers are taken from the latest canonical tier-1 history summary rather than from hand-maintained README text.",
         "",
         f"Source artifact: `{summary_path.relative_to(root) if summary_path.is_relative_to(root) else summary_path}`",
         "",
+    ]
+    if representative_speedup > 0.0:
+        lines.extend(
+            [
+                (
+                    f"Representative suite speedup: `{representative_speedup:.2f}x` geomean"
+                    + (f", `{median_speedup:.2f}x` median" if median_speedup > 0.0 else "")
+                    + (f", `{avg_speedup:.2f}x` arithmetic average" if avg_speedup > 0.0 else "")
+                    + "."
+                ),
+                "",
+            ]
+        )
+    lines.extend(
+        [
         "| Target | Baseline | Optimized | Measured delta | Artifact |",
         "| --- | ---: | ---: | ---: | --- |",
-    ]
+        ]
+    )
     emitted = 0
     for target in targets:
         if not isinstance(target, dict):
@@ -632,6 +652,78 @@ ENTRIES["ch01"] = chapter_entry(
         """\
         Establishes the baseline benchmarking discipline with a simple training-loop goodput benchmark and a small CUDA GEMM case study. The goal is to ground later optimizations in repeatable measurement, equivalent workloads, and verifiable outputs."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 1 sets the measurement contract for the rest of the repo. The useful question here is not "can I make something faster?" but "can I show a repeatable before/after delta without changing the workload or hiding correctness problems?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager FP32 or minimally optimized Python training loops
+                - one-launch-per-work-item CUDA examples
+                - benchmark setups that make launch overhead and framework overhead visible"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - mixed-precision and fused microbatch execution for the training loop
+                - batched or strided CUDA launches to amortize dispatch cost
+                - memory-reduction variants where the main win is footprint, not raw speed"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `gemm` | `0.364 ms` | `0.012 ms` | `29.51x` | strided batched GEMM removes launch overhead |
+                | `performance` | `68.836 ms` | `14.286 ms` | `4.82x` | FP16 + fused microbatches raise goodput |
+                | `nvfp4_mlp` | `1.130 ms` | `1.167 ms` | `0.97x` | near-flat latency, but `37.9%` lower memory use |
+
+                This chapter intentionally includes both pure speedup examples and one memory-oriented tradeoff so later chapters do not overfit on "speedup only" thinking."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want proof of where the win comes from instead of only a runtime delta:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch01:gemm --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch01:performance --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch01:nvfp4_mlp --profile deep_dive --single-gpu
+                ```
+
+                The expected profiler story is straightforward:
+                - `gemm`: fewer launches and lower dispatch overhead
+                - `performance`: less framework-side work and fewer expensive precision conversions
+                - `nvfp4_mlp`: reduced memory footprint rather than a large wall-clock win"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch01.compare
+                python -m cli.aisp bench list-targets --chapter ch01
+                python -m cli.aisp bench run --targets ch01 --profile minimal
+                python -m cli.aisp bench run --targets ch01:gemm --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Profile a minimal PyTorch training loop with the shared harness and reason about throughput vs latency.",
         "Apply basic optimizations (FP16 + fused microbatches) without changing the algorithmic workload.",
@@ -659,6 +751,78 @@ ENTRIES["ch02"] = chapter_entry(
         """\
         Provides architecture awareness tooling for Blackwell-era systems-query SM and memory specs, validate NVLink throughput, and experiment with CPU-GPU coherency so optimizations stay grounded in measured hardware limits."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 2 is the "know the machine first" chapter. The point is not to collect pretty hardware facts; it is to tie optimization decisions to measured fabric, memory, and coherency behavior on the actual target system."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - generic transfer paths that do not exploit topology or coherency
+                - untuned cuBLAS defaults
+                - hardware assumptions based on specs instead of measured bandwidth/latency"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - topology-aware transfer and coherency choices
+                - tuned cuBLAS invocation parameters
+                - system bring-up driven by measured bandwidth ceilings rather than marketing numbers"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `grace_coherent_memory` | `22468.299 ms` | `970.890 ms` | `23.14x` | coherent-memory placement stops fighting the platform |
+                | `memory_transfer` | `18.901 ms` | `3.637 ms` | `5.20x` | optimized transfer path fits the actual link behavior |
+                | `cublas` | `0.590 ms` | `0.114 ms` | `5.17x` | tuned cuBLAS settings match the hardware better |
+
+                This chapter is the hardware sanity anchor for later claims: if these numbers drift, everything that depends on them deserves scrutiny."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                These are mostly hardware-path benchmarks, so the main evidence is topology, transfer, and kernel traces rather than high-level model metrics:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch02:cublas --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch02:memory_transfer --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch02:grace_coherent_memory --profile deep_dive --single-gpu
+                ```
+
+                The expected story is:
+                - `cublas`: better math-mode and launch configuration behavior
+                - `memory_transfer`: less time lost to the wrong host/device path
+                - `grace_coherent_memory`: the placement choice dominates runtime"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch02.compare
+                python -m ch02.hardware_info
+                python -m cli.aisp bench list-targets --chapter ch02
+                python -m cli.aisp bench run --targets ch02 --profile minimal
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Query and log GPU, CPU, and fabric capabilities before running performance studies.",
         "Measure NVLink, PCIe, and memory-bandwidth ceilings using purpose-built microbenchmarks.",
@@ -690,6 +854,78 @@ ENTRIES["ch03"] = chapter_entry(
         """\
         Captures the host-level changes-NUMA pinning, governor tweaks, container settings, and Kubernetes manifests-that keep GPU workloads fed before kernel-level optimization begins."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 3 is where "the GPU is slow" often turns out to be a host problem. The chapter matters when CPU affinity, container defaults, or orchestration choices are quietly capping the work that later CUDA kernels can ever see."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - NUMA-unaware or scheduler-default execution
+                - untuned container and Kubernetes settings
+                - host configuration that leaves throughput on the floor before kernels even matter"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - NUMA pinning and topology-aware process placement
+                - container and cluster settings that stop starving the GPU
+                - host-level tuning that is measurable through the same shared harness"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `docker` | `4.456 ms` | `1.225 ms` | `3.64x` | container setup stops throttling the workload |
+                | `gemm` | `0.548 ms` | `0.189 ms` | `2.90x` | tuned host/runtime path feeds the kernel better |
+                | `kubernetes` | `1.734 ms` | `1.076 ms` | `1.61x` | topology-aware scheduling reduces orchestration drag |
+
+                The magnitude is smaller than the headline CUDA chapters, but the lesson is important: host tuning changes are often prerequisite wins, not optional polish."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                For this chapter, pair the harness runtime with host/GPU traces so the bottleneck story stays grounded:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch03:docker --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch03:gemm --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch03:kubernetes --profile deep_dive --single-gpu
+                ```
+
+                Expected evidence:
+                - `docker`: less launch jitter and cleaner host scheduling
+                - `gemm`: lower host overhead around the same kernel
+                - `kubernetes`: fewer placement-related stalls and better runtime consistency"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch03.compare
+                python -m cli.aisp bench list-targets --chapter ch03
+                python -m cli.aisp bench run --targets ch03 --profile minimal
+                python -m ch03.power_tuning_tool --power-limits 300,350 --iterations 5 --warmup 1
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Diagnose CPU and memory affinity issues that throttle GPU pipelines.",
         "Harden Docker and Kubernetes environments for sustained GPU throughput on shared clusters.",
@@ -832,6 +1068,78 @@ ENTRIES["ch05"] = chapter_entry(
         """\
         Focuses on feeding GPUs efficiently: tune DataLoader workers, vectorize preprocessing, overlap IO with compute, and adopt GPUDirect Storage when NVMe traffic becomes the bottleneck."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 5 exists because GPUs do not care how elegant a kernel is if the input path is late. The useful question is which storage and preprocessing changes actually turn an IO-bound workload into a compute-bound one."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - CPU-heavy preprocessing and unvectorized parsing
+                - storage paths that serialize work on the host
+                - dataloading behavior that leaves visible GPU idle time"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - vectorized preprocessing and overlap between IO and compute
+                - tuned worker/prefetch settings
+                - GPUDirect Storage or cleaner staging paths where the platform supports them"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `vectorization` | `3.861 ms` | `0.053 ms` | `72.64x` | Python-heavy preprocessing becomes vectorized |
+                | `storage_cpu` | `111.652 ms` | `53.898 ms` | `2.07x` | storage path stops starving the device |
+                | `ai` | `63.724 ms` | `47.702 ms` | `1.34x` | streaming/inference pipeline overlaps IO better |
+
+                The headline win here is often preprocessing, not raw storage hardware. That is why both vectorization and storage-path examples belong in the same chapter."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs to distinguish host-side preprocessing waste from actual storage limits:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch05:vectorization --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch05:storage_cpu --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch05:ai --profile deep_dive --single-gpu
+                ```
+
+                The expected evidence is:
+                - `vectorization`: dramatically less CPU time in preprocessing
+                - `storage_cpu`: fewer long idle gaps between batches
+                - `ai`: better overlap between read/decode work and compute"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch05.compare
+                python -m cli.aisp bench list-targets --chapter ch05
+                python -m cli.aisp bench run --targets ch05 --profile minimal
+                python -m ch05.gds_cufile_minimal /tmp/gds_test_file.bin 1073741824 --generate
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Detect IO stalls via harness metrics and restructure pipelines to keep GPUs busy.",
         "Tune PyTorch DataLoader knobs (workers, prefetch, pinned memory) for large-batch training.",
@@ -865,6 +1173,78 @@ ENTRIES["ch06"] = chapter_entry(
         """\
         Moves from Python into CUDA C++: write first kernels, reason about occupancy, control memory layouts, and experiment with ILP, launch bounds, and unified memory on Blackwell devices."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 6 is where kernel mechanics stop being theoretical. The real question is which low-level changes register pressure, vector width, launch bounds, ILP, and memory layout actually show up as measured improvement under the harness."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - simple kernels with minimal attention to occupancy or memory layout
+                - scalar or poorly amortized execution paths
+                - examples that surface launch and memory inefficiency clearly"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - vectorized and parallelized kernels
+                - ILP- and launch-bound-aware variants
+                - autotuned or occupancy-tuned schedules where the hardware payoff is visible"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `add` | `172.202 ms` | `0.044 ms` | `3881.04x` | naive add path replaced with a true CUDA implementation |
+                | `attention_ilp` | `140.603 ms` | `0.529 ms` | `265.82x` | ILP and vectorization collapse the slow path |
+                | `autotuning` | `63.881 ms` | `16.310 ms` | `3.92x` | schedule selection finds a materially better kernel config |
+
+                This chapter has the biggest synthetic-looking wins in the repo because many baselines are intentionally pedagogical. They are still useful, but they should be read as controlled teaching deltas, not production uplift guarantees."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                This is a profiler-heavy chapter by design. Use deep-dive runs when you want to connect the wall-clock delta to occupancy, memory throughput, and launch behavior:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch06:add --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch06:attention_ilp --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch06:autotuning --profile deep_dive --single-gpu
+                ```
+
+                Expected profiler story:
+                - `add`: removal of pure-framework overhead and better GPU utilization
+                - `attention_ilp`: higher effective work per thread and less wasted issue bandwidth
+                - `autotuning`: better schedule choice rather than different math"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch06.compare
+                python -m cli.aisp bench list-targets --chapter ch06
+                python -m cli.aisp bench run --targets ch06 --profile minimal
+                python -m cli.aisp bench run --targets ch06:attention_ilp --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Write and launch custom kernels that mirror the harness workloads.",
         "Understand how occupancy, launch bounds, and register pressure interact.",

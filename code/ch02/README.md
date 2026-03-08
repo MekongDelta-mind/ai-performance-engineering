@@ -21,7 +21,7 @@ Provides architecture awareness tooling for Blackwell-era systems-query SM and m
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch02/compare.py --profile none
+python -m ch02.compare
 python -m cli.aisp bench list-targets --chapter ch02
 python -m cli.aisp bench run --targets ch02 --profile minimal
 ```
@@ -30,8 +30,8 @@ python -m cli.aisp bench run --targets ch02 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python hardware_info.py` records the correct device name, SM count, and HBM size for every GPU in the system.
-- `python nvlink_c2c_bandwidth_benchmark.py --gpus 0 1` sustains ~250 GB/s unidirectional on NVLink-connected pairs; mismatches flag topology or driver issues.
+- `python -m ch02.hardware_info` records the correct device name, SM count, and HBM size for every GPU in the system.
+- `python -m ch02.nvlink_c2c_bandwidth_benchmark` reports the host↔device and bidirectional bandwidth table for the active topology.
 - Running the coherency sample shows zero-copy benefiting sub-MB transfers while large transfers favor explicit H2D copies, matching the documented thresholds.
 
 ## Notes

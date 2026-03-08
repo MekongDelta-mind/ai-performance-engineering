@@ -122,6 +122,7 @@ class CudaBinaryBenchmark(VerificationPayloadMixin, BaseBenchmark):
     # There are no meaningful Python tensor inputs to validate against those parameters.
     parameter_signature_only: bool = True
     _is_deterministic: bool = True
+    allowed_benchmark_fn_antipatterns = ("io",)
     
     def __init__(
         self,

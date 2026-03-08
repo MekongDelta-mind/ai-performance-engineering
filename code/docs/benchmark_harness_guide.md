@@ -73,7 +73,7 @@ Use `--accept-regressions` when you intentionally want to refresh expectation fi
 
 **How it works**:
 1. Serializes benchmark class and config to JSON
-2. Spawns isolated Python subprocess via `core/harness/isolated_runner.py`
+2. Spawns isolated Python subprocess via `python -m core.harness.isolated_runner`
 3. Subprocess imports module, instantiates benchmark, runs harness
 4. Returns results via JSON (Pydantic models)
 5. Parent process handles timeouts and cleanup

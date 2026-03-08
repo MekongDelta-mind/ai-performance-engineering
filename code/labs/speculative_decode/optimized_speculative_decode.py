@@ -10,15 +10,9 @@ The final generated token sequence must match the baseline greedy decode.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Dict, Optional
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
@@ -33,6 +27,10 @@ from labs.speculative_decode.speculative_decode_common import (
 
 class OptimizedSpeculativeDecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Spec decode loop: draft + batched target verification."""
+
+    # This Python reference benchmark intentionally uses host-visible control
+    # flow for the accept/reject boundary.
+    allowed_benchmark_fn_antipatterns = ("host_transfer",)
 
     def __init__(self) -> None:
         super().__init__()

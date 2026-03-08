@@ -194,6 +194,14 @@ class BaselineKernelVerificationBenchmark(VerificationPayloadMixin, BaseBenchmar
     
     See optimized_proofwright_verify.py for automated formal verification.
     """
+
+    # This benchmark intentionally generates random and adversarial test inputs
+    # and compares host-visible discrepancies as part of the verification story.
+    allowed_benchmark_fn_antipatterns = (
+        "allocation",
+        "host_transfer",
+        "random_input_regeneration",
+    )
     
     def __init__(self):
         super().__init__()

@@ -33,7 +33,6 @@ import ast
 import json
 import os
 import subprocess
-import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -49,10 +48,6 @@ try:
     load_dotenv(env_local_path, override=True)
 except ImportError:
     pass  # dotenv not installed, rely on environment variables
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.utils.logger import get_logger
 
@@ -1221,4 +1216,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

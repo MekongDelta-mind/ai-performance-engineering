@@ -2,24 +2,13 @@
 
 from __future__ import annotations
 
-import pathlib
-import sys
+from pathlib import Path
 from typing import Dict, Optional
 
 import torch
 
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
-from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
+from core.benchmark.verification_mixin import VerificationPayloadMixin
 from ch06.baseline_gemm_ilp import BaselineGEMMILPBenchmark
 from ch06.optimized_gemm_ilp import OptimizedILPBenchmark
 
@@ -84,6 +73,16 @@ class RooflineAnalyzer:
 
 class RooflineAnalysisILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Benchmark for roofline analysis of ILP kernels."""
+
+    # This benchmark is an analysis driver that runs nested benchmarks and
+    # persists roofline artifacts; the leaf kernel benchmarks remain subject to
+    # the stricter hot-path contract.
+    allowed_benchmark_fn_antipatterns = (
+        "allocation",
+        "io",
+        "random_input_regeneration",
+        "sync",
+    )
     
     def __init__(self):
         super().__init__()

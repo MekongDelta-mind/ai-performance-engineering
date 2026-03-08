@@ -2,29 +2,14 @@
 
 from __future__ import annotations
 
-import sys
 import os
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.distributed as dist
-try:
-    from distributed_helper import setup_single_gpu_env
-except ImportError:
-    def setup_single_gpu_env():
-        if "RANK" not in os.environ:
-            os.environ.setdefault("RANK", "0")
-            os.environ.setdefault("WORLD_SIZE", "1")
-            os.environ.setdefault("MASTER_ADDR", "localhost")
-            os.environ.setdefault("MASTER_PORT", "29500")
-            os.environ.setdefault("LOCAL_RANK", "0")
 
 from typing import Optional
 
+from ch04.distributed_helper import setup_single_gpu_env
 from core.harness.benchmark_harness import (
     BaseBenchmark,
     BenchmarkConfig,

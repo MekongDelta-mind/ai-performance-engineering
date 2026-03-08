@@ -2,18 +2,13 @@
 """Simple test script to compare warp specialization benchmarks.
 
 Usage:
-    python tests/test_warp_specialization.py [--iterations N] [--warmup N] [--test-mode triton|cuda|both]
+    python -m tests.test_warp_specialization [--iterations N] [--warmup N] [--test-mode triton|cuda|both]
 """
 
 import os
-import sys
 import time
 import argparse
 import torch
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-sys.path.insert(0, str(repo_root))
 
 IS_CI = os.environ.get("CI", "").lower() in {"1", "true", "yes"}
 DEV_ITER_CAP = int(os.environ.get("WARP_SPEC_DEV_ITER_CAP", "20"))
@@ -252,4 +247,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

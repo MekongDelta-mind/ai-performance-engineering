@@ -84,6 +84,7 @@ import torch
 import torch.profiler as profiler
 from torch.profiler import profile, record_function, ProfilerActivity, schedule
 import torch.cuda.nvtx as nvtx
+import importlib.util
 import sys
 import os
 import time
@@ -129,8 +130,6 @@ def run_with_profiler(script_path, profile_mode="full"):
     """Run script with PyTorch profiler with latest features."""
     setup_architecture_optimizations()
 
-    # Import the target script
-    sys.path.insert(0, os.path.dirname(script_path))
     script_name = os.path.basename(script_path).replace('.py', '')
 
     # Configure profiler based on mode
@@ -197,7 +196,11 @@ def run_with_profiler(script_path, profile_mode="full"):
     ) as prof:
         # Import and run the target script
         try:
-            module = __import__(script_name)
+            module_spec = importlib.util.spec_from_file_location(script_name, script_path)
+            if module_spec is None or module_spec.loader is None:
+                raise RuntimeError(f"Unable to load module from {script_path}")
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
             if hasattr(module, 'main'):
                 module.main()
             elif hasattr(module, 'run'):

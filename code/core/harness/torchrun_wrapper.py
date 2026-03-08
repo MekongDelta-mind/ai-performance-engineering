@@ -24,11 +24,8 @@ from typing import Optional
 import numpy as np
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.harness.backend_policy import BackendPolicyName, apply_backend_policy
+from core.utils.python_entrypoints import temporary_sys_path
 
 
 def _apply_backend_policy(deterministic: bool) -> None:
@@ -68,23 +65,12 @@ def _resolve_local_rank() -> int:
 
 def _run_target_script(script_path: Path, argv: list[str]) -> None:
     previous_argv = sys.argv
-    previous_path0: Optional[str] = None
     try:
         sys.argv = [str(script_path), *argv]
-        if sys.path:
-            previous_path0 = sys.path[0]
-            sys.path[0] = str(script_path.parent)
-        else:
-            sys.path.insert(0, str(script_path.parent))
-        runpy.run_path(str(script_path), run_name="__main__")
+        with temporary_sys_path(script_path.parent):
+            runpy.run_path(str(script_path), run_name="__main__")
     finally:
         sys.argv = previous_argv
-        if previous_path0 is None:
-            if sys.path and sys.path[0] == str(script_path.parent):
-                sys.path.pop(0)
-        else:
-            if sys.path:
-                sys.path[0] = previous_path0
 
 
 def _run_target_module(module_name: str, argv: list[str]) -> None:

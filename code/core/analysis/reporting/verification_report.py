@@ -17,10 +17,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-# Local imports
-import sys
-sys.path.insert(0, str(Path(__file__).parents[3]))
-
 try:
     from core.benchmark.quarantine import QuarantineManager
     from core.benchmark.verification import QuarantineReason
@@ -1000,7 +996,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 

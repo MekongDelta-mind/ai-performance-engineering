@@ -6,13 +6,10 @@ import argparse
 from contextlib import nullcontext
 import json
 from pathlib import Path
-import sys
 
 import torch
 
 repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import lock_gpu_clocks
 from labs.block_scaling.block_scaling_common import (

@@ -23,7 +23,7 @@ Concentrates on resource balancing: adjust block sizes, registers, and shared me
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch08/compare.py --profile none
+python -m ch08.compare
 python -m cli.aisp bench list-targets --chapter ch08
 python -m cli.aisp bench run --targets ch08 --profile minimal
 ```
@@ -34,7 +34,7 @@ python -m cli.aisp bench run --targets ch08 --profile minimal
 ## Validation Checklist
 - Nsight Compute traces for `optimized_thresholdtma.py` should show overlapping TMA loads with minimal idle cycles.
 - `python -m cli.aisp tools occupancy-tuning` prints preset timings + speedups for the occupancy tuning microbenchmark.
-- `python compare.py --examples threshold` confirms the TMA-backed kernels reducing latency vs scalar reference implementations.
+- `python -m ch08.compare --examples threshold` confirms the TMA-backed kernels reducing latency vs scalar reference implementations.
 
 ## Notes
 - `arch_config.py` exposes toggles for enabling/disabling tcgen05 lowering per GPU so the same scripts work on SM100 and SM121.

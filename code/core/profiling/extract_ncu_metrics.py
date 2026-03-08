@@ -3,10 +3,10 @@
 Lightweight helper to regenerate Nsight Compute CSV metrics for chapter examples.
 
 Usage examples:
-  python core/profiling/extract_ncu_metrics.py --example ch06_add_parallel \
+  python -m core.profiling.extract_ncu_metrics --example ch06_add_parallel \
       --metrics gpu__time_duration.avg,gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed
 
-  python core/profiling/extract_ncu_metrics.py --example ch06_add_parallel \
+  python -m core.profiling.extract_ncu_metrics --example ch06_add_parallel \
       --metrics default --output artifacts/runs/analysis/metrics/ch06_add_parallel.csv
 
 By default we collect a set of latency/throughput counters that are useful when
@@ -27,11 +27,9 @@ import time
 from pathlib import Path
 from typing import List
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS_DIR))
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
-from profile_harness import (  # type: ignore  # pylint: disable=wrong-import-position
+from core.scripts.harness.profile_harness import (
     CUDA_BIN_DIRS,
     CUDA_LIB_DIRS,
     REPO_ROOT as HARNESS_ROOT,
@@ -92,7 +90,10 @@ def main() -> None:
 
     example = EXAMPLE_BY_NAME.get(args.example)
     if example is None:
-        raise SystemExit(f"Unknown example '{args.example}'. Run core/scripts/harness/profile_harness.py --list for options.")
+        raise SystemExit(
+            f"Unknown example '{args.example}'. "
+            "Run `python -m core.scripts.harness.profile_harness --list` for options."
+        )
 
     metrics: List[str]
     if args.metrics.strip().lower() == "default":

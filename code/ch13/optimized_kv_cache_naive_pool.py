@@ -71,21 +71,7 @@ class OptimizedKVCache:
             cache_idx = self.free_indices.pop()
             self.allocated_caches[request_id] = cache_idx
         else:
-            cache_entry = []
-            for _ in range(self.num_layers):
-                k = torch.empty(
-                    self.batch_size,
-                    self.num_heads,
-                    self.max_seq_len,
-                    self.head_dim,
-                    dtype=self.dtype,
-                    device=self.device,
-                )
-                v = torch.empty_like(k)
-                cache_entry.append((k, v))
-            self.cache_pool.append(cache_entry)
-            cache_idx = len(self.cache_pool) - 1
-            self.allocated_caches[request_id] = cache_idx
+            raise RuntimeError("OptimizedKVCache pool exhausted; increase pool_size in setup instead of allocating in benchmark_fn()")
     
     def append(self, request_id: str, layer_idx: int, k: torch.Tensor, v: torch.Tensor, pos: int) -> None:
         if request_id not in self.allocated_caches:

@@ -22,7 +22,7 @@ Explores NVFP4/FP8 workflows, KV-cache quantization, memory double buffering, an
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch19/compare.py --profile none
+python -m ch19.compare
 python -m cli.aisp bench list-targets --chapter ch19
 python -m cli.aisp bench run --targets ch19 --profile minimal
 ```
@@ -31,8 +31,8 @@ python -m cli.aisp bench run --targets ch19 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python optimized_nvfp4_training.py --calibrate` warms up with FP8, then switches to NVFP4 and matches the baseline's accuracy thresholds.
-- `python optimized_dynamic_quantized_cache.py --trace` logs precision transitions with bounded error, confirming correctness of token-level switching.
+- `python -m ch19.compare` runs the chapter baseline/optimized sweep through the shared harness.
+- `python -m ch19.optimized_dynamic_quantized_cache --trace` logs precision transitions with bounded error, confirming correctness of token-level switching.
 - `nvcc -o optimized_kv_prefetch_overlap_sm121 optimized_kv_prefetch_overlap.cu` plus the baseline binary show measurable overlap improvements in Nsight Compute.
 
 ## Notes

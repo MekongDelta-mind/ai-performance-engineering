@@ -5,16 +5,9 @@ and error propagation as specified in Part 2.10 of the unified improvement plan.
 """
 
 import pytest
-import sys
 import time
 import threading
-from pathlib import Path
 from typing import Optional
-
-# Add repo root to path
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.env import apply_env_defaults
 apply_env_defaults()

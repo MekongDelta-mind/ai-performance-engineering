@@ -78,6 +78,7 @@ from core.harness.validity_checks import (
     check_rank_execution,
     check_stream_sync_completeness,
 )
+from core.utils.python_entrypoints import build_repo_python_env
 
 PYDANTIC_AVAILABLE = True
 
@@ -2043,10 +2044,6 @@ class BenchmarkHarness:
         script_args.extend(_config_args_from_map())
         script_args.extend(extra_args)
 
-        wrapper_script = Path(__file__).resolve().with_name("torchrun_wrapper.py")
-        if not wrapper_script.exists():
-            raise RuntimeError(f"Missing torchrun wrapper script: {wrapper_script}")
-
         expected_torch_seed = getattr(self, "_seed_info", {}).get("torch_seed")
         if expected_torch_seed is None:
             raise RuntimeError("Missing expected torch seed for torchrun enforcement")
@@ -2068,10 +2065,11 @@ class BenchmarkHarness:
                 raise RuntimeError("Missing expected CUDA seed for torchrun enforcement")
             wrapper_args.extend(["--aisp-expected-cuda-seed", str(int(expected_cuda_seed))])
 
-        full_cmd = torchrun_cmd + [str(wrapper_script)] + wrapper_args + script_args
+        full_cmd = torchrun_cmd + ["-m", "core.harness.torchrun_wrapper"] + wrapper_args + script_args
         print(f"[harness] torchrun cmd: {' '.join(full_cmd)}", flush=True)
 
-        env = os.environ.copy()
+        repo_root = Path(__file__).resolve().parents[2]
+        env = build_repo_python_env(repo_root, base_env=os.environ.copy())
         for key in getattr(config, "env_passthrough", []) or []:
             if key in os.environ:
                 env[key] = os.environ[key]
@@ -2829,11 +2827,6 @@ class BenchmarkHarness:
         input_data["verify_output_max_bytes"] = _VERIFY_OUTPUT_MAX_BYTES
         
         # Spawn subprocess using isolated runner
-        runner_script = Path(__file__).parent / "isolated_runner.py"
-        if not runner_script.exists():
-            errors.append("isolated_runner.py not found - falling back to threading")
-            return self._benchmark_with_threading(benchmark, config)
-        
         # Use measurement_timeout_seconds (or fallback to timeout_seconds for backward compatibility).
         # Fail fast if no timeout is configured to avoid indefinite hangs.
         measurement_timeout = getattr(config, "measurement_timeout_seconds", None)
@@ -2851,11 +2844,12 @@ class BenchmarkHarness:
         
         try:
             import signal
-            env = os.environ.copy()
+            repo_root = Path(__file__).resolve().parents[2]
+            env = build_repo_python_env(repo_root, base_env=os.environ.copy())
             if getattr(config, "single_gpu", False):
                 env["CUDA_VISIBLE_DEVICES"] = self._select_single_gpu_visible()
             process = subprocess.Popen(
-                [sys.executable, str(runner_script)],
+                [sys.executable, "-m", "core.harness.isolated_runner"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

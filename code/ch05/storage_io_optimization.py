@@ -1,26 +1,13 @@
-from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """High-throughput DataLoader patterns for storage-bound training (PyTorch 2.10)."""
 
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
+from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Tuple
+from typing import Tuple
 
 import torch
-from torch.utils.data import DataLoader, Dataset, IterableDataset, TensorDataset
+from torch.utils.data import DataLoader, Dataset
 
 
 @dataclass

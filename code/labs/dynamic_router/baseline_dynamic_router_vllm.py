@@ -10,7 +10,8 @@ import torch
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.benchmark.verification_mixin import VerificationPayloadMixin
-from labs.dynamic_router.vllm_runner import run_vllm_routing
+from labs.dynamic_router.topology import detect_topology
+from labs.dynamic_router.vllm_runner import run_vllm_routing_with_topology
 
 
 class BaselineDynamicRouterVllmBenchmark(VerificationPayloadMixin, BaseBenchmark):
@@ -19,35 +20,32 @@ class BaselineDynamicRouterVllmBenchmark(VerificationPayloadMixin, BaseBenchmark
     def __init__(self) -> None:
         super().__init__()
         self._summary: Dict[str, float] = {}
-        self.metrics: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
-        self.verify_input: Optional[torch.Tensor] = None
+        self._topology = None
         self.register_workload_metadata(requests_per_iteration=1.0)
 
     def setup(self) -> None:
         torch.manual_seed(42)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(42)
+        self._topology = detect_topology(max_gpus=torch.cuda.device_count())
 
     def benchmark_fn(self) -> None:
         from labs.dynamic_router import vllm_runner
 
-        self._summary = run_vllm_routing("baseline", cli_args=vllm_runner._CLI_ARGS)
+        self._summary = run_vllm_routing_with_topology(
+            "baseline",
+            topology_snapshot=self._topology,
+            cli_args=vllm_runner._CLI_ARGS,
+        )
         metric_values = [float(v) for v in self._summary.values() if isinstance(v, Number)]
         if not metric_values:
             metric_values = [0.0]
-        summary_tensor = torch.tensor(metric_values, dtype=torch.float32).unsqueeze(0)
-        expected_shape = tuple(summary_tensor.shape)
-        if self.metrics is None or tuple(self.metrics.shape) != expected_shape:
-            self.metrics = torch.zeros(expected_shape, dtype=torch.float32)
-        if self.verify_input is None or tuple(self.verify_input.shape) != expected_shape:
-            self.verify_input = torch.ones(expected_shape, dtype=torch.float32)
-        self.output = (summary_tensor * self.verify_input + self.metrics).detach()
+        self.output = torch.tensor(metric_values, dtype=torch.float32).unsqueeze(0)
 
     def capture_verification_payload(self) -> None:
         self._set_verification_payload(
             inputs={
-                "verify_input": self.verify_input.detach(),
                 "mode": torch.tensor([0], dtype=torch.int64),  # baseline
             },
             output=self.output,
@@ -58,9 +56,8 @@ class BaselineDynamicRouterVllmBenchmark(VerificationPayloadMixin, BaseBenchmark
         )
 
     def teardown(self) -> None:
-        self.metrics = None
-        self.verify_input = None
         self.output = None
+        self._topology = None
         super().teardown()
 
     def get_config(self) -> Optional[BenchmarkConfig]:

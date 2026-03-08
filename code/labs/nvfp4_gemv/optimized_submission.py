@@ -4,11 +4,16 @@
 import importlib.util
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import torch
-from task import input_t, output_t
-from utils import make_match_reference
+try:
+    from task import input_t, output_t
+    from utils import make_match_reference
+except ModuleNotFoundError:
+    from labs.nvfp4_gemv.task import input_t, output_t
+    from labs.nvfp4_gemv.utils import make_match_reference
 
 # Scaling factor vector size
 sf_vec_size = 16
@@ -17,10 +22,34 @@ sf_vec_size = 16
 _GEMM_V3B = None
 _CASE0_OUT_CACHE: dict[tuple[int, int, int, int], torch.Tensor] = {}
 _STREAM_POOL: dict[tuple[int, int], list[torch.cuda.Stream]] = {}
+_MISSING = object()
 
 
 def ceil_div(a: int, b: int) -> int:
     return (a + b - 1) // b
+
+
+def _load_module_from_path(path: Path, module_name: str):
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load module from {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@contextmanager
+def _install_module_aliases(aliases):
+    previous = {name: sys.modules.get(name, _MISSING) for name in aliases}
+    try:
+        sys.modules.update(aliases)
+        yield
+    finally:
+        for name, value in previous.items():
+            if value is _MISSING:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = value
 
 
 def to_blocked(input_matrix: torch.Tensor) -> torch.Tensor:
@@ -51,16 +80,17 @@ def _load_gemm_v3b():
         return None
 
     module_path = Path(__file__).resolve().parents[1] / "nvfp4_gemm" / "optimized_submission.py"
-    module_dir = str(module_path.parent)
-    if module_dir not in sys.path:
-        sys.path.insert(0, module_dir)
-
-    spec = importlib.util.spec_from_file_location("nvfp4_gemm_opt_for_gemv", module_path)
-    if spec is None or spec.loader is None:
-        return None
-
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    task_mod = _load_module_from_path(module_path.parent / "task.py", "nvfp4_gemm_task_for_gemv")
+    utils_mod = _load_module_from_path(module_path.parent / "utils.py", "nvfp4_gemm_utils_for_gemv")
+    with _install_module_aliases({"task": task_mod, "utils": utils_mod}):
+        ref_mod = _load_module_from_path(
+            module_path.parent / "reference_submission.py",
+            "nvfp4_gemm_reference_for_gemv",
+        )
+    with _install_module_aliases(
+        {"task": task_mod, "utils": utils_mod, "reference_submission": ref_mod}
+    ):
+        mod = _load_module_from_path(module_path, "nvfp4_gemm_opt_for_gemv")
     _GEMM_V3B = getattr(mod, "gemm_v3b", None)
     return _GEMM_V3B
 

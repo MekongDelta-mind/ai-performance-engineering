@@ -25,7 +25,7 @@ Addresses large-scale inference concerns: disaggregated compute/storage, KV-cach
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch15/compare.py --profile none
+python -m ch15.compare
 python -m cli.aisp bench list-targets --chapter ch15
 python -m cli.aisp bench run --targets ch15 --profile minimal
 ```

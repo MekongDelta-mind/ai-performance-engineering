@@ -37,6 +37,7 @@ class OptimizedKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmar
             tokens_per_iteration=float(tokens),
         )
         self.output = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self._verify_input: Optional[torch.Tensor] = None
         self.register_workload_metadata(
             requests_per_iteration=float(self.batch_size),
@@ -75,12 +76,20 @@ class OptimizedKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmar
             device=self.device,
             dtype=torch.bfloat16,
         )
+        self._output_buffer = torch.empty(
+            self.batch_size,
+            self.steps,
+            self.hidden_dim,
+            device=self.device,
+            dtype=torch.bfloat16,
+        )
         self._synchronize()
         self._verify_input = self.tokens.detach()
     
     def benchmark_fn(self) -> None:
         assert self.q_proj is not None and self.k_proj is not None and self.v_proj is not None and self.out_proj is not None
         assert self.tokens is not None and self.k_cache is not None and self.v_cache is not None
+        assert self._output_buffer is not None
         with self._nvtx_range("optimized_kv_cache_management"):
             with torch.no_grad():
                 # Model "prefill-produced" KV cache: project the full token buffer once,
@@ -90,13 +99,7 @@ class OptimizedKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmar
                 self.k_cache.copy_(k_all)
                 self.v_cache.copy_(v_all)
 
-                outputs = torch.empty(
-                    self.batch_size,
-                    self.steps,
-                    self.hidden_dim,
-                    device=self.device,
-                    dtype=torch.bfloat16,
-                )
+                outputs = self._output_buffer
                 for t in range(self.steps):
                     query = self.tokens[:, t : t + 1, :]
                     q = self.q_proj(query)
@@ -148,6 +151,7 @@ class OptimizedKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmar
         self.tokens = None
         self.k_cache = None
         self.v_cache = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

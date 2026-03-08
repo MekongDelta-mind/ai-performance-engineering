@@ -39,6 +39,7 @@ class BaselineKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmark
             tokens_per_iteration=float(tokens),
         )
         self.output = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self._verify_input: Optional[torch.Tensor] = None
         self.register_workload_metadata(
             requests_per_iteration=float(self.batch_size),
@@ -63,6 +64,13 @@ class BaselineKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmark
             device=self.device,
             dtype=torch.bfloat16,
         )
+        self._output_buffer = torch.empty(
+            self.batch_size,
+            self.steps,
+            self.hidden_dim,
+            device=self.device,
+            dtype=torch.bfloat16,
+        )
         self._synchronize()
         self._verify_input = self.tokens.detach()
     
@@ -70,15 +78,10 @@ class BaselineKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmark
         """Benchmark: KV cache without management."""
         assert self.q_proj is not None and self.k_proj is not None and self.v_proj is not None and self.out_proj is not None
         assert self.tokens is not None
+        assert self._output_buffer is not None
         with self._nvtx_range("baseline_kv_cache_management"):
             with torch.no_grad():
-                outputs = torch.empty(
-                    self.batch_size,
-                    self.steps,
-                    self.hidden_dim,
-                    device=self.device,
-                    dtype=torch.bfloat16,
-                )
+                outputs = self._output_buffer
                 for t in range(self.steps):
                     query = self.tokens[:, t : t + 1, :]
                     prefix = self.tokens[:, : t + 1, :]
@@ -131,6 +134,7 @@ class BaselineKVCacheManagementBenchmark(VerificationPayloadMixin, BaseBenchmark
         self.v_proj = None
         self.out_proj = None
         self.tokens = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

@@ -11,22 +11,18 @@ Usage:
 
 import argparse
 import time
-import sys
-from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import Any, Dict, List, Optional
 import torch
 
-sys.path.insert(0, str(Path(__file__).parent))
-
-from nanochat.gpt import GPT, GPTConfig
-from nanochat.engine import Engine
+from labs.nanochat_fullstack.nanochat.engine import Engine
+from labs.nanochat_fullstack.nanochat.gpt import GPT, GPTConfig
 
 
 @dataclass
 class BenchmarkConfig:
     name: str
-    flags: Dict[str, any]
+    flags: Dict[str, Any]
     description: str
     category: str
 
@@ -61,7 +57,7 @@ class IncrementalBenchmark:
         print(f"Timed iterations: {self.iterations}")
         print()
     
-    def create_model(self, config_overrides: Dict[str, any]) -> GPT:
+    def create_model(self, config_overrides: Dict[str, Any]) -> GPT:
         """Create a small GPT model for benchmarking."""
         base_config = {
             'sequence_len': 1024,
@@ -86,9 +82,9 @@ class IncrementalBenchmark:
         model.eval()
         return model
     
-    def benchmark_inference(self, config_overrides: Dict[str, any]) -> tuple:
+    def benchmark_inference(self, config_overrides: Dict[str, Any]) -> tuple:
         """Benchmark prefill + decode performance."""
-        from nanochat.engine import KVCache
+        from labs.nanochat_fullstack.nanochat.engine import KVCache
         
         model = self.create_model(config_overrides)
         cfg = model.config
@@ -480,4 +476,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

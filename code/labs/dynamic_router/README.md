@@ -28,17 +28,6 @@ python -m cli.aisp bench run --targets labs/dynamic_router --profile minimal
 - Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
 - Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
 
-### ABI Preflight For vLLM Targets
-Run this once per host before long sweeps that include `dynamic_router_vllm` or `dual_pool_vllm`:
-```bash
-python -c "import importlib, importlib.metadata as md, torch, vllm; importlib.import_module('vllm._C'); print(torch.__version__, md.version('vllm'), vllm.__version__)"
-```
-If this fails with `undefined symbol` from `vllm/_C.abi3.so`, the host has a torch/vLLM ABI mismatch.
-Use the pinned benchmark stack:
-- `torch==2.9.1+cu130`
-- `vllm==0.16.0`
-- `flashinfer-python==0.6.3`
-
 ## Validation Checklist
 - `python labs/dynamic_router/driver.py --mode baseline` vs `--mode optimized` shows lower TTFT variance and higher TPOT for the optimized policy.
 - `python -m cli.aisp bench run --targets labs/dynamic_router --profile minimal` records artifacts comparing baseline/optimized harness runs.

@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """
 Production NVSHMEM Training Patterns for multi-GPU B200
@@ -77,7 +69,6 @@ When to Stick with NCCL:
 """
 
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.optimization.symmetric_memory_patch import (
     SymmetricMemoryHandle,
@@ -86,7 +77,7 @@ from core.optimization.symmetric_memory_patch import (
 )
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -99,7 +90,6 @@ except ImportError:
 
 import argparse
 import datetime
-import os
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

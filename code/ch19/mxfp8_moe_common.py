@@ -63,33 +63,34 @@ def bucket_by_expert(
     return bucketed, m_splits, gather_index, expert_order_tensor, bucket_token_ids_tensor
 
 
-def restore_bucketed(output: torch.Tensor, bucket_indices: torch.Tensor, num_tokens: int) -> torch.Tensor:
+def restore_bucketed(
+    output: torch.Tensor,
+    bucket_indices: torch.Tensor,
+    num_tokens: int,
+    out: torch.Tensor,
+) -> torch.Tensor:
     """Scatter bucketed outputs back to the original token order."""
-    restored = torch.empty((num_tokens, output.shape[-1]), device=output.device, dtype=output.dtype)
-    restored[bucket_indices] = output
-    return restored
+    if out.shape != (num_tokens, output.shape[-1]):
+        raise ValueError("restore_bucketed() requires a preallocated output buffer with matching shape")
+    out[bucket_indices] = output
+    return out
 
 
 def restore_bucketed_reduce(
     output: torch.Tensor,
     bucket_token_ids: torch.Tensor,
     num_tokens: int,
-    weights: Optional[torch.Tensor] = None,
-    out: Optional[torch.Tensor] = None,
-    weight_out: Optional[torch.Tensor] = None,
+    weights: torch.Tensor,
+    out: torch.Tensor,
+    weight_out: torch.Tensor,
 ) -> torch.Tensor:
     """Scatter-accumulate bucketed outputs to tokens, handling duplicate assignments."""
-    if out is None:
-        out = torch.zeros((num_tokens, output.shape[-1]), device=output.device, dtype=output.dtype)
-    else:
-        out.zero_()
-    if weight_out is None:
-        weight_out = torch.zeros((num_tokens,), device=output.device, dtype=output.dtype)
-    else:
-        weight_out.zero_()
-
-    if weights is None:
-        weights = torch.ones_like(bucket_token_ids, dtype=out.dtype)
+    if out.shape != (num_tokens, output.shape[-1]):
+        raise ValueError("restore_bucketed_reduce() requires a preallocated output buffer with matching shape")
+    if weight_out.shape != (num_tokens,):
+        raise ValueError("restore_bucketed_reduce() requires a preallocated weight buffer with matching shape")
+    out.zero_()
+    weight_out.zero_()
     weights = weights.to(out.dtype)
 
     expanded_weights = weights.unsqueeze(-1)

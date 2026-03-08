@@ -3,6 +3,46 @@
 ## Summary
 Applies tensor-core friendly scheduling on Blackwell: warp specialization, TMA-powered pipelines, persistent kernels, and thread-block clusters with DSMEM and NVLink-C2C awareness.
 
+## Problem
+Chapter 10 is where the repo stops talking about tensor-core scheduling in the abstract and starts proving which pipeline and cluster choices actually matter on Blackwell.
+
+## Baseline Path
+- scalar-heavy or launch-heavy kernels that leave tensor cores underfed
+- non-persistent pipelines that pay setup cost every iteration
+- cluster-disabled variants that show the cost of ignoring DSMEM / multicast hardware
+
+## Optimized Path
+- warp-specialized and persistent kernels that keep producer/consumer work separated
+- TMA-fed pipelines that reduce staging overhead
+- cluster-enabled kernels that exploit DSMEM and multicast when the hardware supports it
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `cluster_group_single_cta` | `2.203 ms` | `0.031 ms` | `71.42x` |
+| `batch` | `10.061 ms` | `0.185 ms` | `54.44x` |
+
+These are good chapter-level "does the optimization concept work?" numbers, not universal hardware ceilings.
+
+## Profiler Evidence
+Use the harness target directly when you want reproducible Nsight evidence instead of ad hoc scripts:
+
+```bash
+python -m cli.aisp bench run --targets ch10:cluster_group_single_cta --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch10:batch --profile deep_dive --single-gpu
+```
+
+The deep-dive path gives you a concrete before/after pairing for launch count, kernel duration, and memory/cluster behavior.
+
+## Repro Commands
+```bash
+python -m ch10.compare --profile none
+python -m cli.aisp bench list-targets --chapter ch10
+python -m cli.aisp bench run --targets ch10 --profile minimal
+```
+
 ## Learning Goals
 - Use warp specialization and cp.async/TMA to keep tensor cores saturated.
 - Prototype persistent matmuls that amortize launch overhead across iterations.
@@ -28,7 +68,7 @@ Applies tensor-core friendly scheduling on Blackwell: warp specialization, TMA-p
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch10/compare.py --profile none
+python -m ch10.compare
 python -m cli.aisp bench list-targets --chapter ch10
 python -m cli.aisp bench run --targets ch10 --profile minimal
 ```
@@ -38,8 +78,9 @@ python -m cli.aisp bench run --targets ch10 --profile minimal
 
 ## Validation Checklist
 - Cluster-enabled kernels fail fast on hardware without DSMEM support, while DSMEM-free variants still execute-use this to confirm cluster capability flags.
-- `python optimized_flash_attn_tma_micro_pipeline.py --profile` produces fewer kernel launches and higher achieved FLOP/s than the baseline script.
-- `bash demo_both_examples.sh` runs the CUDA memory pipeline and GDS demo, highlighting launch amortization and IO overlap.
+- `python -m ch10.optimized_flash_attention --profile minimal` produces fewer kernel launches and higher achieved FLOP/s than the baseline script.
+- `python -m ch10.analyze_scaling` summarizes the chapter's scaling behavior without relying on path surgery.
+- `python -m ch10.cufile_gds_example` runs the CUDA memory pipeline and GDS demo, highlighting launch amortization and IO overlap.
 
 ## Notes
 - `cufile_gds_example.py` demonstrates integrating GPUDirect Storage into tensor-core pipelines for IO-heavy training loops.

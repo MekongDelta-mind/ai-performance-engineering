@@ -13,14 +13,6 @@ Note: Uses DeepSeek Coder 6.7B (manageable size for single GPU)
 For full DeepSeek-V3, see multi-GPU examples in extras/ch13/fsdp_example.py
 """
 
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 import os
 
 
@@ -30,7 +22,6 @@ from contextlib import nullcontext
 
 import torch
 from torch.profiler import ProfilerActivity, profile
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from core.common.device_utils import get_preferred_device
 
 
@@ -59,6 +50,14 @@ PROFILE_STEPS = 3
 
 
 def main() -> None:
+    try:
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+    except (ImportError, OSError) as exc:
+        raise RuntimeError(
+            "transformers and its optional runtime dependencies must import cleanly "
+            "to run ch13.train_deepseek_coder"
+        ) from exc
+
     device, cuda_err = get_preferred_device()
     if cuda_err:
         print(f"WARNING: CUDA unavailable ({cuda_err}); using CPU.")

@@ -135,7 +135,8 @@ echo ""
 echo "🧪 Harness Validation:"
 if [[ -f "$PROJECT_ROOT/core/scripts/harness/profile_harness.py" ]]; then
     echo "   Running dry-run test (max 3 examples)..."
-    python3 "$PROJECT_ROOT/core/scripts/harness/profile_harness.py" --profile all --dry-run --max-examples 3 2>&1 | tail -5 || echo "   ⚠️  Harness dry-run had issues"
+    PYTHONPATH="$PROJECT_ROOT${PYTHONPATH:+:${PYTHONPATH}}" \
+        python3 -m core.scripts.harness.profile_harness --profile all --dry-run --max-examples 3 2>&1 | tail -5 || echo "   ⚠️  Harness dry-run had issues"
 else
     echo "   ℹ️  profile_harness.py not found (optional)"
 fi

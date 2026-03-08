@@ -1,14 +1,7 @@
 """Regression tests for BenchmarkDefaults and BenchmarkConfig integration."""
 
 import os
-import sys
-from pathlib import Path
 import pytest
-
-# Add repo root to path for imports
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.defaults import BenchmarkDefaults, get_defaults, set_defaults
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, ExecutionMode, LaunchVia

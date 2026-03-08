@@ -8,9 +8,7 @@ on a simplified MLP-based decode loop.
 from __future__ import annotations
 
 import os
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Dict, Optional, Tuple
 from contextlib import nullcontext
 
@@ -18,22 +16,18 @@ import torch
 from core.profiling.nvtx_helper import standardize_nvtx_label
 import torch.nn as nn
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 try:
-    from arch_config import prefer_sdpa_backends  # type: ignore
-    from core.utils.compile_utils import enable_tf32  # type: ignore
+    from core.harness.arch_config import prefer_sdpa_backends
+    from core.utils.compile_utils import enable_tf32
 except Exception:  # pragma: no cover - defensive import
     prefer_sdpa_backends = None  # type: ignore
     enable_tf32 = None  # type: ignore
 
-from core.benchmark.verification_mixin import VerificationPayloadMixin  # noqa: E402
-from core.benchmark.verification import PrecisionFlags, simple_signature  # noqa: E402
-from core.benchmark.wrapper_utils import attach_benchmark_metadata  # noqa: E402
-from core.harness.hardware_capabilities import detect_capabilities  # noqa: E402
-from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig  # noqa: E402
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.benchmark.verification import PrecisionFlags, simple_signature
+from core.benchmark.wrapper_utils import attach_benchmark_metadata
+from core.harness.hardware_capabilities import detect_capabilities
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 
 try:  # Optional but strongly recommended for fast variants
     import transformer_engine.pytorch as te

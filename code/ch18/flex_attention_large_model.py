@@ -1,12 +1,3 @@
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 # Environment (Nov-2025): CUDA 13.x r580+, torch 2.10.0+cu130, triton 3.5.0, optional TE 2.9+
 """
 FlexAttention with Large Models - Testing for 2-3x Speedup
@@ -24,7 +15,6 @@ Test configurations:
 Hardware: NVIDIA B200 (SM 10.0, 178 GB HBM3e)
 """
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     pass

@@ -10,15 +10,6 @@ Highlights:
 - Warp specialization knobs (num_consumer_groups / num_buffers_warp_spec)
 - PyTorch allocator bridge so Triton TMA kernels can request scratch buffers
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 
 import os
 import torch

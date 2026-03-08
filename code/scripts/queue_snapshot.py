@@ -24,6 +24,7 @@ ACTIVE_MARKERS = (
     "cli/aisp.py bench run",
     "python -m cli.aisp bench run",
     "torchrun_wrapper.py",
+    "core.harness.torchrun_wrapper",
     "nsys profile",
     "ncu --force-overwrite",
 )

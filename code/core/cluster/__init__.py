@@ -6,6 +6,7 @@ from core.cluster.runner import (
     run_cluster_common_eval,
     run_cluster_eval_suite,
     validate_field_report_requirements,
+    watch_cluster_run_for_promotion,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "run_cluster_common_eval",
     "run_cluster_eval_suite",
     "validate_field_report_requirements",
+    "watch_cluster_run_for_promotion",
 ]

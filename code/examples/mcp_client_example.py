@@ -5,13 +5,6 @@ Example: Using the Robust MCP Client
 This demonstrates how to use the robust MCP client to interact with the MCP server
 with proper error handling, timeouts, and message ID tracking.
 """
-
-import sys
-from pathlib import Path
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from mcp.mcp_client import create_client, RobustMCPClient
 
 
@@ -180,4 +173,3 @@ if __name__ == "__main__":
     print("=" * 60)
     print("All examples complete!")
     print("=" * 60)
-

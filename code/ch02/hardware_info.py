@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
 
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """Chapter 2: Hardware Topology Inspection
 
 Analyze CPU/GPU topology, memory bandwidth, and interconnect characteristics
 for NVIDIA Blackwell-based systems.
 """
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 try:
     pass
 except Exception:  # pragma: no cover - optional per-environment tweak

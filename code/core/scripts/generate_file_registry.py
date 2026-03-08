@@ -5,21 +5,17 @@ This script auto-discovers all baseline_/optimized_ file pairs and generates
 a registry that can be used by coverage verification tools.
 
 Usage:
-    python3 core/scripts/generate_file_registry.py [--output registry.json]
+    python -m core.scripts.generate_file_registry [--output registry.json]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Add repo root to path
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
+code_root = Path(__file__).resolve().parents[2]
 
 from core.utils.chapter_compare_template import discover_benchmarks
 
@@ -97,7 +93,7 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=repo_root / "file_registry.json",
+        default=code_root / "file_registry.json",
         help="Output JSON file path (default: file_registry.json)"
     )
     parser.add_argument(
@@ -115,7 +111,7 @@ def main():
     print()
     
     # Discover all benchmarks
-    registry = discover_all_benchmarks(repo_root)
+    registry = discover_all_benchmarks(code_root)
     
     # Count statistics
     total_chapters = len(registry)
@@ -174,4 +170,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

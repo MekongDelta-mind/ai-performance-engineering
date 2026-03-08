@@ -11,7 +11,6 @@ import builtins
 import hashlib
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
@@ -21,8 +20,6 @@ from core.utils.extension_loader_template import load_cuda_extension
 from labs.nvfp4_group_gemm.task import input_t, output_t
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 _EXT_BASE_NAME = "nvfp4_group_gemm_custom_cuda"
 _SOURCE_FILE = "custom_cuda_group_gemm_kernel.cu"

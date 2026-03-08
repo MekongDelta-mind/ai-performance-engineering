@@ -3,13 +3,8 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import Dict, Optional, Tuple
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 import torch
 
@@ -137,7 +132,7 @@ class BaselineMoEReadinessBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def __init__(self) -> None:
         super().__init__()
         self._probe = torch.zeros(1, dtype=torch.float32)
-        self._verify_output = torch.zeros(1, dtype=torch.float32)
+        self._verify_output = torch.zeros(1, device=self.device, dtype=torch.float32)
         self.parameter_count = 0
         self.workload_size = 1
         self.register_workload_metadata(requests_per_iteration=1.0)
@@ -148,7 +143,7 @@ class BaselineMoEReadinessBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if torch.cuda.device_count() < 2:
             raise RuntimeError("SKIPPED: MoE readiness benchmark requires >=2 GPUs.")
         # Real work happens in the torchrun-launched script.
-        self._verify_output = torch.zeros(1, device=self.device, dtype=torch.float32)
+        self._verify_output.zero_()
 
     def get_config(self) -> BenchmarkConfig:
         return BenchmarkConfig(

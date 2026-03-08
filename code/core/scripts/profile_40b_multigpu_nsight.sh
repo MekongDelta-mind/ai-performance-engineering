@@ -83,10 +83,6 @@ import time
 import torch
 import torch.distributed as dist
 
-# Set PYTHONPATH
-repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, repo_root)
-
 # Import test script
 from ch16.gpt_large_benchmark import main
 

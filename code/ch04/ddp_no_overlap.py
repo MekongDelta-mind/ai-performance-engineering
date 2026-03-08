@@ -14,13 +14,7 @@ The optimized variant is implemented in `ddp_overlap.py` and exposed via
 from __future__ import annotations
 
 import argparse
-import sys
 import os
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.distributed as dist
@@ -28,17 +22,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from core.benchmark.gpu_requirements import skip_if_insufficient_gpus
-
-try:
-    from distributed_helper import setup_single_gpu_env
-except ImportError:
-    def setup_single_gpu_env():
-        if "RANK" not in os.environ:
-            os.environ.setdefault("RANK", "0")
-            os.environ.setdefault("WORLD_SIZE", "1")
-            os.environ.setdefault("MASTER_ADDR", "localhost")
-            os.environ.setdefault("MASTER_PORT", "29500")
-            os.environ.setdefault("LOCAL_RANK", "0")
+from ch04.distributed_helper import setup_single_gpu_env
 
 from typing import Optional
 

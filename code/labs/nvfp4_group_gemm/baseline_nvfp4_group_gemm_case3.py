@@ -7,12 +7,6 @@ but runs with the fast runtime path (fused inputs + iter-graph replay) by defaul
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 # Keep baseline behavior stable by default, but allow explicit overrides for experiments.
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_UNROLL_N", "1")

@@ -9,7 +9,7 @@ Takes two deep_profiling_report.py JSON outputs and generates:
 4. Remaining bottlenecks and next optimization steps
 
 Usage:
-    python core/analysis/differential_profile_analyzer.py \\
+    python -m core.analysis.differential_profile_analyzer \\
         --baseline artifacts/runs/analysis/baseline_deep_profile.json \\
         --optimized artifacts/runs/analysis/optimized_deep_profile.json \\
         --output-json artifacts/runs/analysis/differential_analysis.json \\
@@ -20,14 +20,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 
 @dataclass

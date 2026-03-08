@@ -8,21 +8,9 @@ Implements BaseBenchmark for harness integration.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 import torch
 
-# Import arch_config to apply Triton patch for sm_12x support
-# The patch removes 'a' suffix from sm_121a -> sm_121 for ptxas compatibility
-try:
-    import arch_config  # noqa: F401
-except ImportError:
-    pass  # Continue if arch_config not available
+from core.harness import arch_config as _arch_config_patch  # noqa: F401
 from typing import Optional
 
 from core.utils.compile_utils import compile_callable

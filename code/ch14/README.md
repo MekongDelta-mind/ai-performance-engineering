@@ -3,6 +3,52 @@
 ## Summary
 Highlights compiler-driven acceleration: `torch.compile` workflows, Triton kernels, CUTLASS/TMA experimentation, and quantization-aware communication, all validated through the shared harness.
 
+## Problem
+Chapter 14 is where compiler claims have to turn into measured wins. The useful question is not "can `torch.compile` or Triton work?" but "which compiler-driven optimizations still deliver real latency and memory reductions on current Blackwell-class hardware?"
+
+## Baseline Path
+- eager or minimally fused PyTorch execution
+- generic Triton/CUTLASS paths without persistent or regional specialization
+- easier to reason about, but heavy on launch overhead, graph breaks, and redundant staging
+
+## Optimized Path
+- `torch.compile` and regional compilation where the graph is stable enough to pay back compile cost
+- Triton persistent kernels and TMA-fed schedules where memory movement dominates
+- the same harness contract as every other benchmarked chapter, so the speedups are comparable instead of script-local
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `model_eager` | `29.873 ms` | `7.978 ms` | `3.74x` | compile-driven model execution |
+| `regional_triton` | `1.944 ms` | `0.863 ms` | `2.25x` | regional compilation and Triton fusion |
+| `triton_persistent` | `0.830 ms` | `0.086 ms` | `9.68x` | persistent Triton kernel scheduling |
+
+These are chapter-level proof points, not vendor peak numbers. The chapter is most useful when you separate "compiler removes Python/graph overhead" from "kernel schedule removes memory-movement overhead."
+
+## Profiler Evidence
+Use the same benchmark targets with deep-dive profiling when you want launch-count and kernel-attribution evidence instead of only the wall-clock delta:
+
+```bash
+python -m cli.aisp bench run --targets ch14:model_eager --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch14:regional_triton --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch14:triton_persistent --profile deep_dive --single-gpu
+```
+
+The expected story is different per workload:
+- `model_eager`: fewer graph breaks and lower framework overhead
+- `regional_triton`: fewer unfused launches and better steady-state scheduling
+- `triton_persistent`: materially longer-lived kernels with less relaunch churn
+
+## Repro Commands
+```bash
+python -m ch14.compare --profile none
+python -m cli.aisp bench list-targets --chapter ch14
+python -m cli.aisp bench run --targets ch14 --profile minimal
+python -m cli.aisp bench run --targets ch14:triton_persistent --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Adopt `torch.compile` modes for large models while tracking compile-time and steady-state gains.
 - Author Triton kernels (including TMA schedules) that rival custom CUDA.
@@ -12,7 +58,7 @@ Highlights compiler-driven acceleration: `torch.compile` workflows, Triton kerne
 ## Directory Layout
 | Path | Description |
 | --- | --- |
-| `baseline_model_eager.py`, `optimized_model_eager.py`, `baseline_graph_break_control_flow.py`, `optimized_graph_break_control_flow.py`, `torch_compile_large_model.py`, `torch_compiler_examples.py`, `training_large_model_1_5x.py` | Model-scale examples showcasing compile modes, graph-break mitigation (`if` vs tensorized branch), guard rails, and large-model sanity tests. |
+| `baseline_model_eager.py`, `optimized_model_eager.py`, `torch_compile_large_model.py`, `torch_compiler_examples.py`, `training_large_model_1_5x.py` | Model-scale examples showcasing compile modes, guard rails, and large-model sanity tests. |
 | `baseline_cutlass.py`, `optimized_cutlass.py`, `triton_examples.py`, `triton_tma_blackwell.py`, `triton_fp8_advanced.py`, `triton_nvshmem_example.py` | CUTLASS vs Triton comparisons plus advanced TMA/NVSHMEM Triton kernels. |
 | `baseline_flex_attention.py`, `optimized_flex_attention.py`, `baseline_flex_attention_sparse.py`, `optimized_flex_attention_sparse.py`, `flex_attention_sparse_demo.py` | FlexAttention workloads that validate custom score mods, masks, sparsity, and compile speedups. |
 | `baseline_nccl_quantization.py`, `optimized_nccl_quantization.py`, `deepseek_innovation_l2_bypass.py` | Quantization-aware communication and the DeepSeek-inspired L2 bypass experiment. |
@@ -22,7 +68,7 @@ Highlights compiler-driven acceleration: `torch.compile` workflows, Triton kerne
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch14/compare.py --profile none
+python -m ch14.compare
 python -m cli.aisp bench list-targets --chapter ch14
 python -m cli.aisp bench run --targets ch14 --profile minimal
 ```
@@ -31,10 +77,9 @@ python -m cli.aisp bench run --targets ch14 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python optimized_model_eager.py --profile minimal` produces compile-time summaries followed by steady-state throughput gains vs the baseline.
-- `python compare.py --examples graph_break_control_flow --profile none` demonstrates graph-break-prone Python control flow (`if`) versus tensorized control flow (`torch.where`) under `torch.compile`.
-- `python triton_tma_blackwell.py --validate` compares Triton and CUDA outputs to double-check TMA scheduling logic.
-- `python compare.py --examples flex_attention` shows the compiled path significantly reducing kernel launch count without changing accuracy.
+- `python -m ch14.optimized_model_eager --profile minimal` produces compile-time summaries followed by steady-state throughput gains vs the baseline.
+- `python -m ch14.triton_tma_blackwell --validate` compares Triton and CUDA outputs to double-check TMA scheduling logic.
+- `python -m ch14.compare --examples flex_attention` shows the compiled path significantly reducing kernel launch count without changing accuracy.
 
 ## Notes
 - `inspect_compiled_code.py` dumps Triton/PTX/Graph captures for any target; edit the helper to introspect new workloads.

@@ -23,7 +23,7 @@ Focuses on feeding GPUs efficiently: tune DataLoader workers, vectorize preproce
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch05/compare.py --profile none
+python -m ch05.compare
 python -m cli.aisp bench list-targets --chapter ch05
 python -m cli.aisp bench run --targets ch05 --profile minimal
 ```
@@ -33,8 +33,8 @@ python -m cli.aisp bench run --targets ch05 --profile minimal
 
 ## Validation Checklist
 - `python baseline_storage_cpu.py --inspect` exposes CPU wait time > GPU time; `optimized_storage_cpu.py` reverses the ratio with >=80% GPU utilization.
-- `python gds_cufile_minimal.py --bytes 1073741824` sustains multi-GB/s throughput when `/etc/cufile.json` is configured and NVMe advertises GPUDirect support.
-- `python compare.py --examples ai` shows optimized_ai eliminating CPU-side preprocessing from the critical path.
+- `python -m ch05.gds_cufile_minimal /tmp/gds_test_file.bin 1073741824 --generate` sustains multi-GB/s throughput when `/etc/cufile.json` is configured and NVMe advertises GPUDirect support.
+- `python -m ch05.compare` shows optimized_ai eliminating CPU-side preprocessing from the critical path.
 
 ## Notes
 - GPUDirect scripts fall back to host-mediated reads when `libcufile.so` is unavailable, making it safe to run on dev laptops.

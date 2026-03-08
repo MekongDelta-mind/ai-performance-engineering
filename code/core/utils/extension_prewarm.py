@@ -31,6 +31,8 @@ from pathlib import Path
 from typing import Optional, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from core.utils.python_entrypoints import find_repo_root, temporary_sys_path
+
 logger = logging.getLogger(__name__)
 
 # State tracking
@@ -44,20 +46,12 @@ _PREWARM_LOCK = threading.Lock()
 
 def _get_repo_root() -> Path:
     """Find repository root."""
-    cwd = Path.cwd()
-    repo_root = cwd
-    while repo_root.parent != repo_root:
-        if (repo_root / ".git").exists() or (repo_root / "core" / "common").exists():
-            break
-        repo_root = repo_root.parent
-    return repo_root
+    return find_repo_root()
 
 
-def _ensure_path():
-    """Ensure repo root is on sys.path."""
-    repo_root = _get_repo_root()
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
+def _repo_import_context():
+    """Temporarily expose the repo root for extension module imports."""
+    return temporary_sys_path(_get_repo_root())
 
 
 def _build_extension(name: str, import_path: str, verbose: bool = False) -> Tuple[bool, str, float]:
@@ -99,8 +93,6 @@ def _do_prewarm(verbose: bool = False, parallel: bool = True) -> Dict[str, Tuple
     """
     global _PREWARM_RESULTS, _PREWARM_COMPLETE, _PREWARM_TIMES
     
-    _ensure_path()
-    
     total_start = _time.time()
     
     # Extensions to prebuild
@@ -139,34 +131,35 @@ def _do_prewarm(verbose: bool = False, parallel: bool = True) -> Dict[str, Tuple
         else:
             to_build.append((name, import_path))
     
-    if parallel and len(to_build) > 1:
-        # Build extensions in parallel using thread pool
-        # Note: GIL is released during compilation, so this helps
-        max_workers = min(len(to_build), int(os.environ.get("MAX_JOBS", "4")))
-        
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(_build_extension, name, import_path, verbose): name
-                for name, import_path in to_build
-            }
+    with _repo_import_context():
+        if parallel and len(to_build) > 1:
+            # Build extensions in parallel using thread pool
+            # Note: GIL is released during compilation, so this helps
+            max_workers = min(len(to_build), int(os.environ.get("MAX_JOBS", "4")))
             
-            for future in as_completed(futures):
-                name = futures[future]
-                try:
-                    success, msg, elapsed = future.result()
-                    results[name] = (success, msg)
-                    times[name] = elapsed
-                except Exception as e:
-                    results[name] = (False, str(e)[:200])
-                    times[name] = 0.0
-                    if verbose:
-                        print(f"  ✗ {name}: {e}")
-    else:
-        # Sequential build
-        for name, import_path in to_build:
-            success, msg, elapsed = _build_extension(name, import_path, verbose)
-            results[name] = (success, msg)
-            times[name] = elapsed
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(_build_extension, name, import_path, verbose): name
+                    for name, import_path in to_build
+                }
+                
+                for future in as_completed(futures):
+                    name = futures[future]
+                    try:
+                        success, msg, elapsed = future.result()
+                        results[name] = (success, msg)
+                        times[name] = elapsed
+                    except Exception as e:
+                        results[name] = (False, str(e)[:200])
+                        times[name] = 0.0
+                        if verbose:
+                            print(f"  ✗ {name}: {e}")
+        else:
+            # Sequential build
+            for name, import_path in to_build:
+                success, msg, elapsed = _build_extension(name, import_path, verbose)
+                results[name] = (success, msg)
+                times[name] = elapsed
     
     _PREWARM_RESULTS = results
     _PREWARM_TIMES = times

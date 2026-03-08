@@ -10,13 +10,8 @@ import sys
 from pathlib import Path
 from typing import Optional, List
 
-# Add analysis directory to path for imports
-ANALYSIS_DIR = Path(__file__).parent
-if str(ANALYSIS_DIR) not in sys.path:
-    sys.path.insert(0, str(ANALYSIS_DIR))
-
-from metric_extractor import discover_and_extract_all, flatten_metrics
-from report_generator import generate_report_from_metrics
+from core.analysis.metric_extractor import discover_and_extract_all, flatten_metrics
+from core.analysis.report_generator import generate_report_from_metrics
 
 
 def find_latest_results_dir(code_root: Path, pattern: str = "test_results_*") -> Optional[Path]:
@@ -131,19 +126,19 @@ def main():
         epilog="""
 Examples:
   # Analyze latest test results
-  python core/analysis/analyze_results.py
+  python -m core.analysis.analyze_results
   
   # Analyze specific directory
-  python core/analysis/analyze_results.py --input test_results_20251028_063307
+  python -m core.analysis.analyze_results --input test_results_20251028_063307
   
   # Analyze all historical results
-  python core/analysis/analyze_results.py --all
+  python -m core.analysis.analyze_results --all
   
   # Write to specific output file
-  python core/analysis/analyze_results.py --output docs/analysis_latest.md
+  python -m core.analysis.analyze_results --output docs/analysis_latest.md
   
   # Analyze power efficiency
-  python core/analysis/analyze_results.py --power-file power.json --throughput-file results.json
+  python -m core.analysis.analyze_results --power-file power.json --throughput-file results.json
         """
     )
     
@@ -195,7 +190,8 @@ Examples:
             import subprocess
             result = subprocess.run([
                 sys.executable,
-                str(code_root / "core" / "analysis" / "power_efficiency_analyzer.py"),
+                "-m",
+                "core.analysis.power_efficiency_analyzer",
                 "--power-file", str(args.power_file),
                 "--throughput-file", str(args.throughput_file),
                 "--output", str(args.output) if args.output else "-",

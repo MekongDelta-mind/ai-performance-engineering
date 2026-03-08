@@ -112,6 +112,8 @@ class SimpleAttentionLayer(nn.Module):
 
 class BaselineKVCacheNaiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Naive KV cache baseline."""
+
+    allowed_benchmark_fn_antipatterns = ("allocation",)
     
     def __init__(self):
         super().__init__()

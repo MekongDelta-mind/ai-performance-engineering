@@ -1,19 +1,13 @@
 """Python harness wrapper for baseline_memory_transfer_multigpu.cu."""
 
 from __future__ import annotations
+from pathlib import Path
 from typing import Optional
 
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
 import torch
 
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
-from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 
 
 class BaselineMemoryTransferMultigpuBenchmark(CudaBinaryBenchmark):

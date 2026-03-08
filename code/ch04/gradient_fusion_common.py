@@ -57,6 +57,7 @@ class GradientFusionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         ]
         self.fused_tensor = torch.cat([t.view(-1) for t in self.tensors])
         self._verify_input = self.tensors[0]
+        self._accum_buffer = torch.zeros((), device=self.device, dtype=torch.float32)
 
     def benchmark_fn(self) -> None:
         if not self.tensors or self.fused_tensor is None:
@@ -64,7 +65,8 @@ class GradientFusionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if self.fused:
             self.output = self.fused_tensor.sum()
         else:
-            accum = torch.zeros((), device=self.device, dtype=torch.float32)
+            accum = self._accum_buffer
+            accum.zero_()
             for tensor in self.tensors:
                 accum = accum + tensor.sum()
             self.output = accum
@@ -95,6 +97,7 @@ class GradientFusionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.fused_tensor = None
         self.output = None
         self._verify_input = None
+        self._accum_buffer = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

@@ -7,12 +7,7 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 from typing import Optional
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 from ch04.nccl_blackwell_config import (
@@ -54,6 +49,7 @@ def _enable_symmem_pipeline() -> bool:
 class OptimizedNVSHMEMPipelineParallelMultiGPU(VerificationPayloadMixin, BaseBenchmark):
     multi_gpu_required = True
     preferred_ncu_replay_mode = "kernel"
+    allowed_benchmark_fn_antipatterns = ("host_transfer", "random_input_regeneration", "sync")
     def __init__(self) -> None:
         super().__init__()
         self.register_workload_metadata(requests_per_iteration=1.0)

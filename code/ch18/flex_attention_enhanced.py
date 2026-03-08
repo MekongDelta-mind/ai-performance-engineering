@@ -11,17 +11,7 @@ Architecture-aware optimizations:
 - B200: Optimized for HBM3e bandwidth patterns
 - GB10: Leverages NVLink-C2C for large sequence handling
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import copy
 

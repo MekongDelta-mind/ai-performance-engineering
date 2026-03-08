@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parents[1]
-HARNESS = SCRIPT_DIR / "profile_harness.py"
+REPO_ROOT = SCRIPT_DIR.parents[2]
+HARNESS_MODULE = "core.scripts.harness.profile_harness"
 PYTHON_BIN = os.environ.get("PYTHON", sys.executable)
 
 
@@ -29,7 +29,7 @@ def _resolve_target(target: str) -> Path:
 
 
 def _match_example(target: Path) -> Optional[str]:
-    from example_registry import EXAMPLES
+    from core.scripts.harness.example_registry import EXAMPLES
 
     resolved = target
     candidates: List[tuple[str, Path]] = []
@@ -159,7 +159,7 @@ def _split_targets(
 def main() -> int:
     args, raw_args = parse_args()
 
-    from example_registry import EXAMPLE_BY_NAME
+    from core.scripts.harness.example_registry import EXAMPLE_BY_NAME
 
     try:
         forward_args, resolved_examples = _split_targets(
@@ -172,7 +172,7 @@ def main() -> int:
         return 1
 
     harness_args = _merge_examples(forward_args, resolved_examples)
-    command = [PYTHON_BIN, str(HARNESS), *harness_args]
+    command = [PYTHON_BIN, "-m", HARNESS_MODULE, *harness_args]
     return subprocess.call(command)
 
 

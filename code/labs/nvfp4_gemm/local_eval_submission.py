@@ -3,23 +3,22 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import math
 import statistics
-import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.harness.benchmark_harness import lock_gpu_clocks
-import utils as nvfp4_utils
+from labs.nvfp4_gemm import utils as nvfp4_utils
+from labs.nvfp4_gemm.local_eval_loader import (
+    load_reference_module,
+    load_submission_module,
+    load_utils_module,
+)
 
 # Queried from https://www.gpumode.com/api/leaderboard/597 on 2026-02-28.
 TOP_SCORE_SECONDS_597 = 9.981888843481874e-06
@@ -35,15 +34,6 @@ BENCHMARKS = (
 @contextmanager
 def _null_ctx():
     yield None
-
-
-def _load_module(path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Failed to load module from {path}")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def _clone_tree(x: Any) -> Any:
@@ -187,14 +177,19 @@ def main() -> int:
     if not args.reference_file.exists():
         raise FileNotFoundError(f"Reference file not found: {args.reference_file}")
 
-    # Ensure sibling imports (`task`, `utils`, `reference_submission`) resolve.
-    for p in (args.submission_file.parent.resolve(), args.reference_file.parent.resolve()):
-        s = str(p)
-        if s not in sys.path:
-            sys.path.insert(0, s)
-
-    submission_mod = _load_module(args.submission_file, "nvfp4_gemm_submission")
-    reference_mod = _load_module(args.reference_file, "nvfp4_gemm_reference")
+    utils_path = args.reference_file.parent.resolve() / "utils.py"
+    utils_mod = load_utils_module(utils_path, "nvfp4_gemm_utils")
+    reference_mod = load_reference_module(
+        args.reference_file,
+        module_name="nvfp4_gemm_reference",
+        utils_module=utils_mod,
+    )
+    submission_mod = load_submission_module(
+        args.submission_file,
+        module_name="nvfp4_gemm_submission",
+        reference_module=reference_mod,
+        utils_module=utils_mod,
+    )
     if not callable(getattr(submission_mod, "custom_kernel", None)):
         raise RuntimeError(f"{args.submission_file} must define callable custom_kernel(data)")
     if not callable(getattr(reference_mod, "generate_input", None)):

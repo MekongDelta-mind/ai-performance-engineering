@@ -5,11 +5,6 @@ Run with: pytest tests/test_benchmark_metrics.py -v
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.benchmark.metrics import (
     # Hardware specs
@@ -551,4 +546,3 @@ class TestValidateMetrics:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

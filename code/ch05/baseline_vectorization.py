@@ -17,6 +17,7 @@ class BaselineVectorizationBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().__init__()
         self.data: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.N = 1_000_000
         # Computation benchmark - jitter check not applicable
         tokens = self.N
@@ -29,12 +30,16 @@ class BaselineVectorizationBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize data."""
         torch.manual_seed(42)
         self.data = torch.randn(self.N, device=self.device)
+        self._output_buffer = torch.zeros(1, device=self.device)
     
     def benchmark_fn(self) -> None:
         """Benchmark: Chunked reductions to simulate scalar-style overhead."""
         assert self.data is not None
         with self._nvtx_range("baseline_vectorization"):
-            result = torch.zeros(1, device=self.device)
+            result = self._output_buffer
+            if result is None:
+                raise RuntimeError("Output buffer not initialized")
+            result.zero_()
             chunk = 4096
             for start in range(0, self.N, chunk):
                 result += self.data[start:start + chunk].sum()
@@ -58,6 +63,7 @@ class BaselineVectorizationBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def teardown(self) -> None:
         """Teardown: Clean up resources."""
         self.data = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

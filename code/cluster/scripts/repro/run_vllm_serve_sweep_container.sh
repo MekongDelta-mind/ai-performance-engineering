@@ -326,6 +326,20 @@ pathlib.Path(out_path).write_text(json.dumps(payload, indent=2) + "\n")
 PY
 }
 
+start_progress_poller() {
+  local current_repeat="$1"
+  local current_csv="$2"
+  local interval_seconds="${3:-15}"
+  (
+    exec </dev/null >/dev/null 2>&1
+    while true; do
+      write_progress_json "running" "$current_repeat" "$current_csv" || true
+      sleep "$interval_seconds"
+    done
+  ) &
+  echo $!
+}
+
 write_progress_json "starting" 0 ""
 
 DOCKER_ARGS=(
@@ -352,6 +366,14 @@ for rep in $(seq 1 "$REPEATS"); do
   mkdir -p "$REP_DIR"
   REP_LOG="${REP_DIR}/sweep_log.txt"
   write_progress_json "running" "$rep" "${REP_DIR}/sweep_summary.csv"
+  POLLER_PID="$(start_progress_poller "$rep" "${REP_DIR}/sweep_summary.csv")"
+  cleanup_progress_poller() {
+    if [[ -n "${POLLER_PID:-}" ]]; then
+      kill "$POLLER_PID" 2>/dev/null || true
+      wait "$POLLER_PID" 2>/dev/null || true
+      POLLER_PID=""
+    fi
+  }
   if [[ "$DETACH" -eq 1 ]]; then
     safe_name="$(echo "vllm_sweep_${RUN_ID}_${LABEL}_r${rep}" | tr -c '[:alnum:]_.' '_' )_$(date +%s)"
     echo "Starting detached container (repeat ${rep}/${REPEATS}): ${safe_name}"
@@ -367,6 +389,7 @@ for rep in $(seq 1 "$REPEATS"); do
     wait "$TAIL_PID" 2>/dev/null || true
     docker_exec rm "$safe_name" >/dev/null 2>&1 || true
     if [[ "$rc" -ne 0 ]]; then
+      cleanup_progress_poller
       write_progress_json "failed" "$rep" "${REP_DIR}/sweep_summary.csv"
       echo "ERROR: vLLM sweep container exited with code ${rc} on repeat ${rep}" >&2
       exit "$rc"
@@ -384,6 +407,7 @@ for rep in $(seq 1 "$REPEATS"); do
     rc=${PIPESTATUS[0]}
     set -e
     if [[ "$rc" -ne 0 ]]; then
+      cleanup_progress_poller
       write_progress_json "failed" "$rep" "${REP_DIR}/sweep_summary.csv"
       echo "ERROR: vLLM sweep container failed on repeat ${rep} (rc=${rc})." >&2
       if [[ -f "${REP_DIR}/server.log" ]]; then
@@ -394,6 +418,7 @@ for rep in $(seq 1 "$REPEATS"); do
     fi
   fi
 
+  cleanup_progress_poller
   if [[ ! -f "${REP_DIR}/sweep_summary.csv" ]]; then
     write_progress_json "failed" "$rep" "${REP_DIR}/sweep_summary.csv"
     echo "ERROR: missing repeat CSV output: ${REP_DIR}/sweep_summary.csv" >&2

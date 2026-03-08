@@ -5,13 +5,8 @@ Run with: pytest tests/test_update_custom_metrics.py -v
 """
 
 import pytest
-import sys
 import tempfile
 from pathlib import Path
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from core.scripts.update_custom_metrics import (
     get_chapter_from_path,

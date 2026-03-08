@@ -13,11 +13,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Any, Dict, Optional
-import sys
-from pathlib import Path
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.harness.arch_config import prefer_sdpa_backends
 from core.utils.compile_utils import compile_model

@@ -25,6 +25,7 @@ class StridedStreamBaseline(VerificationPayloadMixin, BaseBenchmark):
     """Baseline workload that executes strided copies on a single stream."""
 
     declare_all_streams = False
+    allowed_benchmark_fn_antipatterns = ("sync",)
 
     def __init__(
         self,

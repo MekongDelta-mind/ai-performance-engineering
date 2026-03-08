@@ -10,11 +10,6 @@ Reference: NVIDIA NVSHMEM 2.7+ documentation
 import os
 import subprocess
 from typing import Dict, List, Optional
-from pathlib import Path
-import sys
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.utils.logger import get_logger
 
@@ -313,4 +308,3 @@ Examples:
 
 if __name__ == '__main__':
     main()
-

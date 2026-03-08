@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from dataclasses import dataclass, asdict
 import argparse
 import csv
@@ -20,8 +19,6 @@ from pathlib import Path
 from typing import Dict, List, Set
 
 repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.discovery import discover_all_chapters, discover_benchmarks
 from core.profiling.nvtx_helper import canonicalize_nvtx_name

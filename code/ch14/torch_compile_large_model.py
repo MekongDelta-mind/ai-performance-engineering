@@ -12,22 +12,8 @@ Key insight: torch.compile benefits scale with model size!
 
 Hardware: NVIDIA B200 (178 GB memory available)
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 import os
-
-# Add repository root to import shared helpers
-_extras_dir = os.path.dirname(os.path.abspath(__file__))
-_repo_root = os.path.dirname(_extras_dir)
-if _repo_root not in sys.path:
-    sys.path.insert(0, _repo_root)
 
 
 import torch

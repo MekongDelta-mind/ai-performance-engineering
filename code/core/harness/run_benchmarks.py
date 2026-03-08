@@ -8,7 +8,7 @@ This script:
 4. Generates a comprehensive summary report
 
 Usage:
-    python core/harness/run_benchmarks.py [--targets chX chY:example] [--format json|markdown|both]
+    python -m core.harness.run_benchmarks [--targets chX chY:example] [--format json|markdown|both]
 """
 
 import sys
@@ -32,10 +32,7 @@ import copy
 # Force NVCC line info so Nsight/torch traces carry file/line metadata
 os.environ["NVCCFLAGS"] = f"-lineinfo {os.environ.get('NVCCFLAGS', '')}".strip()
 
-# Ensure repository root on sys.path before importing helpers
 repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.arch_config import configure_optimizations as _configure_arch_optimizations
 from core.benchmark.artifact_manager import default_artifacts_root, build_run_id, slugify
@@ -93,6 +90,7 @@ from core.benchmark.expectations import (
     compute_speedup,
 )
 from core.discovery import chapter_slug, resolve_target_chapters, is_cuda_binary_benchmark_file
+from core.utils.python_entrypoints import build_repo_python_env
 
 # Import verification system for mandatory correctness checks
 try:
@@ -1873,10 +1871,6 @@ def _build_torchrun_profile_command(
     rdzv_backend = getattr(config, "rdzv_backend", None) or "c10d"
     torchrun_cmd.extend(["--rdzv_backend", str(rdzv_backend), "--rdzv_endpoint", str(rdzv_endpoint)])
 
-    wrapper = Path(__file__).resolve().with_name("torchrun_wrapper.py")
-    if not wrapper.exists():
-        raise RuntimeError(f"Missing torchrun wrapper script: {wrapper}")
-
     expected_seed = _resolve_expected_seed(config)
     wrapper_args: List[str] = [
         "--aisp-target-script",
@@ -1889,9 +1883,9 @@ def _build_torchrun_profile_command(
     if torch.cuda.is_available():
         wrapper_args.extend(["--aisp-expected-cuda-seed", str(_resolve_expected_cuda_seed(config))])
 
-    torchrun_cmd.extend([str(wrapper), *wrapper_args])
+    torchrun_cmd.extend(["-m", "core.harness.torchrun_wrapper", *wrapper_args])
 
-    env = os.environ.copy()
+    env = build_repo_python_env(repo_root, base_env=os.environ.copy())
     if getattr(config, "single_gpu", False):
         env["CUDA_VISIBLE_DEVICES"] = _select_single_gpu_visible()
     if getattr(config, "lock_gpu_clocks", False) and torch.cuda.is_available():
@@ -2043,18 +2037,17 @@ def profile_python_benchmark(
         from core.profiling.nsight_automation import NsightAutomation
 
         wrapper_script.write(f"""
-import sys
+import importlib.util
 from pathlib import Path
 from contextlib import nullcontext
 
-# Add repo root so NVTX helpers can be imported
-sys.path.insert(0, r'{repo_root}')
-
-# Add chapter directory to path
-sys.path.insert(0, r'{chapter_dir}')
-
-# Import and load benchmark
-from {benchmark_path.stem} import get_benchmark
+_BENCHMARK_PATH = Path(r"{benchmark_path}")
+_BENCHMARK_SPEC = importlib.util.spec_from_file_location("profile_benchmark_module", _BENCHMARK_PATH)
+if _BENCHMARK_SPEC is None or _BENCHMARK_SPEC.loader is None:
+    raise RuntimeError(f"Failed to create benchmark module spec for {{_BENCHMARK_PATH}}")
+_BENCHMARK_MODULE = importlib.util.module_from_spec(_BENCHMARK_SPEC)
+_BENCHMARK_SPEC.loader.exec_module(_BENCHMARK_MODULE)
+get_benchmark = _BENCHMARK_MODULE.get_benchmark
 
 from core.harness.benchmark_harness import (
     BenchmarkConfig,
@@ -2343,18 +2336,17 @@ def profile_python_benchmark_ncu(
     
     try:
         wrapper_script.write(f"""
-import sys
+import importlib.util
 from pathlib import Path
 from contextlib import nullcontext
 
-# Add repo root so NVTX helpers can be imported
-sys.path.insert(0, r'{repo_root}')
-
-# Add chapter directory to path
-sys.path.insert(0, r'{chapter_dir}')
-
-# Import and load benchmark
-from {benchmark_path.stem} import get_benchmark
+_BENCHMARK_PATH = Path(r"{benchmark_path}")
+_BENCHMARK_SPEC = importlib.util.spec_from_file_location("profile_benchmark_module", _BENCHMARK_PATH)
+if _BENCHMARK_SPEC is None or _BENCHMARK_SPEC.loader is None:
+    raise RuntimeError(f"Failed to create benchmark module spec for {{_BENCHMARK_PATH}}")
+_BENCHMARK_MODULE = importlib.util.module_from_spec(_BENCHMARK_SPEC)
+_BENCHMARK_SPEC.loader.exec_module(_BENCHMARK_MODULE)
+get_benchmark = _BENCHMARK_MODULE.get_benchmark
 
 from core.harness.benchmark_harness import (
     BenchmarkConfig,
@@ -2664,14 +2656,17 @@ def profile_python_benchmark_torch(
     wrapper_path = Path(wrapper_script.name)
     wrapper_script.write(
         f"""
-import sys
+import importlib.util
 from pathlib import Path
 from contextlib import nullcontext
 
-sys.path.insert(0, r"{repo_root}")
-sys.path.insert(0, r"{chapter_dir}")
-
-from {benchmark_path.stem} import get_benchmark
+_BENCHMARK_PATH = Path(r"{benchmark_path}")
+_BENCHMARK_SPEC = importlib.util.spec_from_file_location("profile_benchmark_module", _BENCHMARK_PATH)
+if _BENCHMARK_SPEC is None or _BENCHMARK_SPEC.loader is None:
+    raise RuntimeError(f"Failed to create benchmark module spec for {{_BENCHMARK_PATH}}")
+_BENCHMARK_MODULE = importlib.util.module_from_spec(_BENCHMARK_SPEC)
+_BENCHMARK_SPEC.loader.exec_module(_BENCHMARK_MODULE)
+get_benchmark = _BENCHMARK_MODULE.get_benchmark
 from core.harness.benchmark_harness import (
     BenchmarkConfig,
     ReadOnlyBenchmarkConfigView,

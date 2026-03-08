@@ -9,13 +9,7 @@ batch by iterating over (batch, m_tile, n_tile) tiles inside the kernel.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Optional
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 
@@ -36,6 +30,7 @@ class OptimizedTritonPersistentBenchBenchmark(VerificationPayloadMixin, BaseBenc
         self.output = None
         self.a = None
         self.b = None
+        self._output_buffer = None
 
         self.batch_size = 32
         self.M = 256
@@ -64,12 +59,15 @@ class OptimizedTritonPersistentBenchBenchmark(VerificationPayloadMixin, BaseBenc
 
         self.a = torch.randn(self.batch_size, self.M, self.K, device=self.device, dtype=self.dtype)
         self.b = torch.randn(self.batch_size, self.K, self.N, device=self.device, dtype=self.dtype)
+        self._output_buffer = torch.empty(
+            (self.batch_size, self.M, self.N), device=self.device, dtype=self.dtype
+        )
 
         for _ in range(3):
-            _ = matmul_persistent_batched(self.a, self.b, self.num_sms)
+            _ = matmul_persistent_batched(self.a, self.b, self.num_sms, out=self._output_buffer)
 
     def benchmark_fn(self) -> None:
-        self.output = matmul_persistent_batched(self.a, self.b, self.num_sms)
+        self.output = matmul_persistent_batched(self.a, self.b, self.num_sms, out=self._output_buffer)
         self._last = float(self.output.sum())
         if self.output is None or self.a is None or self.b is None:
             raise RuntimeError("benchmark_fn() must produce output")
@@ -92,6 +90,7 @@ class OptimizedTritonPersistentBenchBenchmark(VerificationPayloadMixin, BaseBenc
     def teardown(self) -> None:
         self.a = None
         self.b = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:
@@ -127,4 +126,3 @@ if __name__ == "__main__":
     from core.harness.benchmark_harness import benchmark_main
 
     benchmark_main(get_benchmark)
-

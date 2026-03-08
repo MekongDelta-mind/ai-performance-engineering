@@ -12,11 +12,9 @@ benchmark mode used by nvfp4 dual gemm leaderboard runs:
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import math
 import os
-import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,21 +22,14 @@ from typing import Any
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-import sys
-
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.harness.benchmark_harness import lock_gpu_clocks
-
-LAB_DIR = Path(__file__).resolve().parent
-if str(LAB_DIR) not in sys.path:
-    sys.path.insert(0, str(LAB_DIR))
-
-from gpu_isolation import ensure_gpu_isolation
-from utils import clear_l2_cache_large
+from labs.nvfp4_dual_gemm.gpu_isolation import ensure_gpu_isolation
+from labs.nvfp4_dual_gemm.local_eval_loader import (
+    load_reference_module,
+    load_submission_module,
+    load_utils_module,
+)
+from labs.nvfp4_dual_gemm.utils import clear_l2_cache_large
 
 BENCHMARKS = (
     {"name": "case0", "m": 256, "n": 4096, "k": 7168, "l": 1, "seed": 1111},
@@ -59,15 +50,6 @@ class Stats:
     err: float
     best: float
     worst: float
-
-
-def _load_module(path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Failed to load module from {path}")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def _clone_tree(x: Any) -> Any:
@@ -253,13 +235,21 @@ def main() -> int:
     if args.num_iterations_per_benchmark <= 0:
         raise ValueError("--num-iterations-per-benchmark must be > 0")
 
-    for p in (args.submission_file.parent.resolve(), args.reference_file.parent.resolve()):
-        sp = str(p)
-        if sp not in sys.path:
-            sys.path.insert(0, sp)
-
-    submission_mod = _load_module(args.submission_file, "nvfp4_dual_submission")
-    reference_mod = _load_module(args.reference_file, "nvfp4_dual_reference")
+    utils_mod = load_utils_module(
+        args.submission_file.parent / "utils.py",
+        "nvfp4_dual_utils_for_official_semantics",
+    )
+    reference_mod = load_reference_module(
+        args.reference_file,
+        module_name="nvfp4_dual_reference_for_official_semantics",
+        utils_module=utils_mod,
+    )
+    submission_mod = load_submission_module(
+        args.submission_file,
+        module_name="nvfp4_dual_submission_for_official_semantics",
+        reference_module=reference_mod,
+        utils_module=utils_mod,
+    )
 
     isolation_preflight = None
     if args.require_idle_gpu or args.kill_foreign_gpu_jobs:

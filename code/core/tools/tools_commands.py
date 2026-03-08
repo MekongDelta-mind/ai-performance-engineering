@@ -153,16 +153,19 @@ TOOLS: Dict[str, ToolSpec] = {
     "perf-per-watt": ToolSpec(
         name="perf-per-watt",
         script_path=REPO_ROOT / "ch03" / "power_perf_watt_tool.py",
+        module_name="ch03.power_perf_watt_tool",
         description="Estimate GEMM perf-per-watt using NVML power sampling.",
     ),
     "power-tuning": ToolSpec(
         name="power-tuning",
         script_path=REPO_ROOT / "ch03" / "power_tuning_tool.py",
+        module_name="ch03.power_tuning_tool",
         description="Sweep GPU power caps and report perf-per-watt.",
     ),
     "mig-mps": ToolSpec(
         name="mig-mps",
         script_path=REPO_ROOT / "ch03" / "mig_mps_tool.py",
+        module_name="ch03.mig_mps_tool",
         description="Report MIG and MPS status for a GPU.",
     ),
     "proofwright-verify": ToolSpec(

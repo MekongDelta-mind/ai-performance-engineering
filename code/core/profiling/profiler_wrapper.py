@@ -58,26 +58,6 @@ def create_benchmark_wrapper(
         if not module_path.exists():
             return None
         
-        module_dir = module_path.parent
-
-        # Ensure the import root for the module is on sys.path so `import <module_name>`
-        # works for both simple modules ("foo") and package-style modules ("pkg.foo").
-        # For namespace packages (no __init__.py), the parent directory containing the
-        # top-level package must be present on sys.path.
-        module_parts = module_name.split(".")
-        up_levels = len(module_parts) - 1
-        if module_path.name == "__init__.py":
-            up_levels = len(module_parts)
-        try:
-            import_root = module_path.parents[max(up_levels, 0)]
-        except Exception:
-            import_root = module_dir
-
-        # Repo code root (the directory containing `core/`). Needed because the
-        # wrapper runs as a standalone script whose sys.path does not include the
-        # current working directory by default.
-        code_root = Path(__file__).resolve().parents[2]
-        
         # Create temporary wrapper script
         wrapper_script = tempfile.NamedTemporaryFile(
             mode='w', suffix='.py', delete=False, dir=tempfile.gettempdir()
@@ -90,15 +70,15 @@ def create_benchmark_wrapper(
         instantiation_code = f"""# Get benchmark instance (try common patterns)
 benchmark = None
 try:
-    if hasattr({module_name}, "get_benchmark"):
-        benchmark = {module_name}.get_benchmark()
-    elif hasattr({module_name}, "{benchmark_class}"):
-        benchmark_class = getattr({module_name}, "{benchmark_class}")
+    if hasattr(_benchmark_module, "get_benchmark"):
+        benchmark = _benchmark_module.get_benchmark()
+    elif hasattr(_benchmark_module, "{benchmark_class}"):
+        benchmark_class = getattr(_benchmark_module, "{benchmark_class}")
         benchmark = benchmark_class()
     else:
         # Try to find any class with benchmark_fn method
-        for attr_name in dir({module_name}):
-            attr = getattr({module_name}, attr_name)
+        for attr_name in dir(_benchmark_module):
+            attr = getattr(_benchmark_module, attr_name)
             if isinstance(attr, type) and hasattr(attr, "benchmark_fn") and callable(getattr(attr, "benchmark_fn", None)):
                 benchmark = attr()
                 break
@@ -121,17 +101,17 @@ _profiling_config = BenchmarkConfig(
 benchmark._config = ReadOnlyBenchmarkConfigView.from_config(_profiling_config)
 """
         
-        wrapper_content = f'''import sys
+        wrapper_content = f'''import importlib.util
 from pathlib import Path
+from core.utils.python_entrypoints import temporary_sys_path
 
-# Add repo code root so `import core` works inside the wrapper process.
-sys.path.insert(0, r"{code_root}")
-
-# Add benchmark module import root so dotted imports work.
-sys.path.insert(0, r"{import_root}")
-
-# Import the benchmark module
-import {module_name}
+_MODULE_PATH = Path(r"{module_path}")
+_MODULE_SPEC = importlib.util.spec_from_file_location("{module_name}", _MODULE_PATH)
+if _MODULE_SPEC is None or _MODULE_SPEC.loader is None:
+    raise RuntimeError(f"Failed to create import spec for {{_MODULE_PATH}}")
+_benchmark_module = importlib.util.module_from_spec(_MODULE_SPEC)
+with temporary_sys_path(_MODULE_PATH.parent):
+    _MODULE_SPEC.loader.exec_module(_benchmark_module)
 
 {instantiation_code}
 
@@ -162,7 +142,7 @@ except Exception as e:
     traceback.print_exc()
     raise
 '''
-        
+
         wrapper_script.write(wrapper_content)
         wrapper_script.close()
         

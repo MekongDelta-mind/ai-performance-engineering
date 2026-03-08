@@ -6,11 +6,6 @@ Enables torch.compile, FlexAttention, and optional FP8 for maximum performance.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from typing import Optional
 
 import torch

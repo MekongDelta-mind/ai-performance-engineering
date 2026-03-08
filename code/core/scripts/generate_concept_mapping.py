@@ -8,30 +8,66 @@ This script auto-generates the concept-to-code mapping by:
 4. Preserving existing notes/metadata where possible
 
 Usage:
-    python3 core/scripts/generate_concept_mapping.py [--output concept_code_mapping.json]
+    python -m core.scripts.generate_concept_mapping [--output concept_code_mapping.json]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import sys
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-# Add repo root to path
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
-# Import from comprehensive_coverage_check for concept extraction
-from tools.coverage.comprehensive_coverage_check import (
-    CONCEPT_KEYWORDS,
-    extract_key_concepts_from_text,
-    should_exclude_concept,
-    CHAPTER_EXCLUSIONS,
-)
+code_root = Path(__file__).resolve().parents[2]
 from core.utils.chapter_compare_template import discover_benchmarks
+
+CHAPTER_EXCLUSIONS: Dict[int, Set[str]] = {}
+CONCEPT_KEYWORDS: Dict[str, tuple[str, ...]] = {}
+_GENERIC_CONCEPTS = {
+    "baseline",
+    "benchmark",
+    "benchmarks",
+    "comparison",
+    "concept",
+    "concepts",
+    "example",
+    "examples",
+    "introduction",
+    "optimized",
+    "performance",
+    "summary",
+}
+
+
+def _slugify_concept(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+    return re.sub(r"_+", "_", slug)
+
+
+def extract_key_concepts_from_text(text: str) -> Set[str]:
+    """Extract plausible concept tokens from headings and inline code."""
+    concepts: Set[str] = set()
+
+    for match in re.finditer(r"^#+\s+(.+)$", text, flags=re.MULTILINE):
+        concept = _slugify_concept(match.group(1))
+        if concept and concept not in _GENERIC_CONCEPTS:
+            concepts.add(concept)
+
+    for match in re.finditer(r"`([A-Za-z][A-Za-z0-9_\- ]+)`", text):
+        concept = _slugify_concept(match.group(1))
+        if concept and concept not in _GENERIC_CONCEPTS:
+            concepts.add(concept)
+
+    return concepts
+
+
+def should_exclude_concept(chapter_num: int, concept: str) -> bool:
+    if len(concept) < 3:
+        return True
+    if concept in _GENERIC_CONCEPTS:
+        return True
+    return concept in CHAPTER_EXCLUSIONS.get(chapter_num, set())
 
 
 def extract_concept_from_filename(filename: str) -> str:
@@ -198,7 +234,7 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=repo_root / "concept_code_mapping.json",
+        default=code_root / "concept_code_mapping.json",
         help="Output JSON file path (default: concept_code_mapping.json)"
     )
     parser.add_argument(
@@ -225,7 +261,7 @@ def main():
             print(f"Could not load existing JSON: {e}")
     
     # Generate mapping
-    mapping = generate_concept_mapping(repo_root, existing_json)
+    mapping = generate_concept_mapping(code_root, existing_json)
     
     # Write output
     with open(args.output, "w") as f:
@@ -243,4 +279,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

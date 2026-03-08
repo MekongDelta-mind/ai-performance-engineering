@@ -11,13 +11,7 @@ This demonstrates why keeping data on GPU is critical for performance.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Optional
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.nn as nn
@@ -65,8 +59,9 @@ class OptimizedGpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         ).to(self.device).eval()
         
         self.input = torch.randn(self.batch_size, self.hidden_dim, device=self.device)
-        self.output = None
-        self._reduction_buffer = None
+        reduced_rows = self.batch_size // self.num_shards
+        self.output = torch.empty((reduced_rows, self.hidden_dim), device=self.device)
+        self._reduction_buffer = torch.empty_like(self.output)
         torch.cuda.synchronize(self.device)
 
     def benchmark_fn(self) -> None:
@@ -86,9 +81,7 @@ class OptimizedGpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
             
             # In-place sum reduction (stays on GPU)
             if self._reduction_buffer is None or self.output is None:
-                shard0 = shards[0]
-                self._reduction_buffer = torch.empty_like(shard0)
-                self.output = torch.empty_like(shard0)
+                raise RuntimeError("Reduction buffers not initialized")
             self._reduction_buffer.zero_()
             for shard in shards:
                 self._reduction_buffer.add_(shard)

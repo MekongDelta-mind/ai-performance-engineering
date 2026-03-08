@@ -7,17 +7,12 @@ or report SKIPPED with a clear message.
 
 from __future__ import annotations
 
-import sys
+import os
 from pathlib import Path
 from typing import Optional
-import os
 
 import torch
 import torch.nn as nn
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import BaseBenchmark, WorkloadMetadata  # noqa: E402
 from core.benchmark.verification_mixin import VerificationPayloadMixin

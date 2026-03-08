@@ -5,14 +5,10 @@ Automates CUTLASS profiler to find optimal GEMM kernels for Blackwell.
 """
 
 import argparse
-import subprocess
 import json
+import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-import sys
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from typing import Any, Dict, List, Optional, Tuple
 
 from core.utils.logger import get_logger
 
@@ -254,7 +250,6 @@ Examples:
 
 if __name__ == '__main__':
     main()
-
 
 
 

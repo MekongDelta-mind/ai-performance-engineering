@@ -34,25 +34,12 @@ Requirements:
 - PyTorch 2.10+
 - CUDA-capable GPU (graceful fallback on CPU-only systems)
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-
 import platform
 import subprocess
-import torch
-import psutil
 from typing import Any, Dict, List, Optional, Tuple
+
+import psutil
+import torch
 
 
 # GPU Architecture mappings

@@ -187,6 +187,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch01_performance_basics",
         path="ch01/baseline_performance.py",
+        module_name="ch01.baseline_performance",
         description="Goodput and profiling primer from Chapter 1.",
         tags=["ch01", "profiling", "training"],
         requires_modules=["torch", "psutil", "GPUtil", "numpy"],
@@ -197,6 +198,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch02_hardware_info",
         path="ch02/hardware_info.py",
+        module_name="ch02.hardware_info",
         description="Hardware topology and monitoring walkthrough.",
         tags=["ch02", "system", "monitoring"],
         requires_modules=["torch", "psutil", "GPUtil", "numpy"],
@@ -207,6 +209,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch03_bind_numa_affinity",
         path="ch03/bind_numa_affinity.py",
+        module_name="ch03.bind_numa_affinity",
         description="NUMA-aware data pipeline and affinity demo.",
         tags=["ch03", "system", "numa"],
         requires_modules=["torch", "psutil"],
@@ -314,6 +317,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch05_gpudirect_storage",
         path="ch05/gpudirect_storage_example.py",
+        module_name="ch05.gpudirect_storage_example",
         description="GPUDirect Storage pipeline and monitoring demo.",
         tags=["ch05", "io", "storage"],
         requires_modules=["torch", "psutil", "numpy"],
@@ -323,6 +327,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch05_storage_io_optimization",
         path="ch05/storage_io_optimization.py",
+        module_name="ch05.storage_io_optimization",
         description="High-throughput DataLoader and storage optimizations.",
         tags=["ch05", "io", "dataloader"],
         requires_modules=["torch"],
@@ -330,7 +335,8 @@ EXAMPLES: List[Example] = [
     ),
     _example(
         name="ch06_add_sequential",
-        path="ch06/add_sequential.py",
+        path="ch06/baseline_add.py",
+        module_name="ch06.baseline_add",
         description="Sequential kernel launch anti-pattern.",
         tags=["ch06", "kernel", "baseline"],
         requires_modules=["torch"],
@@ -338,7 +344,8 @@ EXAMPLES: List[Example] = [
     ),
     _example(
         name="ch06_add_parallel",
-        path="ch06/add_parallel.py",
+        path="ch06/optimized_add.py",
+        module_name="ch06.optimized_add",
         description="Fused parallel kernel addition example.",
         tags=["ch06", "kernel", "optimization"],
         requires_modules=["torch"],
@@ -347,6 +354,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch07_memory_access",
         path="ch07/memory_access_pytorch.py",
+        module_name="ch07.memory_access_pytorch",
         description="Coalesced vs uncoalesced memory access patterns.",
         tags=["ch07", "memory", "access"],
         requires_modules=["torch"],
@@ -355,6 +363,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch07_vectorized",
         path="ch07/vectorized_pytorch.py",
+        module_name="ch07.vectorized_pytorch",
         description="Vectorized operations for bandwidth efficiency.",
         tags=["ch07", "memory", "vectorization"],
         requires_modules=["torch"],
@@ -363,6 +372,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch07_lookup",
         path="ch07/lookup_pytorch.py",
+        module_name="ch07.lookup_pytorch",
         description="Embedding lookup optimization strategies.",
         tags=["ch07", "memory", "embedding"],
         requires_modules=["torch"],
@@ -371,6 +381,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch07_matmul",
         path="ch07/matmul_pytorch.py",
+        module_name="ch07.matmul_pytorch",
         description="Matmul optimization with tiling examples.",
         tags=["ch07", "compute", "matmul"],
         requires_modules=["torch"],
@@ -379,6 +390,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch08_warp_divergence",
         path="ch08/warp_divergence_pytorch.py",
+        module_name="ch08.warp_divergence_pytorch",
         description="Warp divergence and control flow efficiency study.",
         tags=["ch08", "warp", "control-flow"],
         requires_modules=["torch"],
@@ -388,6 +400,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch08_occupancy",
         path="ch08/occupancy_pytorch.py",
+        module_name="ch08.occupancy_pytorch",
         description="Occupancy tuning and launch configuration demo.",
         tags=["ch08", "warp", "occupancy"],
         requires_modules=["torch"],
@@ -396,6 +409,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch08_ilp",
         path="ch08/ilp_pytorch.py",
+        module_name="ch08.ilp_pytorch",
         description="Instruction level parallelism experiment.",
         tags=["ch08", "warp", "ilp"],
         requires_modules=["torch"],
@@ -404,6 +418,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch09_fusion",
         path="ch09/fusion_pytorch.py",
+        module_name="ch09.fusion_pytorch",
         description="Kernel fusion and compiler-assisted optimizations.",
         tags=["ch09", "compiler", "fusion"],
         requires_modules=["torch", "numpy"],
@@ -413,6 +428,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch13_custom_allocator",
         path="ch13/custom_allocator.py",
+        module_name="ch13.custom_allocator",
         description="Custom CUDA memory allocator strategies.",
         tags=["ch13", "memory", "allocator"],
         requires_modules=["torch"],
@@ -421,6 +437,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch13_memory_profiling",
         path="ch13/memory_profiling.py",
+        module_name="ch13.memory_profiling",
         description="Memory profiling workflow for large models.",
         tags=["ch13", "memory", "profiling"],
         requires_modules=["torch"],
@@ -430,6 +447,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch13_fsdp",
         path="ch13/fsdp_example.py",
+        module_name="ch13.fsdp_example",
         description="Fully Sharded Data Parallel training demo.",
         tags=["ch13", "distributed", "fsdp"],
         requires_modules=["torch"],
@@ -439,6 +457,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch13_train_deepseek_coder",
         path="ch13/train_deepseek_coder.py",
+        module_name="ch13.train_deepseek_coder",
         description="DeepSeek Coder 6.7B training workflow with profiling.",
         tags=["ch13", "training", "llm"],
         requires_modules=["torch", "transformers"],
@@ -448,6 +467,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch14_torch_compiler_examples",
         path="ch14/torch_compiler_examples.py",
+        module_name="ch14.torch_compiler_examples",
         description="Torch compile and dynamo optimization suite.",
         tags=["ch14", "compiler", "torch-compile"],
         requires_modules=["torch", "psutil", "GPUtil"],
@@ -457,6 +477,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch14_triton_examples",
         path="ch14/triton_examples.py",
+        module_name="ch14.triton_examples",
         description="Custom Triton kernels and PyTorch integration.",
         tags=["ch14", "triton", "compiler"],
         requires_modules=["torch", "triton"],
@@ -530,6 +551,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="tool_memory_profiler",
         path="core/profiling/memory_profiler.py",
+        module_name="core.profiling.memory_profiler",
         description="Profiler wrapper focused on CUDA memory diagnostics.",
         tags=["tools", "profiling"],
         requires_modules=["torch"],
@@ -575,6 +597,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch18_flexdecoding",
         path="ch18/baseline_flexdecoding.py",
+        module_name="ch18.baseline_flexdecoding",
         description="FlexAttention decoding pipeline (baseline/optimized pair).",
         tags=["ch18", "attention", "flex"],
         requires_modules=["torch", "numpy"],
@@ -585,6 +608,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch18_test_flex_attention",
         path="ch18/test_flex_attention.py",
+        module_name="ch18.test_flex_attention",
         description="Environment probe for flex_attention availability.",
         tags=["ch18", "attention", "flex"],
         requires_modules=["torch"],
@@ -612,6 +636,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch18_paged_attn",
         path="ch18/baseline_paged_attn.py",
+        module_name="ch18.baseline_paged_attn",
         description="Baseline PyTorch SDPA + MoE dispatch for the paged-attention demo.",
         tags=["ch18", "attention", "moe"],
         requires_modules=["torch"],
@@ -621,6 +646,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch18_paged_attn_vllm",
         path="ch18/optimized_paged_attn_vllm.py",
+        module_name="ch18.optimized_paged_attn_vllm",
         description="vLLM-inspired paged attention with fused RMSNorm and CUDA Graph capture.",
         tags=["ch18", "attention", "moe", "vllm"],
         requires_modules=["torch"],
@@ -630,6 +656,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch19_adaptive_parallelism",
         path="ch19/adaptive_parallelism_strategy.py",
+        module_name="ch19.adaptive_parallelism_strategy",
         description="Adaptive parallelism orchestration for LLM inference.",
         tags=["ch19", "scheduling", "inference"],
         requires_modules=["torch", "psutil"],
@@ -639,6 +666,7 @@ EXAMPLES: List[Example] = [
     _example(
         name="ch19_token_precision_switching",
         path="ch19/token_precision_switching.py",
+        module_name="ch19.token_precision_switching",
         description="Token precision switching and dynamic quantization.",
         tags=["ch19", "quantization", "inference"],
         requires_modules=["torch", "transformers", "numpy"],

@@ -20,8 +20,6 @@ from dataclasses import dataclass
 import torch
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig  # noqa: E402
 from core.benchmark.verification_mixin import VerificationPayloadMixin
@@ -117,13 +115,18 @@ class BaselineDecodeDriver:
         dtype = torch.float16 if getattr(self.decode_kernel, "backend", "") == "vllm" else torch.float32
         self.kv_layout = NaiveKVLayout(hidden=self.hidden, device=DEVICE, dtype=dtype)
         self.captured_shapes: set[Tuple[int, int]] = set()
+        self._token_bank = [
+            torch.randn(batch_size, self.hidden, device=DEVICE, dtype=dtype)
+            for batch_size in self.trace
+        ]
+        self._kv_bank = [
+            torch.randn(batch_size, self.hidden, device=DEVICE, dtype=dtype)
+            for batch_size in self.trace
+        ]
 
     def run(self) -> DecodeMetrics:
         metrics = DecodeMetrics()
-        dtype = torch.float16 if getattr(self.decode_kernel, "backend", "") == "vllm" else torch.float32
-        for batch_size in self.trace:
-            tokens = torch.randn(batch_size, self.hidden, device=DEVICE, dtype=dtype)
-            kv = torch.randn(batch_size, self.hidden, device=DEVICE, dtype=dtype)
+        for batch_size, tokens, kv in zip(self.trace, self._token_bank, self._kv_bank):
             logits = self.decode_kernel(tokens, kv, None)
 
             shape_key = (logits.shape[0], logits.shape[1])

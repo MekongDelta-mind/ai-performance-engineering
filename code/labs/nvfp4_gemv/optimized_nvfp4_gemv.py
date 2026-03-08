@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-import importlib
-import sys
 from pathlib import Path
 from typing import Any, Callable, Optional
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 LAB_DIR = Path(__file__).resolve().parent
-if str(LAB_DIR) not in sys.path:
-    sys.path.insert(0, str(LAB_DIR))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+from labs.nvfp4_gemv.local_eval_loader import (
+    load_reference_module,
+    load_submission_module,
+    load_utils_module,
+)
 
 
 class OptimizedNvfp4GemvBenchmark(VerificationPayloadMixin, BaseBenchmark):
@@ -48,10 +46,18 @@ class OptimizedNvfp4GemvBenchmark(VerificationPayloadMixin, BaseBenchmark):
             raise RuntimeError("SKIPPED: CUDA is required for NVFP4 GEMV benchmarks")
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
-        for stale in ("task", "utils", "reference_submission", "baseline_submission", "optimized_submission"):
-            sys.modules.pop(stale, None)
-        reference_mod = importlib.import_module("reference_submission")
-        optimized_mod = importlib.import_module("optimized_submission")
+        utils_mod = load_utils_module(LAB_DIR / "utils.py", "nvfp4_gemv_utils_for_optimized")
+        reference_mod = load_reference_module(
+            LAB_DIR / "reference_submission.py",
+            module_name="nvfp4_gemv_reference_for_optimized",
+            utils_module=utils_mod,
+        )
+        optimized_mod = load_submission_module(
+            LAB_DIR / "optimized_submission.py",
+            module_name="nvfp4_gemv_optimized_submission",
+            reference_module=reference_mod,
+            utils_module=utils_mod,
+        )
         generate_input = getattr(reference_mod, "generate_input", None)
         if not callable(generate_input):
             raise RuntimeError("reference_submission.py must expose generate_input()")

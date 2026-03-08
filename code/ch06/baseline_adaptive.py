@@ -30,7 +30,7 @@ class BaselineAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize with static configuration."""
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = None
+        self.output = torch.empty_like(self.input)
         self._synchronize()
 
     def _transform(self, tensor: torch.Tensor) -> torch.Tensor:
@@ -42,8 +42,7 @@ class BaselineAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def benchmark_fn(self) -> None:
         """Benchmark: static configuration operations."""
         assert self.input is not None
-        if self.output is None or self.output.shape != self.input.shape:
-            self.output = torch.empty_like(self.input)
+        assert self.output is not None and self.output.shape == self.input.shape
         with self._nvtx_range("baseline_adaptive"):
             for start in range(0, self.N, self.static_chunk):
                 end = min(start + self.static_chunk, self.N)

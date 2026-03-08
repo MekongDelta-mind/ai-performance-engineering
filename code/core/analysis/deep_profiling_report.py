@@ -11,7 +11,7 @@ out as missing:
 
 Typical usage:
 
-    python core/analysis/deep_profiling_report.py \\
+    python -m core.analysis.deep_profiling_report \\
         --ncu-csv artifacts/runs/analysis/double_buffered_pipeline_512.csv \\
         --nsys-report artifacts/runs/<run_id>/profiles/bench/ch10/pipeline_async_verified.nsys-rep \\
         --output-json artifacts/runs/analysis/double_buffered_pipeline_analysis.json
@@ -33,15 +33,9 @@ import math
 import os
 import re
 import statistics
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
-
-# Allow running from repo root
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from ch08.roofline import RooflineAnalyzer
 from ch17.blackwell_profiling_guide import NsightSystemsProfiler

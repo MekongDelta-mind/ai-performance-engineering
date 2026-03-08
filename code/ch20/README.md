@@ -22,7 +22,7 @@ Combines kernel, memory, pipeline, and inference optimizations into holistic cas
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python -m ch20.compare --profile none
+python -m ch20.compare
 python -m cli.aisp bench list-targets --chapter ch20
 python -m cli.aisp bench run --targets ch20 --profile minimal
 ```

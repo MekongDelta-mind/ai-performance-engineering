@@ -30,12 +30,6 @@ Requirements:
 - PyTorch 2.9+ with CUDA 13.0
 - Blackwell GPU (B200/B300)
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
 
 import torch
 import torch.nn as nn

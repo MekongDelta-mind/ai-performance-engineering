@@ -5,27 +5,8 @@ These snippets intentionally highlight how to keep GPU control flow uniform by
 preferring vectorized tensor ops over Python loops, masking work, and (optionally)
 fusing conditionals with torch.compile.
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
-
-import os
-
-CHAPTER_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(CHAPTER_DIR)
-if CHAPTER_DIR not in sys.path:
-    sys.path.insert(0, CHAPTER_DIR)
-if REPO_ROOT not in sys.path:
-    sys.path.insert(1, REPO_ROOT)
-
 try:
-    from arch_config import (
+    from ch08.arch_config import (
         get_compile_mode,
         maybe_compile,
         should_use_compile,

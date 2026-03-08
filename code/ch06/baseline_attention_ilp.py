@@ -30,6 +30,7 @@ class BaselineAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
             tokens_per_iteration=float(token_count),
         )
         self._last_sum: Optional[torch.Tensor] = None
+        self._sum_buffer: Optional[torch.Tensor] = None
         # ILP benchmark: fixed dimensions for measurement
 
     def setup(self) -> None:
@@ -47,14 +48,17 @@ class BaselineAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
             device=self.device,
             dtype=torch.float16,
         )
+        self._sum_buffer = torch.zeros(1, device=self.device, dtype=torch.float16)
         self._synchronize()
     
     def benchmark_fn(self) -> None:
         """Benchmark: Attention with low ILP."""
         assert self.model is not None and self.input is not None
+        assert self._sum_buffer is not None
         with self._nvtx_range("baseline_attention_ilp"):
             with torch.no_grad():
-                accum = torch.zeros(1, device=self.device, dtype=self.input.dtype)
+                accum = self._sum_buffer
+                accum.zero_()
                 for query in self.input.split(self.query_chunk, dim=1):
                     out = self.model(query, self.input, self.input)[0]
                     accum += out.sum()
@@ -76,6 +80,7 @@ class BaselineAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Teardown: Clean up resources."""
         self.model = None
         self.input = None
+        self._sum_buffer = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

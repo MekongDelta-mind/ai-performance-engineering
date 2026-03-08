@@ -17,10 +17,6 @@ import signal
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Sequence
-import sys
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.utils.logger import get_logger
 

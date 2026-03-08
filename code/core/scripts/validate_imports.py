@@ -5,9 +5,9 @@ This script attempts to import each benchmark module and reports any failures.
 Useful for catching missing dependencies, syntax errors, or broken imports.
 
 Usage:
-    python core/scripts/validate_imports.py              # Validate all
-    python core/scripts/validate_imports.py --chapter 7  # Validate ch07 only
-    python core/scripts/validate_imports.py --verbose    # Show successful imports too
+    python -m core.scripts.validate_imports              # Validate all
+    python -m core.scripts.validate_imports --chapter 7  # Validate ch07 only
+    python -m core.scripts.validate_imports --verbose    # Show successful imports too
 """
 from __future__ import annotations
 
@@ -52,10 +52,6 @@ def validate_benchmarks(
     
     Returns (total, passed, failures) where failures is [(module, error), ...].
     """
-    # Add root to path
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-    
     # Find benchmark files
     if chapter:
         patterns = [f'ch{chapter}/baseline_*.py', f'ch{chapter}/optimized_*.py']
@@ -151,6 +147,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 

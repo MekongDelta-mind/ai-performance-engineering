@@ -74,10 +74,10 @@ nvidia-smi topo -m > "${RESULTS_DIR}/nvlink_topology.txt"
     echo ""
     echo "==> Test 4: Memory Profiling - Large Model (40B)"
     if [ -f "${REPO_ROOT}/core/profiling/memory_profiler.py" ]; then
-        python "${REPO_ROOT}/core/profiling/memory_profiler.py" \
-            --output "${RESULTS_DIR}/memory_profile_40b.json" \
-            --chrome-trace "${RESULTS_DIR}/memory_trace_40b.json" \
-            -- python "${REPO_ROOT}/ch16/gpt_large_benchmark.py" \
+        PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" \
+        python -m core.profiling.memory_profiler \
+            --trace "${RESULTS_DIR}/memory_trace_40b.json" \
+            "${REPO_ROOT}/ch16/gpt_large_benchmark.py" \
                 --model-size 40B \
                 --batch-size 4 \
                 --seq-len 4096 \

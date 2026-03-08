@@ -8,17 +8,15 @@ Demonstrates optimized coherent memory patterns:
 - NUMA-aware allocation on Grace CPUs
 """
 
-import torch
-import time
-from typing import Any, Dict, List, Optional
-import sys
 from pathlib import Path
-import os
 import ctypes
+from typing import Any, Dict, List, Optional
+import os
+import time
 
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import torch
 
+from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import (
     BaseBenchmark,
     BenchmarkHarness,
@@ -26,7 +24,6 @@ from core.harness.benchmark_harness import (
     BenchmarkMode,
     WorkloadMetadata,
 )
-from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -245,6 +242,7 @@ class OptimizedGraceCoherentMemory:
 
 class OptimizedGraceCoherentMemoryBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Harness-friendly wrapper around the optimized coherent memory path."""
+    allowed_benchmark_fn_antipatterns = ("sync", "host_transfer")
 
     def __init__(self, size_mb: int = 256, iterations: int = 100):
         super().__init__()

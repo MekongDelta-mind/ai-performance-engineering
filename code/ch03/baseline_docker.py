@@ -6,17 +6,12 @@ and blocking H2D copies. The optimized version uses pinned memory and prefetchin
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
+import os
 import torch
 import torch.nn as nn
-import os
 from core.benchmark.smoke import is_smoke_mode
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin

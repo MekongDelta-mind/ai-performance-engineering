@@ -7,15 +7,10 @@ Usage:
 """
 
 import torch
-import sys
-from pathlib import Path
 
-# Add nanochat to path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from nanochat.gpt import GPT, GPTConfig
-from nanochat.engine import Engine
-from nanochat.tokenizer import get_tokenizer
+from labs.nanochat_fullstack.nanochat.engine import Engine
+from labs.nanochat_fullstack.nanochat.gpt import GPT, GPTConfig
+from labs.nanochat_fullstack.nanochat.tokenizer import get_tokenizer
 
 
 def test_cta_clustering():
@@ -278,4 +273,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-

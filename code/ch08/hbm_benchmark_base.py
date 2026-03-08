@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Optional
 
 import torch
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
@@ -58,7 +53,7 @@ class HBMBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.host_col = host_col.pin_memory()
         self.matrix_row = host_row.to(self.device, non_blocking=False).contiguous()
         self.matrix_col = self.host_col.to(self.device, non_blocking=False).contiguous()
-        self.output = None
+        self.output = torch.empty(self.rows, device=self.device, dtype=torch.float32)
         torch.cuda.synchronize()
 
     def benchmark_fn(self) -> None:
@@ -68,7 +63,7 @@ class HBMBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         enable_nvtx = get_nvtx_enabled(config) if config else False
         with nvtx_range(self.nvtx_label, enable=enable_nvtx):
             if self.output is None:
-                self.output = torch.empty(self.rows, device=self.device, dtype=torch.float32)
+                raise RuntimeError("setup() must initialize the output buffer")
             for _ in range(self.inner_iterations):
                 self._invoke_kernel()
         if self.matrix_row is None or self.matrix_col is None or self.output is None:

@@ -21,6 +21,17 @@ from typing import Any, Dict, List
 import torch
 import torch.distributed as dist
 
+if __package__ in {None, ""}:
+    _repo_root = Path(__file__).resolve().parents[2]
+    _env = os.environ.copy()
+    _pythonpath = _env.get("PYTHONPATH")
+    _env["PYTHONPATH"] = str(_repo_root) if not _pythonpath else os.pathsep.join([str(_repo_root), _pythonpath])
+    os.execvpe(
+        sys.executable,
+        [sys.executable, "-m", "cluster.scripts.torchrun_connectivity_probe", *sys.argv[1:]],
+        _env,
+    )
+
 
 def _env_int(name: str, default: int) -> int:
     value = os.environ.get(name)
@@ -34,9 +45,6 @@ def _env_int(name: str, default: int) -> int:
 
 def _resolve_physical_gpu(logical_index: int) -> int:
     try:
-        code_root = Path(__file__).resolve().parents[2]
-        if str(code_root) not in sys.path:
-            sys.path.insert(0, str(code_root))
         from core.harness.benchmark_harness import _resolve_physical_device_index  # type: ignore
 
         return int(_resolve_physical_device_index(logical_index))

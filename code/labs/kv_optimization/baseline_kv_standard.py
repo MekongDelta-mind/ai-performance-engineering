@@ -7,11 +7,6 @@ Standard KV cache using BF16 precision without optimization.
 import torch
 import torch.nn as nn
 from typing import Any, Dict, Optional, Tuple
-import sys
-from pathlib import Path
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.harness.benchmark_harness import (
     BaseBenchmark,

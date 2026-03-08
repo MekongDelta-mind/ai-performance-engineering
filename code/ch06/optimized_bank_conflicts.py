@@ -33,14 +33,13 @@ class OptimizedBankConflictsBenchmark(VerificationPayloadMixin, BaseBenchmark):
         
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = None
+        self.output = torch.empty_like(self.input)
         self._synchronize()
     
     def benchmark_fn(self) -> None:
         """Benchmark: padding eliminates bank conflicts."""
         assert self._extension is not None and self.input is not None
-        if self.output is None or self.output.shape != self.input.shape:
-            self.output = torch.empty_like(self.input)
+        assert self.output is not None and self.output.shape == self.input.shape
         with self._nvtx_range("bank_conflicts_optimized"):
             for _ in range(self.repeats):
                 self._extension.bank_conflicts_padded(self.output, self.input)

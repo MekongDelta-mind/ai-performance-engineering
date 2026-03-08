@@ -560,17 +560,18 @@ write_attestation_consistency() {
   local root_dir="$1"
   local run_id="$2"
   local labels_csv="$3"
-    local out_path="$4"
+  local structured_dir="$4"
+  local out_path="$5"
 
-  python3 - "$root_dir" "$run_id" "$labels_csv" "$out_path" <<'PY'
+  python3 - "$root_dir" "$run_id" "$labels_csv" "$structured_dir" "$out_path" <<'PY'
 import json
 import sys
 import time
 from pathlib import Path
 
-root_dir, run_id, labels_csv, out_path = sys.argv[1:]
+root_dir, run_id, labels_csv, structured_dir, out_path = sys.argv[1:]
 labels = [x.strip() for x in labels_csv.split(",") if x.strip()]
-structured = Path(root_dir) / "results" / "structured"
+structured = Path(structured_dir)
 
 entries = []
 missing_platform_files = []
@@ -1041,7 +1042,7 @@ if [[ "${#ATTESTATION_LABELS[@]}" -gt 0 ]]; then
   attestation_labels_csv="$(IFS=,; echo "${ATTESTATION_LABELS[*]}")"
   attestation_consistency_rel="${LOCAL_STRUCTURED_REL}/${RUN_ID}_fp4_attestation_consistency.json"
   echo "Evaluating FP4 attestation consistency across hosts..."
-  if ! write_attestation_consistency "${ROOT_DIR}" "${RUN_ID}" "${attestation_labels_csv}" "${ROOT_DIR}/${attestation_consistency_rel}"; then
+  if ! write_attestation_consistency "${ROOT_DIR}" "${RUN_ID}" "${attestation_labels_csv}" "${CLUSTER_STRUCTURED_DIR_EFFECTIVE}" "${ROOT_DIR}/${attestation_consistency_rel}"; then
     echo "ERROR: FP4 attestation consistency failed. See ${attestation_consistency_rel}" >&2
     exit 1
   fi

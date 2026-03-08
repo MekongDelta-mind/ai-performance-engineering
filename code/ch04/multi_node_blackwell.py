@@ -14,31 +14,20 @@ detailed SDPA analysis and optimization techniques.
 """
 
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
-import pathlib
-import sys
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    
-            sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-from pathlib import Path
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
+
 try:
-    
-        from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
 
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
-            
-            
             os.environ.setdefault("RANK", "0")
             os.environ.setdefault("WORLD_SIZE", "1")
             os.environ.setdefault("MASTER_ADDR", "localhost")
             os.environ.setdefault("MASTER_PORT", "29500")
             os.environ.setdefault("LOCAL_RANK", "0")
             # Graceful fallback if arch_config not available
-import os
 import torch
 import torch.nn as nn
 import torch.distributed as dist
@@ -102,7 +91,7 @@ def setup_multigpu_optimized(
 
     # Use optimized NCCL config
     try:
-        from extras.ch04.nccl_blackwell_config import (
+        from ch04.nccl_blackwell_config import (
             configure_nccl_for_gb200_gb300,
             configure_nccl_for_multigpu,
         )

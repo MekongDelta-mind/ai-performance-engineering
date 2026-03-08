@@ -13,30 +13,20 @@ import importlib.metadata
 import random
 import gc
 import os
-import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
 
-# Ensure the hack/numba stub is importable before vLLM touches numba.
+from core.utils.python_entrypoints import build_repo_python_env, install_local_module_override
+
 repo_root = Path(__file__).resolve().parents[1]
 hack_path = repo_root / "hack"
-if str(hack_path) not in sys.path:
-    sys.path.insert(0, str(hack_path))
-# Ensure child processes inherit the hack path for the numba stub.
-existing_pythonpath = os.environ.get("PYTHONPATH", "")
-if existing_pythonpath:
-    if str(hack_path) not in existing_pythonpath.split(os.pathsep):
-        os.environ["PYTHONPATH"] = f"{hack_path}{os.pathsep}{existing_pythonpath}"
-else:
-    os.environ["PYTHONPATH"] = str(hack_path)
-# Import numba (will resolve to hack/numba) so vLLM sees a compatible module.
-import numba  # noqa: F401
 
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+os.environ.update(build_repo_python_env(repo_root, base_env=os.environ, extra_pythonpath=[hack_path]))
+install_local_module_override("numba", hack_path / "numba")
+import numba  # noqa: F401
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
 from core.harness.serving_stack import (
@@ -321,6 +311,7 @@ class OptimizedVLLMV1Integration:
 
 class OptimizedVLLMV1IntegrationBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Benchmark wrapper for the optimized vLLM path."""
+    allowed_benchmark_fn_antipatterns = ("sync",)
 
     def __init__(self):
         super().__init__()

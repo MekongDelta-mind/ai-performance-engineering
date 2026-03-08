@@ -10,6 +10,7 @@ from typing import Dict, Optional
 
 import torch
 
+from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 
 
@@ -74,8 +75,10 @@ class _NumaHelper:
         return None
 
 
-class KvLocalityMicrobench(BaseBenchmark):
+class KvLocalityMicrobench(VerificationPayloadMixin, BaseBenchmark):
     """Compare H2D copy time for HBM vs pinned-local vs pinned-remote vs pageable."""
+
+    allowed_benchmark_fn_antipatterns = ("sync",)
 
     def __init__(self) -> None:
         super().__init__()
@@ -91,6 +94,7 @@ class KvLocalityMicrobench(BaseBenchmark):
         self.hbm = None
         self.helper = _NumaHelper()
         self.results: Dict[str, float] = {}
+        self.output: Optional[torch.Tensor] = None
 
     def setup(self) -> None:
         self.device = resolve_device()
@@ -128,9 +132,29 @@ class KvLocalityMicrobench(BaseBenchmark):
         self.results["pinned_local_to_hbm_ms"] = self._bench_copy(self.pinned_local)  # type: ignore[arg-type]
         if self.pinned_remote is not None:
             self.results["pinned_remote_to_hbm_ms"] = self._bench_copy(self.pinned_remote)
+        ordered = [
+            self.results["hbm_to_hbm_ms"],
+            self.results["pageable_to_hbm_ms"],
+            self.results["pinned_local_to_hbm_ms"],
+            self.results.get("pinned_remote_to_hbm_ms", -1.0),
+        ]
+        self.output = torch.tensor(ordered, dtype=torch.float32)
 
     def get_config(self) -> Optional[BenchmarkConfig]:
         return BenchmarkConfig(iterations=1, warmup=5)
+
+    def capture_verification_payload(self) -> None:
+        if self.output is None:
+            raise RuntimeError("benchmark_fn() must run before capture_verification_payload()")
+        signature = torch.tensor([self.rows, self.cols, self.iters], dtype=torch.float32)
+        self._set_verification_payload(
+            inputs={"shape": signature},
+            output=self.output,
+            batch_size=1,
+            parameter_count=0,
+            precision_flags={"fp16": True, "bf16": False, "fp8": False, "tf32": False},
+            output_tolerance=(1e-6, 1e-6),
+        )
 
     def get_custom_metrics(self) -> Optional[Dict[str, float]]:
         if not self.results:
@@ -152,6 +176,7 @@ class KvLocalityMicrobench(BaseBenchmark):
         self.pinned_remote = None
         self.hbm = None
         self.results = {}
+        self.output = None
         torch.cuda.empty_cache()
 
 

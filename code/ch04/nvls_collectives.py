@@ -8,16 +8,10 @@ it cleanly reports SKIPPED so the harness stays green.
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
 from typing import Optional
 
 import torch
 import torch.distributed as dist
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import BaseBenchmark, WorkloadMetadata  # noqa: E402
 from core.profiling.nvtx_helper import get_nvtx_enabled, nvtx_range  # noqa: E402

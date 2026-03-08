@@ -10,11 +10,6 @@ Optimized KV cache with:
 import torch
 import torch.nn as nn
 from typing import Dict, Any, Tuple, Optional
-import sys
-from pathlib import Path
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.harness.benchmark_harness import (
     BaseBenchmark,

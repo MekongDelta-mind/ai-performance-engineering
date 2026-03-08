@@ -7,8 +7,6 @@ It measures a fixed prefill + decode workload using the NanoChat GPT model.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Optional
 
 import torch
@@ -16,13 +14,8 @@ import torch
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 
-# NanoChat uses absolute imports like `import nanochat.*`; add this lab root to sys.path.
-_LAB_DIR = Path(__file__).resolve().parent
-if str(_LAB_DIR) not in sys.path:
-    sys.path.insert(0, str(_LAB_DIR))
-
-from nanochat.engine import KVCache  # noqa: E402
-from nanochat.gpt import GPT, GPTConfig  # noqa: E402
+from labs.nanochat_fullstack.nanochat.engine import KVCache
+from labs.nanochat_fullstack.nanochat.gpt import GPT, GPTConfig
 
 
 class BaselineNanochatInferenceBenchmark(VerificationPayloadMixin, BaseBenchmark):

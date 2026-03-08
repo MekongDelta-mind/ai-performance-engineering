@@ -9,13 +9,7 @@ This script illustrates the V1 guidance for polling an EngineCore:
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 from typing import Any, Dict, Iterator, List, Set
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from ch18.v1_engine_loop_common import MockRequestOutput, build_demo_stack  # noqa: E402
 
@@ -96,4 +90,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

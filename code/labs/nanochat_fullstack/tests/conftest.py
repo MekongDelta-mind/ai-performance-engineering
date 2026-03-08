@@ -3,18 +3,14 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = PROJECT_ROOT.parent
-
-for path in (PROJECT_ROOT, REPO_ROOT):
-    str_path = str(path)
-    if str_path not in sys.path:
-        sys.path.insert(0, str_path)
+importlib.import_module("labs.nanochat_fullstack")
 
 
 def _ensure_rustbpe_extension() -> None:
@@ -62,7 +58,12 @@ def _ensure_rustbpe_extension() -> None:
     shutil.copyfile(src, dest)
 
     sys.modules.pop("rustbpe", None)
-    module = importlib.import_module("rustbpe")
+    spec = importlib.util.spec_from_file_location("rustbpe", dest)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load rustbpe extension from {dest}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    sys.modules["rustbpe"] = module
     if not hasattr(module, "Tokenizer"):
         raise RuntimeError("rustbpe extension loaded but Tokenizer is missing")
 

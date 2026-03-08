@@ -8,12 +8,7 @@ memory-efficient long-context processing.
 import torch
 import torch.nn as nn
 from typing import Dict, Any, Optional, Callable
-import sys
-from pathlib import Path
 import math
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.harness.benchmark_harness import BenchmarkHarness, BenchmarkConfig, BenchmarkMode
 from core.utils.logger import get_logger

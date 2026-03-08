@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """
 TorchTitan Async Tensor Parallelism demo
@@ -35,10 +27,9 @@ Async-TP currently requires:
 """
 
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -52,7 +43,6 @@ from core.benchmark.gpu_requirements import require_min_gpus, warn_optimal_gpu_c
 
 
 import argparse
-import os
 import time
 
 import torch

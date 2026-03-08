@@ -24,11 +24,17 @@ import torch
 
 try:
     from core.utils.build_utils import ensure_clean_build_directory
+    from core.utils.python_entrypoints import find_repo_root, temporary_sys_path
 except ImportError:
     # Fallback if build_utils not available
     def ensure_clean_build_directory(build_dir: Path, max_lock_age_seconds: int = 300) -> None:
         """Fallback: do nothing if build_utils not available."""
         pass
+    def find_repo_root(start: str | Path | None = None) -> Path:
+        return Path.cwd() if start is None else Path(start).resolve()
+    from contextlib import nullcontext
+    def temporary_sys_path(*entries):
+        return nullcontext()
 
 
 # Module-level cache for loaded extensions
@@ -867,18 +873,8 @@ def prebuild_all_extensions(verbose: bool = False) -> dict[str, tuple[bool, str]
         Dictionary mapping extension names to (success, message) tuples
     """
     import importlib
-    import sys
-    
-    # Find repo root and add to path
-    cwd = Path.cwd()
-    repo_root = cwd
-    while repo_root.parent != repo_root:
-        if (repo_root / ".git").exists() or (repo_root / "core" / "common").exists():
-            break
-        repo_root = repo_root.parent
-    
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
+
+    repo_root = find_repo_root()
     
     results = {}
     
@@ -889,21 +885,22 @@ def prebuild_all_extensions(verbose: bool = False) -> dict[str, tuple[bool, str]
         ("core.common.tcgen05", "tcgen05 (SM100+ only)"),
     ]
     
-    for module_path, description in extensions:
-        if verbose:
-            print(f"Building {description}...", flush=True)
-        
-        try:
-            # Import triggers build
-            mod = importlib.import_module(module_path)
-            results[module_path] = (True, "OK")
+    with temporary_sys_path(repo_root):
+        for module_path, description in extensions:
             if verbose:
-                print(f"  ✓ {module_path}")
-        except Exception as e:
-            error_msg = str(e)[:100]
-            results[module_path] = (False, error_msg)
-            if verbose:
-                print(f"  ✗ {module_path}: {error_msg}")
+                print(f"Building {description}...", flush=True)
+            
+            try:
+                # Import triggers build
+                importlib.import_module(module_path)
+                results[module_path] = (True, "OK")
+                if verbose:
+                    print(f"  ✓ {module_path}")
+            except Exception as e:
+                error_msg = str(e)[:100]
+                results[module_path] = (False, error_msg)
+                if verbose:
+                    print(f"  ✗ {module_path}: {error_msg}")
     
     return results
 

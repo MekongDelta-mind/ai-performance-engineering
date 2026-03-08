@@ -12,12 +12,7 @@ This provides 4-8x memory reduction vs full FP32 baseline.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from ch19.baseline_dynamic_quantized_cache import (  # noqa: E402
     _DynamicQuantizedCacheBenchmark,

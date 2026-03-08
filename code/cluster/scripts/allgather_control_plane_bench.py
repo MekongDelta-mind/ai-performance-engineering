@@ -27,9 +27,16 @@ from statistics import mean, median, stdev
 import torch
 import torch.distributed as dist
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+if __package__ in {None, ""}:
+    _repo_root = Path(__file__).resolve().parents[2]
+    _env = os.environ.copy()
+    _pythonpath = _env.get("PYTHONPATH")
+    _env["PYTHONPATH"] = str(_repo_root) if not _pythonpath else os.pathsep.join([str(_repo_root), _pythonpath])
+    os.execvpe(
+        sys.executable,
+        [sys.executable, "-m", "cluster.scripts.allgather_control_plane_bench", *sys.argv[1:]],
+        _env,
+    )
 
 try:
     from core.harness.benchmark_harness import _resolve_physical_device_index  # type: ignore

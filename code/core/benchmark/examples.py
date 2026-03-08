@@ -11,7 +11,7 @@ Run validation:
     python -m core.benchmark.registry --validate
 
 Run chapter entrypoints from the repo root with ``python -m chXX.module``.
-Avoid local ``sys.path.insert(...)`` bootstrapping in benchmark/example files.
+Avoid local import-path mutation bootstrapping in benchmark/example files.
 """
 
 from __future__ import annotations
@@ -236,4 +236,3 @@ if __name__ == "__main__":
     bm = get_benchmark()
     print(f"Benchmark class: {type(bm).__name__}")
     print(f"Device: {bm.device}")
-

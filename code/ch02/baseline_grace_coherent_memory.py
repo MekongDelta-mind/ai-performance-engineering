@@ -5,16 +5,13 @@ Demonstrates basic coherent memory access patterns on Grace-Blackwell systems
 without cache-aware optimizations or NUMA awareness.
 """
 
-import torch
-import time
-from typing import Dict, Any, Optional
-import sys
 from pathlib import Path
-import os
+from typing import Any, Dict, Optional
+import time
 
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import torch
 
+from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import (
     BaseBenchmark,
     BenchmarkHarness,
@@ -22,7 +19,6 @@ from core.harness.benchmark_harness import (
     BenchmarkMode,
     WorkloadMetadata,
 )
-from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -108,6 +104,7 @@ class BaselineGraceCoherentMemory:
 
 class GraceCoherentMemoryBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Harness-friendly wrapper around the baseline coherent memory example."""
+    allowed_benchmark_fn_antipatterns = ("sync", "host_transfer")
 
     def __init__(self, size_mb: int = 256, iterations: int = 100):
         super().__init__()

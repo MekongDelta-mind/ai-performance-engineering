@@ -14,15 +14,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Add project root to path
 PROJECT_ROOT = Path(__file__).parents[3]
-sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.benchmark.quarantine import QuarantineManager
 from core.benchmark.verification import QuarantineReason
@@ -225,7 +222,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 

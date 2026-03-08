@@ -1,0 +1,33 @@
+suite_name: tier1
+version: 1
+description: >
+  High-signal canonical benchmark suite covering GEMM, attention, decode,
+  KV-memory, distributed communication, and an end-to-end model path.
+history_root: artifacts/history/tier1
+default_profile: minimal
+default_output_format: both
+targets:
+  - key: block_scaling
+    category: gemm
+    target: labs/block_scaling:block_scaling
+    rationale: Blackwell block-scaled GEMM with explicit baseline/optimized verification.
+  - key: flashattention4_alibi
+    category: attention
+    target: labs/flashattention4:flashattention4_alibi
+    rationale: Fused attention path with a non-trivial score modifier and profiler support.
+  - key: persistent_decode
+    category: decode
+    target: labs/persistent_decode:persistent_decode
+    rationale: Persistent decode serving path with strong launch-overhead savings.
+  - key: kv_standard
+    category: kv_memory
+    target: labs/kv_optimization:kv_standard
+    rationale: KV-cache baseline vs optimized memory path.
+  - key: gradient_fusion
+    category: communication
+    target: ch04:gradient_fusion
+    rationale: Communication/computation overlap sanity target for distributed training.
+  - key: llama_3_1_8b
+    category: end_to_end
+    target: labs/real_world_models:llama_3_1_8b
+    rationale: Real-model throughput path that prevents overfitting to microbenchmarks.

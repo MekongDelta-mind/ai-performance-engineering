@@ -144,6 +144,9 @@ class _TinyHFDecoderLM(torch.nn.Module):
 class HFDecoderCacheBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Harness benchmark for decoder cache strategy and EOS host-sync policies."""
 
+    # Blocking EOS polling intentionally performs a host-visible completion check.
+    allowed_benchmark_fn_antipatterns = ("host_transfer",)
+
     def __init__(self, cfg: HFDecoderCacheConfig):
         super().__init__()
         if not _TRANSFORMERS_AVAILABLE:

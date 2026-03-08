@@ -8,7 +8,6 @@ import json
 import math
 import os
 import statistics
-import sys
 import time
 from enum import Enum
 from pathlib import Path
@@ -19,10 +18,6 @@ try:
     import yaml  # type: ignore
 except ImportError:  # pragma: no cover - optional dependency
     yaml = None
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.harness.benchmark_harness import (  # noqa: E402
     BaseBenchmark,
@@ -254,7 +249,7 @@ class SpeculativeDecoder:
 class VLLMMoEInferenceBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Optimized MoE inference benchmark with paged KV cache + speculative decode."""
 
-    allowed_benchmark_fn_antipatterns = ("sync",)
+    allowed_benchmark_fn_antipatterns = ("host_transfer", "sync")
 
     def __init__(self) -> None:
         super().__init__()

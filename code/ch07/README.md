@@ -23,7 +23,7 @@ Teaches how memory layout drives performance: coalesced copies, tiled matmuls, a
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch07/compare.py --profile none
+python -m ch07.compare
 python -m cli.aisp bench list-targets --chapter ch07
 python -m cli.aisp bench run --targets ch07 --profile minimal
 ```
@@ -32,8 +32,8 @@ python -m cli.aisp bench run --targets ch07 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python baseline_hbm_copy.py --bytes 1073741824` reports noticeably lower GB/s than `optimized_hbm_copy.py`, proving vectorization plus async copies work.
-- `python compare.py --examples async_prefetch` shows optimized_async_prefetch reducing total kernel count while preserving accuracy.
+- `python -m ch07.baseline_hbm_copy` reports noticeably lower GB/s than `python -m ch07.optimized_hbm_copy`, proving vectorization plus async copies work.
+- `python -m ch07.compare` runs the full baseline/optimized chapter sweep through the shared harness.
 - Nsight Compute captures of `optimized_matmul_tiled.cu` hit >80% shared-memory bandwidth utilization with minimal bank conflicts.
 
 ## Notes

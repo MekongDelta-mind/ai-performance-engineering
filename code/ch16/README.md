@@ -23,7 +23,7 @@ Focuses on real-world inference services: paged attention, Flash SDP, FP8 servin
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch16/compare.py --profile none
+python -m ch16.compare
 python -m cli.aisp bench list-targets --chapter ch16
 python -m cli.aisp bench run --targets ch16 --profile minimal
 ```

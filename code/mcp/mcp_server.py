@@ -156,8 +156,6 @@ def _discover_code_root() -> Path:
 
 
 CODE_ROOT = _discover_code_root()
-if str(CODE_ROOT) not in sys.path:
-    sys.path.insert(0, str(CODE_ROOT))
 
 from core.analysis.tool_router import DEFAULT_SUGGEST_RULES, suggest_tools_auto
 from core.harness.progress import ProgressEvent, ProgressRecorder
@@ -1730,7 +1728,7 @@ def _is_active_run_command(cmd: str) -> bool:
         exe = Path(tokens[0]).name
         if exe == "aisp":
             return True
-    if "torchrun_wrapper.py" in cmd:
+    if "torchrun_wrapper.py" in cmd or "core.harness.torchrun_wrapper" in cmd:
         return True
     exe = Path(tokens[0]).name
     if exe == "nsys" and "profile" in tokens:
@@ -3807,10 +3805,6 @@ from typing import Optional
 
 import sys
 from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import BaseBenchmark
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark

@@ -23,7 +23,7 @@ Moves from Python into CUDA C++: write first kernels, reason about occupancy, co
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch06/compare.py --profile none
+python -m ch06.compare
 python -m cli.aisp bench list-targets --chapter ch06
 python -m cli.aisp bench run --targets ch06 --profile minimal
 ```
@@ -34,7 +34,7 @@ python -m cli.aisp bench run --targets ch06 --profile minimal
 ## Validation Checklist
 - `nvcc -o baseline_add_cuda_sm121 baseline_add_cuda.cu` vs the optimized vectorized version shows a clear bandwidth delta when inspected with Nsight Compute.
 - `python optimized_autotuning.py --search` converges to the same schedule as the curated preset and logs the score table under `artifacts/`.
-- `python compare.py --examples ilp` confirms optimized ILP kernels achieving higher instructions-per-byte with identical outputs.
+- `python -m ch06.compare` confirms the chapter baseline/optimized pairs stay runnable through the harness after ILP and launch-bound refactors.
 
 ## Notes
 - `arch_config.py` forces SM-specific compile flags (e.g., disabling pipelines on unsupported GPUs) so targets fail gracefully on older hardware.

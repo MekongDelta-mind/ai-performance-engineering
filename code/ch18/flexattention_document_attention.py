@@ -7,11 +7,6 @@ their document boundaries, useful for multi-document batching.
 
 import torch
 from typing import Dict, Any, Callable
-import sys
-from pathlib import Path
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.harness.benchmark_harness import BenchmarkHarness, BenchmarkConfig, BenchmarkMode
 from core.utils.logger import get_logger

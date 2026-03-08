@@ -125,7 +125,7 @@ Example call shape:
 
 ## Tool Catalog (generated)
 
-Generated from `mcp.mcp_server.TOOLS`. Run `python scripts/generate_mcp_docs.py` to refresh.
+Generated from `mcp.mcp_server.TOOLS`. Run `python -m scripts.generate_mcp_docs` to refresh.
 
 ### GPU (5)
 - `gpu_bandwidth` — Run GPU memory bandwidth test measuring actual vs theoretical HBM bandwidth

@@ -5,15 +5,10 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib
-import sys
 from pathlib import Path
 from typing import Optional
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from labs.blackwell_matmul import is_cluster_launch_supported
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, BenchmarkMode

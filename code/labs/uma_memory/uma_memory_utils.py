@@ -4,15 +4,10 @@ from __future__ import annotations
 
 import os
 import pathlib
-import sys
 from dataclasses import dataclass
 from typing import Optional
 
 import torch
-
-_REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
 
 
 @dataclass

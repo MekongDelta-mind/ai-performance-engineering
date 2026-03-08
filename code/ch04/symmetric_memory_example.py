@@ -11,17 +11,8 @@ Requirements:
 Expected Runtime: ~5-10 seconds on 2 GPUs
 """
 import argparse
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.optimization.symmetric_memory_patch import (
     create_symmetric_memory_handle,
@@ -29,7 +20,7 @@ from core.optimization.symmetric_memory_patch import (
 )
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -44,7 +35,6 @@ import torch
 import torch.distributed as dist
 import torch.cuda.nvtx as nvtx
 from core.profiling.nvtx_helper import standardize_nvtx_label
-import os
 import time
 from typing import Optional
 

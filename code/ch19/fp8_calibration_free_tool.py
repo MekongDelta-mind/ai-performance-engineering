@@ -10,11 +10,6 @@ Demonstrates FP8 inference without calibration phase using:
 import torch
 import torch.nn as nn
 from typing import Dict, Any, Optional, Tuple
-import sys
-from pathlib import Path
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.harness.benchmark_harness import (
     BaseBenchmark,
@@ -298,6 +293,8 @@ def run_benchmark(
 
 class _FP8CalibrationFreeBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Wrapper benchmark for calibration-free FP8."""
+
+    allowed_benchmark_fn_antipatterns = ("host_transfer", "sync")
 
     def __init__(self) -> None:
         super().__init__()

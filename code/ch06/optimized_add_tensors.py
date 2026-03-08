@@ -1,12 +1,6 @@
 """Book-aligned wrapper exposing the optimized tensor-add example."""
-from pathlib import Path
-import sys
 
-CHAPTER_DIR = Path(__file__).parent
-if str(CHAPTER_DIR) not in sys.path:
-    sys.path.insert(0, str(CHAPTER_DIR))
-
-from optimized_add import get_benchmark as _get_benchmark
+from ch06.optimized_add import get_benchmark as _get_benchmark
 
 
 def get_benchmark():

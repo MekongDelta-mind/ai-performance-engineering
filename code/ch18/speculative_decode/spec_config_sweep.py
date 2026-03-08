@@ -9,18 +9,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.benchmark.artifact_manager import ArtifactManager  # noqa: E402
 from core.harness.benchmark_harness import BenchmarkHarness, BenchmarkMode  # noqa: E402
 from ch18.run_vllm_decoder import GraphMode, VLLMMoEInferenceBenchmark  # noqa: E402
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _discover_config_paths(config_dir: Path, explicit: Optional[str]) -> List[Path]:

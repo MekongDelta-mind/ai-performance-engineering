@@ -1,14 +1,7 @@
 """Unit tests for benchmark comparison utilities."""
 
-import sys
-from pathlib import Path
 from typing import Optional, Dict
 import pytest
-
-# Add repo root to path
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.comparison import (
     MetricComparison,

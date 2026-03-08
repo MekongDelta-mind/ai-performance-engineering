@@ -39,11 +39,6 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set
 
-# Add repo root to path for imports
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 
 def reset_cuda_state() -> None:
     """Reset CUDA state before benchmark to ensure clean environment."""

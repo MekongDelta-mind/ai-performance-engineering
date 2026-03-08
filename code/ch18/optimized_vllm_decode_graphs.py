@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
 from typing import Dict, Iterable, Tuple, Optional
 
 # Workaround for importlib.util.spec_from_file_location loading:
@@ -15,10 +14,6 @@ if __name__ not in sys.modules:
 from dataclasses import dataclass
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 try:
     from ch18.baseline_vllm_decode_graphs import (  # noqa: E402

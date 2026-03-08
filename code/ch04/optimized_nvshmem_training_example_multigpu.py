@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-import sys
 import os
-from pathlib import Path
+import sys
 from typing import Optional
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 from ch04.nccl_blackwell_config import (
@@ -47,6 +42,7 @@ def _configure_blackwell_nccl() -> None:
 
 class OptimizedNVSHMEMTrainingExampleMultiGPU(VerificationPayloadMixin, BaseBenchmark):
     multi_gpu_required = True
+    allowed_benchmark_fn_antipatterns = ("random_input_regeneration",)
     def __init__(self) -> None:
         super().__init__()
         self.register_workload_metadata(requests_per_iteration=1.0)

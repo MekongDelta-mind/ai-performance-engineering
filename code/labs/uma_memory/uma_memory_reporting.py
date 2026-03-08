@@ -16,15 +16,10 @@ import argparse
 import datetime
 import json
 import socket
-import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from ch02.uma_memory_utils import format_bytes, is_integrated_gpu, read_meminfo  # noqa: E402
 

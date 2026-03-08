@@ -33,11 +33,6 @@ os.environ["NVCCFLAGS"] = f"-lineinfo {os.environ.get('NVCCFLAGS', '')}".strip()
 warnings.filterwarnings("ignore", message=".*Found GPU.*cuda capability.*", category=UserWarning)
 warnings.filterwarnings("ignore", message=".*Minimum and Maximum cuda capability supported.*", category=UserWarning)
 
-# Add repo root to path (file is under core/benchmark/)
-repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 from core.analysis.performance_analyzer import PerformanceAnalyzer, load_benchmark_data as load_benchmark_results
 from core.plugins.loader import load_plugin_apps
 
@@ -391,7 +386,8 @@ def _execute_benchmarks(
     llm_patch_retries: int = 2,
     use_llm_cache: bool = True,
     llm_explain: bool = False,
-) -> None:
+    exit_on_failure: bool = True,
+) -> Dict[str, Any]:
     """Execute selected benchmarks with optional profiling."""
     validity_profile = _validate_validity_profile(validity_profile)
     portable_mode = validity_profile == "portable"
@@ -468,7 +464,28 @@ def _execute_benchmarks(
 
     if not BENCHMARK_AVAILABLE or not TEST_FUNCTIONS_AVAILABLE:
         logger.error("Benchmark dependencies missing (torch/benchmark_harness or test functions).")
-        sys.exit(1)
+        if exit_on_failure:
+            sys.exit(1)
+    return {
+        "run_id": artifact_manager.run_id,
+        "artifact_root": str(artifact_manager.run_dir),
+        "output_json": str(output_json),
+        "output_markdown": (
+            str(output_md)
+            if output_format in ["markdown", "both"]
+            else None
+        ),
+        "manifest_path": (
+            str(artifact_manager.manifest_path)
+            if manifests
+            else None
+        ),
+        "bench_root": str(active_bench_root),
+        "total_failed": total_failed,
+        "total_successful": total_successful,
+        "total_skipped": total_skipped,
+        "results": all_results,
+    }
 
     try:
         dump_environment_and_capabilities()
@@ -695,7 +712,7 @@ def _execute_benchmarks(
         kill_targets: List[int] = []
         for pid, cmd in descendants:
             lower = cmd.lower()
-            if "isolated_runner.py" in lower:
+            if "isolated_runner.py" in lower or "core.harness.isolated_runner" in lower:
                 kill_targets.append(pid)
         killed: List[int] = []
         for pid in kill_targets:
@@ -1176,6 +1193,86 @@ if TYPER_AVAILABLE:
             use_llm_cache=not no_llm_cache,
             llm_explain=llm_explain,
         )
+
+    @app.command("run-tier1")
+    def run_tier1(
+        config: Optional[Path] = Option(None, "--config", help="Path to tier-1 suite YAML (defaults to configs/benchmark_suites/tier1.yaml)."),
+        history_root: Optional[Path] = Option(None, "--history-root", help="Directory to store tier-1 history artifacts (default: artifacts/history/tier1)."),
+        bench_root: Optional[Path] = Option(None, "--bench-root", "-r", help="Root directory to scan for benchmarks (defaults to repo root)."),
+        output_format: Optional[str] = Option(None, "--format", "-f", help="Output format override: json, markdown, or both.", callback=lambda value: _validate_output_format(value) if value is not None else None),
+        profile_type: Optional[str] = Option(None, "--profile", "-p", help="Profile override for the suite (defaults to tier-1 config).", callback=lambda value: _validate_profile_type(value) if value is not None else None),
+        suite_timeout: Optional[int] = Option(14400, "--suite-timeout", help="Suite timeout in seconds (default: 14400 = 4 hours, 0 = disabled)"),
+        timeout_seconds: Optional[int] = Option(None, "--timeout-seconds", help="Override suite timeout in seconds (0 disables timeout)"),
+        timeout_multiplier: float = Option(3.0, "--timeout-multiplier", help="Multiply all benchmark timeouts by this factor."),
+        validity_profile: str = Option(
+            "strict",
+            "--validity-profile",
+            help=VALIDITY_PROFILE_HELP_TEXT,
+            callback=_validate_validity_profile,
+        ),
+        reproducible: bool = Option(False, "--reproducible", help="Enable reproducible mode."),
+        cold_start: bool = Option(False, "--cold-start", help="Reset GPU state between benchmarks for cold-start measurements."),
+        force_sync: bool = Option(False, "--force-sync", help="Force a device-wide synchronize immediately after benchmark_fn()."),
+        iterations: Optional[int] = Option(None, "--iterations", help="Override benchmark iterations."),
+        warmup: Optional[int] = Option(None, "--warmup", help="Override benchmark warmup iterations."),
+        gpu_sm_clock_mhz: Optional[int] = Option(None, "--gpu-sm-clock-mhz", help="Lock the SM application clock (MHz) for this run."),
+        gpu_mem_clock_mhz: Optional[int] = Option(None, "--gpu-mem-clock-mhz", help="Lock the GPU memory application clock (MHz) for this run."),
+        artifacts_dir: Optional[str] = Option(None, "--artifacts-dir", help="Base directory for benchmark run artifacts."),
+        run_id: Optional[str] = Option(None, "--run-id", help="Explicit run id."),
+        log_level: str = Option("INFO", "--log-level", help="Log level: DEBUG, INFO, WARNING, ERROR"),
+        log_file: Optional[str] = Option(None, "--log-file", help="Path to log file."),
+        single_gpu: bool = Option(False, "--single-gpu", help="Force single-GPU visibility."),
+        ncu_metric_set: str = Option("minimal", "--ncu-metric-set", help="Nsight Compute metric preset.", callback=_validate_ncu_metric_set),
+        ncu_replay_mode: Optional[str] = Option("kernel", "--ncu-replay-mode", help="Nsight Compute replay mode.", callback=_validate_ncu_replay_mode),
+        nsys_timeout_seconds: Optional[int] = Option(None, "--nsys-timeout-seconds", help="Override Nsight Systems timeout in seconds."),
+        ncu_timeout_seconds: Optional[int] = Option(None, "--ncu-timeout-seconds", help="Override Nsight Compute timeout in seconds."),
+        allow_portable_expectations_update: bool = Option(False, "--allow-portable-expectations-update", help=PORTABLE_EXPECTATIONS_UPDATE_HELP_TEXT, is_flag=True),
+    ):
+        """Run the canonical tier-1 suite and write summary/history artifacts."""
+        from core.benchmark.suites.tier1 import run_tier1_suite as _run_tier1_suite
+
+        effective_timeout = timeout_seconds if timeout_seconds is not None else suite_timeout
+        result = _run_tier1_suite(
+            config_path=config,
+            history_root=history_root,
+            bench_root=bench_root,
+            profile_type=profile_type,
+            output_format=output_format,
+            suite_timeout=effective_timeout,
+            timeout_multiplier=timeout_multiplier,
+            validity_profile=validity_profile,
+            allow_portable_expectations_update=allow_portable_expectations_update,
+            reproducible=reproducible,
+            cold_start=cold_start,
+            force_synchronize=force_sync,
+            iterations=iterations,
+            warmup=warmup,
+            gpu_sm_clock_mhz=gpu_sm_clock_mhz,
+            gpu_mem_clock_mhz=gpu_mem_clock_mhz,
+            artifacts_dir=artifacts_dir,
+            run_id=run_id,
+            log_level=log_level,
+            log_file=log_file,
+            single_gpu=single_gpu,
+            ncu_metric_set=ncu_metric_set,
+            ncu_replay_mode=ncu_replay_mode,
+            nsys_timeout_seconds=nsys_timeout_seconds,
+            ncu_timeout_seconds=ncu_timeout_seconds,
+        )
+        typer.echo(
+            json.dumps(
+                {
+                    "run_id": result["execution"]["run_id"],
+                    "summary_path": str(result["summary_path"]),
+                    "regression_summary_path": str(result["regression_summary_path"]),
+                    "trend_snapshot_path": str(result["trend_snapshot_path"]),
+                    "history_root": str(result["history_root"]),
+                },
+                indent=2,
+            )
+        )
+        if int(result["execution"].get("total_failed", 0) or 0) > 0:
+            raise typer.Exit(code=1)
 
     @app.command("explore")
     def explore(

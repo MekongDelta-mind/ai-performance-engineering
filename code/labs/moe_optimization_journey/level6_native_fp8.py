@@ -14,14 +14,6 @@ Results:
 - FP8:  55-58% of peak → 1.4x speedup!
 """
 
-import sys
-from pathlib import Path
-
-# Add repo root to path
-repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -48,7 +40,7 @@ class NativeFP8MoE(VerificationPayloadMixin, BaseBenchmark):
     
     def setup(self) -> None:
         import gc
-        
+
         self.device = 'cuda'
         
         # Clean up CUDA state to prevent RNG corruption from previous benchmarks
@@ -112,6 +104,12 @@ class NativeFP8MoE(VerificationPayloadMixin, BaseBenchmark):
         self.sorted_order = torch.argsort(flat_idx, stable=True)
         sorted_expert_ids = flat_idx[self.sorted_order]
         self.counts = torch.bincount(sorted_expert_ids, minlength=E).tolist()
+        self._output_buffer = torch.empty(
+            batch_seq * K,
+            H,
+            device=self.device,
+            dtype=self.x.dtype,
+        )
         
         print(f"FP8 weight memory: {(self.w1_fp8.numel() + self.w3_fp8.numel() + self.w2_fp8.numel()) / 1e9:.2f} GB")
         print(f"(vs BF16: {(w1.numel() + w3.numel() + w2.numel()) * 2 / 1e9:.2f} GB)")
@@ -123,12 +121,11 @@ class NativeFP8MoE(VerificationPayloadMixin, BaseBenchmark):
         E = self.NUM_EXPERTS
         H = self.HIDDEN_SIZE
         scale = self.scale
-        
+        output = self._output_buffer
+
         sorted_tokens = x.repeat_interleave(self.TOP_K, dim=0)[self.sorted_order]
         sorted_w = self.expert_weights.view(-1)[self.sorted_order]
-        
-        output = torch.zeros(sorted_tokens.shape[0], H, device=self.device, dtype=x.dtype)
-        
+
         offset = 0
         for e in range(E):
             count = self.counts[e]

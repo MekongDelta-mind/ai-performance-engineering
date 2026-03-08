@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import List
 
@@ -12,11 +11,6 @@ try:
     import pynvml  # type: ignore
 except ImportError as exc:  # pragma: no cover - required dependency
     raise RuntimeError("mig_mps_tool requires pynvml (nvidia-ml-py)") from exc
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 
 def _get_mps_processes(handle) -> List[object]:
     for name in (

@@ -62,11 +62,20 @@ import json
 from pathlib import Path
 from enum import Enum
 from types import SimpleNamespace
-from typing import List, Optional
+from typing import Any, List, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+
+if __package__ in {None, ""}:
+    env = dict(os.environ)
+    pythonpath = [str(REPO_ROOT)]
+    existing = env.get("PYTHONPATH", "")
+    if existing:
+        pythonpath.extend(part for part in existing.split(os.pathsep) if part)
+    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(pythonpath))
+    raise SystemExit(
+        subprocess.call([sys.executable, "-m", "cli.aisp", *sys.argv[1:]], env=env)
+    )
 
 from core.plugins.loader import load_plugin_apps
 
@@ -96,6 +105,22 @@ def load_env() -> None:
                                 os.environ[key] = value
 
 load_env()
+
+
+def _json_default(value: Any) -> Any:
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, SimpleNamespace):
+        return vars(value)
+    if isinstance(value, set):
+        return sorted(str(item) for item in value)
+    return str(value)
+
+
+def emit_json(payload: Any) -> None:
+    typer.echo(json.dumps(payload, indent=2, default=_json_default))
 
 
 # =============================================================================
@@ -276,7 +301,7 @@ if typer:
         from core.engine import get_engine
         result = get_engine().gpu.info()
         if ctx.obj and ctx.obj.get("json_output"):
-            typer.echo(json.dumps(result, indent=2))
+            emit_json(result)
         else:
             typer.echo(f"\n🖥️  GPU Info")
             for i, gpu in enumerate(result.get("gpus", [result])):
@@ -292,14 +317,14 @@ if typer:
     def gpu_topology_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().gpu.topology()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @gpu_app.command("power", help="Power draw, limits, thermal status")
     def gpu_power_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().analyze.power()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @gpu_app.command("bandwidth", help="Run GPU memory bandwidth test")
@@ -307,7 +332,7 @@ if typer:
         from core.engine import get_engine
         typer.echo("Running GPU bandwidth test...")
         result = get_engine().gpu.bandwidth()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @gpu_app.command("features", help="Hardware features (TMA, tensor cores, FP8)")
@@ -422,7 +447,7 @@ if typer:
         from core.engine import get_engine
         result = get_engine().system.software()
         if ctx.obj and ctx.obj.get("json_output"):
-            typer.echo(json.dumps(result, indent=2))
+            emit_json(result)
         else:
             typer.echo("\n📦 Software Stack")
             for key, val in result.items():
@@ -433,56 +458,56 @@ if typer:
     def system_deps_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.dependencies()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("capabilities", help="Hardware capabilities (TMA, FP8, etc)")
     def system_capabilities_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.capabilities()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("context", help="Full system context for AI analysis")
     def system_context_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.context()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("parameters", help="Kernel/system parameters (swappiness, dirty ratios)")
     def system_parameters_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.parameters()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("container", help="Container/cgroup limits")
     def system_container_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.container()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("cpu-memory", help="CPU/NUMA/cache hierarchy snapshot")
     def system_cpu_memory_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.cpu_memory()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("env", help="Environment variables and paths")
     def system_env_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.env()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command("network", help="Network + InfiniBand status (structured)")
     def system_network_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().system.network()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @system_app.command(
@@ -497,7 +522,7 @@ if typer:
         from core.engine import get_engine
 
         result = get_engine().system.clock_lock_check(sm_clock_mhz=sm_clock_mhz, mem_clock_mhz=mem_clock_mhz)
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
 # =============================================================================
@@ -513,21 +538,21 @@ if typer:
     ) -> None:
         from core.engine import get_engine
         result = get_engine().analyze.bottlenecks(mode=mode.value)
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @analyze_app.command("pareto", help="Pareto frontier analysis")
     def analyze_pareto_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().analyze.pareto()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @analyze_app.command("scaling", help="Scaling analysis with GPU count")
     def analyze_scaling_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().analyze.scaling()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @analyze_app.command("whatif", help="What-if constraint analysis")
@@ -538,14 +563,14 @@ if typer:
     ) -> None:
         from core.engine import get_engine
         result = get_engine().analyze.whatif(max_vram_gb=max_vram, max_latency_ms=max_latency)
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @analyze_app.command("stacking", help="Optimization stacking compatibility")
     def analyze_stacking_cmd(ctx: typer.Context) -> None:
         from core.engine import get_engine
         result = get_engine().analyze.stacking()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
 # =============================================================================
@@ -725,7 +750,7 @@ if typer and profile_app is not None:
         from core.engine import get_engine
 
         result = get_engine().profile.list_profiles()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @profile_app.command("compile-analysis", help="Summarize torch.compile graphs/breaks from the latest benchmark data")
@@ -733,7 +758,7 @@ if typer and profile_app is not None:
         from core.engine import get_engine
 
         result = get_engine().profile.compile_analysis()
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @profile_app.command("ncu-summary", help="Summarize an NCU report (top kernels + key metrics)")
@@ -751,7 +776,7 @@ if typer and profile_app is not None:
             metrics=None,
             timeout_seconds=timeout_seconds,
         )
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @profile_app.command("torch", help="Run torch.profiler capture (Chrome trace + summary)")
@@ -1716,7 +1741,7 @@ if typer and cluster_app is not None:
             extra_args=extra_arg or None,
             timeout_seconds=timeout_seconds,
         )
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @cluster_app.command("common-eval", help="Run a preset system-evaluation bundle for common benchmark questions")
@@ -1756,7 +1781,7 @@ if typer and cluster_app is not None:
             extra_args=extra_arg or None,
             timeout_seconds=timeout_seconds,
         )
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @cluster_app.command("validate-field-report", help="Validate cluster field report requirements + artifact hygiene")
@@ -1781,7 +1806,7 @@ if typer and cluster_app is not None:
             allow_run_id=allow_run_id or None,
             timeout_seconds=timeout_seconds,
         )
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @cluster_app.command("build-canonical-package", help="Materialize a clean canonical cluster package from selected runs")
@@ -1802,7 +1827,7 @@ if typer and cluster_app is not None:
             output_dir=str(output_dir) if output_dir else None,
             timeout_seconds=timeout_seconds,
         )
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
         raise typer.Exit(0)
 
     @cluster_app.command("promote-run", help="Promote one run-local cluster result tree into the published cluster package")
@@ -1831,7 +1856,38 @@ if typer and cluster_app is not None:
             cleanup=cleanup,
             timeout_seconds=timeout_seconds,
         )
-        typer.echo(json.dumps(result, indent=2))
+        emit_json(result)
+        raise typer.Exit(0)
+
+    @cluster_app.command("watch-promote", help="Attach a detached post-run watcher that promotes a completed cluster run")
+    def cluster_watch_promote_cmd(
+        ctx: typer.Context,
+        run_id: str = typer.Option(..., "--run-id", help="Run id under cluster/runs/<run_id>"),
+        pid: int = typer.Option(..., "--pid", help="PID to watch before evaluating + promoting the run"),
+        label: str = typer.Option("localhost", "--label", help="Host label for localhost report rendering"),
+        allow_run_id: List[str] = typer.Option([], "--allow-run-id", help="Additional run ids to retain during cleanup/validation hygiene checks", show_default=False),
+        publish_report_path: Optional[Path] = typer.Option(None, "--publish-report-path", help="Published localhost report path"),
+        publish_notes_path: Optional[Path] = typer.Option(None, "--publish-notes-path", help="Published localhost notes path"),
+        skip_render_localhost_report: bool = typer.Option(False, "--skip-render-localhost-report", help="Skip rendering run-local + published localhost report markdown"),
+        skip_validate_localhost_report: bool = typer.Option(False, "--skip-validate-localhost-report", help="Skip localhost report validation after promotion"),
+        cleanup: bool = typer.Option(False, "--cleanup", help="Run cleanup_run_artifacts.sh after promotion using this run_id as canonical"),
+        poll_interval_seconds: float = typer.Option(30.0, "--poll-interval-seconds", help="How often to check whether the watched PID has exited"),
+    ) -> None:
+        from core.cluster import watch_cluster_run_for_promotion
+
+        result = watch_cluster_run_for_promotion(
+            run_id=run_id,
+            pid=pid,
+            label=label,
+            allow_run_ids=allow_run_id or None,
+            publish_report_path=str(publish_report_path) if publish_report_path else None,
+            publish_notes_path=str(publish_notes_path) if publish_notes_path else None,
+            skip_render_localhost_report=skip_render_localhost_report,
+            skip_validate_localhost_report=skip_validate_localhost_report,
+            cleanup=cleanup,
+            poll_interval_seconds=poll_interval_seconds,
+        )
+        emit_json(result)
         raise typer.Exit(0)
 
 

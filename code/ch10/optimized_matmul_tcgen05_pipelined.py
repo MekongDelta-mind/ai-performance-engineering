@@ -26,7 +26,7 @@ from ch10.matmul_extension_tcgen05 import load_matmul_tcgen05_module
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.benchmark.tcgen05_requirements import check_tcgen05_support
-from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_no_wait
+from labs.custom_vs_cublas.tcgen05_loader import load_tcgen05_no_wait_module
 
 
 class OptimizedMatmulTCGen05PipelinedBenchmark(VerificationPayloadMixin, BaseBenchmark):
@@ -50,6 +50,7 @@ class OptimizedMatmulTCGen05PipelinedBenchmark(VerificationPayloadMixin, BaseBen
         self._placeholder_kernel = False
         self._warned_placeholder = False
         self.output: Optional[torch.Tensor] = None
+        self._module = None
         self.register_workload_metadata(bytes_per_iteration=float(self.n * self.n * 2 * 3))
 
     def setup(self) -> None:
@@ -60,14 +61,16 @@ class OptimizedMatmulTCGen05PipelinedBenchmark(VerificationPayloadMixin, BaseBen
         dtype = torch.float16
         self.A = torch.randn(self.size, self.size, device=self.device, dtype=dtype)
         self.B = torch.randn(self.size, self.size, device=self.device, dtype=dtype)
+        self._module = load_tcgen05_no_wait_module()
 
     def benchmark_fn(self) -> None:
         if not self._tcgen05_available:
             raise RuntimeError(self._skip_reason)
         assert self.A is not None and self.B is not None
+        assert self._module is not None
         with self._nvtx_range("optimized_matmul_tcgen05_pipelined"):
             with torch.no_grad():
-                self.output = matmul_tcgen05_no_wait(self.A, self.B)
+                self.output = self._module.matmul_tcgen05_no_wait(self.A, self.B)
         if self.output is None:
             raise RuntimeError("benchmark_fn() must produce output for verification")
 
@@ -88,6 +91,7 @@ class OptimizedMatmulTCGen05PipelinedBenchmark(VerificationPayloadMixin, BaseBen
     def teardown(self) -> None:
         self.A = None
         self.B = None
+        self._module = None
         super().teardown()
 
     def get_config(self) -> BenchmarkConfig:

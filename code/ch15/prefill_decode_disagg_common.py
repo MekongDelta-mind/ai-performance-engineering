@@ -32,7 +32,7 @@ class PrefillDecodeDisaggBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Parameterized benchmark for host-staged or device-local KV handoff."""
 
     multi_gpu_required = False
-    allowed_benchmark_fn_antipatterns: tuple[str, ...] = ()
+    allowed_benchmark_fn_antipatterns: tuple[str, ...] = ("host_transfer",)
 
     def __init__(
         self,

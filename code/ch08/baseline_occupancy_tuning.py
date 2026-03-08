@@ -6,12 +6,6 @@ from typing import Optional
 import os
 from pathlib import Path
 
-repo_root = Path(__file__).parent.parent
-import sys
-
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 from core.benchmark.cuda_binary_benchmark import (  # noqa: E402
     ARCH_SUFFIX,
     CudaBinaryBenchmark,

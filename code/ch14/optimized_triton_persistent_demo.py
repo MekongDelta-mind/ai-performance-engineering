@@ -27,13 +27,6 @@ REQUIREMENTS:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 import torch
 import triton
 import triton.language as tl
@@ -462,6 +455,7 @@ class TritonPersistentDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.a = None
         self.b = None
         self.output = None
+        self._output_buffer = None
         self.num_sms = 0
         # Match baseline dimensions for fair comparison (baseline uses batch_size=32, M=N=K=256)
         self.batch_size = 32
@@ -490,15 +484,18 @@ class TritonPersistentDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
         
         self.a = torch.randn(self.batch_size, self.M, self.K, device=self.device, dtype=torch.float16)
         self.b = torch.randn(self.batch_size, self.K, self.N, device=self.device, dtype=torch.float16)
+        self._output_buffer = torch.empty(
+            (self.batch_size, self.M, self.N), device=self.device, dtype=torch.float16
+        )
         
         # Warmup
         for _ in range(3):
-            _ = matmul_persistent_batched(self.a, self.b, self.num_sms)
+            _ = matmul_persistent_batched(self.a, self.b, self.num_sms, out=self._output_buffer)
         torch.cuda.synchronize(self.device)
 
     def benchmark_fn(self) -> None:
         """Benchmark: Persistent GEMM kernel."""
-        self.output = matmul_persistent_batched(self.a, self.b, self.num_sms)
+        self.output = matmul_persistent_batched(self.a, self.b, self.num_sms, out=self._output_buffer)
         self._last = float(self.output.sum())
         if self.output is None or self.a is None or self.b is None:
             raise RuntimeError("benchmark_fn() must produce output")
@@ -522,6 +519,7 @@ class TritonPersistentDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Teardown: Clean up resources."""
         self.a = None
         self.b = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

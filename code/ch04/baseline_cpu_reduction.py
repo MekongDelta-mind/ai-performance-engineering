@@ -9,13 +9,6 @@ The optimized version (optimized_cpu_reduction.py) keeps all ops on GPU.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 import torch
 import torch.nn as nn
 
@@ -64,7 +57,8 @@ class BaselineCpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         ).to(self.device).eval()
         
         self.input = torch.randn(self.batch_size, self.hidden_dim, device=self.device)
-        self.output = None
+        reduced_rows = self.batch_size // self.num_shards
+        self.output = torch.empty((reduced_rows, self.hidden_dim), device=self.device)
         torch.cuda.synchronize(self.device)
     
     def benchmark_fn(self) -> None:
@@ -78,9 +72,9 @@ class BaselineCpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 # This is the bottleneck: multiple GPU->CPU copies + CPU addition
                 cpu_shards = [shard.cpu() for shard in shards]
                 reduced = sum(cpu_shards) / float(self.num_shards)
-                # Copy result back to GPU (allocate once, then reuse buffer)
+                # Copy result back to GPU
                 if self.output is None:
-                    self.output = torch.empty_like(reduced, device=self.device)
+                    raise RuntimeError("Output buffer not initialized")
                 self.output.copy_(reduced, non_blocking=False)
 
     def capture_verification_payload(self) -> None:

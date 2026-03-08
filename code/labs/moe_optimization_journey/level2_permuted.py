@@ -10,13 +10,7 @@ Based on ch19/mxfp8_moe_common.py bucket_by_expert() pattern.
 
 Cumulative: batched + permuted
 """
-import sys
-from pathlib import Path
-repo_root = Path(__file__).parent.parent.parent
 import torch
-
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from labs.moe_optimization_journey.moe_benchmark import MoEJourneyBenchmark, run_level
 
@@ -31,6 +25,5 @@ def get_benchmark() -> Level2Permuted:
 
 if __name__ == "__main__":
     run_level(2)
-
 
 

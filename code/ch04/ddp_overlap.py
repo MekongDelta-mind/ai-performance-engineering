@@ -13,14 +13,8 @@ Requires multiple GPUs to run (skips on single-GPU systems).
 from __future__ import annotations
 
 import argparse
-import sys
 import os
-from pathlib import Path
 from typing import Optional
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 from core.utils.compile_utils import enable_tf32, compile_model
@@ -29,6 +23,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from core.benchmark.gpu_requirements import skip_if_insufficient_gpus
+from core.harness import arch_config as _arch_config_patch  # noqa: F401
 from core.harness.benchmark_harness import (
     BaseBenchmark,
     BenchmarkConfig,
@@ -36,28 +31,12 @@ from core.harness.benchmark_harness import (
     BenchmarkMode,
     WorkloadMetadata,
 )
+from ch04.distributed_helper import setup_single_gpu_env
 from ch04.verification_payload_mixin import VerificationPayloadMixin
 
 
 # Ensure consistent TF32 state before any operations (new API only)
 enable_tf32()
-
-# Import arch_config to apply Triton patch for sm_12x support
-# The patch removes 'a' suffix from sm_121a -> sm_121 for ptxas compatibility
-try:
-    import arch_config  # noqa: F401
-except ImportError:
-    pass  # Continue if arch_config not available
-try:
-    from distributed_helper import setup_single_gpu_env
-except ImportError:
-    def setup_single_gpu_env():
-        if "RANK" not in os.environ:
-            os.environ.setdefault("RANK", "0")
-            os.environ.setdefault("WORLD_SIZE", "1")
-            os.environ.setdefault("MASTER_ADDR", "localhost")
-            os.environ.setdefault("MASTER_PORT", "29500")
-            os.environ.setdefault("LOCAL_RANK", "0")
 
 def resolve_device() -> torch.device:
     """Return CUDA device if available."""

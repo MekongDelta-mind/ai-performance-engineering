@@ -11,8 +11,6 @@ import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Dict, Optional
 import threading
-import sys
-from pathlib import Path
 
 import typer
 
@@ -21,9 +19,6 @@ try:
 except Exception as exc:  # pragma: no cover
     torch = None
     _torch_import_error = exc
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.utils.logger import get_logger
 

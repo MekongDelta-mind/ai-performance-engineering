@@ -89,6 +89,7 @@ def matmul_persistent_batched(
     a_batch: torch.Tensor,
     b_batch: torch.Tensor,
     num_sms: int,
+    out: torch.Tensor,
     *,
     block_m: int = 64,
     block_n: int = 64,
@@ -114,7 +115,9 @@ def matmul_persistent_batched(
     B, M, K = a_batch.shape
     _, _, N = b_batch.shape
 
-    c_batch = torch.empty((B, M, N), device=a_batch.device, dtype=a_batch.dtype)
+    if out.shape != (B, M, N):
+        raise ValueError("matmul_persistent_batched() requires a preallocated output buffer with matching shape")
+    c_batch = out
 
     num_tiles_m = triton.cdiv(M, block_m)
     num_tiles_n = triton.cdiv(N, block_n)
@@ -149,4 +152,3 @@ def matmul_persistent_batched(
     )
 
     return c_batch
-

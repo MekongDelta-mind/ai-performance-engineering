@@ -13,16 +13,10 @@ This script outputs all hardware capabilities including:
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent.parent.parent  # utilities -> scripts -> core -> repo_root
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
 from core.harness.hardware_capabilities import detect_capabilities, format_capability_report
-import arch_config  # noqa: E402
+from core.harness import arch_config  # noqa: E402
 try:
     import importlib_metadata  # type: ignore[import-not-found]  # noqa: E402
 except ModuleNotFoundError:  # pragma: no cover - stdlib fallback

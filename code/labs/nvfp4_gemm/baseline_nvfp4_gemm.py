@@ -4,11 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
-import sys
-
-repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
 from core.benchmark.verification import simple_signature

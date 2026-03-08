@@ -7,13 +7,8 @@ benchmark execution.
 """
 
 import sys
-from pathlib import Path
 
-repo_root = Path(__file__).parent.parent.parent.parent  # utilities -> scripts -> core -> repo_root
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
-from arch_config import configure_optimizations as _configure_arch_optimizations
+from core.harness.arch_config import configure_optimizations as _configure_arch_optimizations
 
 _configure_arch_optimizations()
 
@@ -105,4 +100,3 @@ def precompile_extensions():
 if __name__ == "__main__":
     success = precompile_extensions()
     sys.exit(0 if success else 1)
-

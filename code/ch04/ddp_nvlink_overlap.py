@@ -49,6 +49,7 @@ class OptimizedDdpNvlinkOverlapBenchmark(VerificationPayloadMixin, BaseBenchmark
         self.batch_size = 8
         self.hidden = 512
         self.root_device = torch.device("cuda:0")
+        self._reduce_buffers: List[torch.Tensor] = []
         tokens = self.batch_size * self.hidden * self.microbatches
         self._workload = WorkloadMetadata(
             requests_per_iteration=float(self.batch_size * self.microbatches),
@@ -72,11 +73,16 @@ class OptimizedDdpNvlinkOverlapBenchmark(VerificationPayloadMixin, BaseBenchmark
             for model in self.models:
                 micro_inputs.append(torch.randn(self.batch_size, self.hidden, device=model.weight.device))
             self._inputs.append(micro_inputs)
+        self._reduce_buffers = [
+            torch.zeros_like(self.models[0].weight, device=self.root_device)
+            for _ in range(self.microbatches)
+        ]
         self._synchronize()
 
-    def _async_reduce_to_root(self, grads: List[torch.Tensor]) -> torch.Tensor:
+    def _async_reduce_to_root(self, grads: List[torch.Tensor], buffer_index: int) -> torch.Tensor:
         """Asynchronously accumulate gradients on the root device."""
-        root_buf = torch.zeros_like(grads[0], device=self.root_device)
+        root_buf = self._reduce_buffers[buffer_index]
+        root_buf.zero_()
         events = []
         for g in grads:
             evt = torch.cuda.Event()
@@ -107,7 +113,7 @@ class OptimizedDdpNvlinkOverlapBenchmark(VerificationPayloadMixin, BaseBenchmark
                 ordered = sorted(zip(grads, _bucket_order()), key=lambda kv: kv[1][0])
                 ordered_grads = [g for g, _ in ordered]
 
-                reduction_results.append(self._async_reduce_to_root(ordered_grads))
+                reduction_results.append(self._async_reduce_to_root(ordered_grads, micro))
 
             # Finalize reductions and apply updates
             torch.cuda.current_stream(self.root_device).wait_stream(self.comm_stream)
@@ -146,6 +152,7 @@ class OptimizedDdpNvlinkOverlapBenchmark(VerificationPayloadMixin, BaseBenchmark
     def teardown(self) -> None:
         self.models.clear()
         self._inputs = []
+        self._reduce_buffers = []
         self.output = None
         torch.cuda.empty_cache()
 

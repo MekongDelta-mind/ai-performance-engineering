@@ -6,6 +6,72 @@ The repository packages 20 focused chapters, advanced labs, and the shared bench
 
 Roadmap: [`docs/performance_repo_roadmap.md`](/home/cfregly/ai-performance-engineering/code/docs/performance_repo_roadmap.md) defines the prioritized plan for canonical suites, trend tracking, anti-pattern enforcement, shared benchmark bases, and evidence-first documentation.
 
+## Problem
+Most performance repos are easy to browse and hard to trust. This one is meant to do the opposite:
+- baseline and optimized paths live side-by-side
+- correctness checks run before speedup claims matter
+- profiler artifacts and benchmark manifests are first-class outputs, not optional extras
+
+## Tier-1 Canonical Suite
+The fastest way to answer "is this repo still delivering real wins?" is the canonical tier-1 suite.
+
+```bash
+python -m cli.aisp bench run-tier1 --single-gpu --profile minimal
+```
+
+That command now writes a stable history package under `artifacts/history/tier1/<run_id>/`:
+- `summary.json`: per-target baseline, optimized path, and best speedup
+- `regression_summary.md`: human-readable before/after summary against the previous tier-1 run
+- `regression_summary.json`: machine-readable regressions and improvements
+- `trend_snapshot.json`: run-history summary for dashboards and release notes
+- `artifacts/history/tier1/index.json`: suite history index
+
+## Current Representative Deltas
+These are measured results from current validated benchmark artifacts in `artifacts/runs/`, not aspirational target numbers.
+
+| Target | Baseline | Optimized | Measured delta | Artifact |
+| --- | ---: | ---: | ---: | --- |
+| `labs/block_scaling:block_scaling` | `0.198 ms` | `0.113 ms` | `1.76x` | `artifacts/runs/20260305_222139__bench__profile_none_targets_labs_block_scaling_block_scaling/...` |
+| `labs/flashattention4:flashattention4_alibi` | `5.562 ms` | `0.385 ms` | `14.45x` | `artifacts/runs/20260306_023114__bench__profile_none_targets_labs_flashattention4_flashattention4_alibi/...` |
+| `labs/persistent_decode:persistent_decode` | `1.411 ms` | `0.118 ms` | `11.94x` | `artifacts/runs/20260302_full_strict_all_singlegpu/...` |
+| `labs/kv_optimization:kv_standard` | `1687.906 ms` | `1074.736 ms` | `1.57x` | `artifacts/runs/20260302_full_strict_all_singlegpu/...` |
+| `ch04:gradient_fusion` | `3.931 ms` | `0.058 ms` | `67.63x` | `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/...` |
+| `labs/real_world_models:llama_3_1_8b` | `13.143 ms` | `5.274 ms` | `2.49x` | `artifacts/runs/20260302_full_strict_all_singlegpu/...` |
+
+## Profiler Evidence
+When you want proof beyond wall-clock timing, use the same harness target with a profiling mode instead of a different script.
+
+```bash
+python -m cli.aisp bench run --targets labs/block_scaling:block_scaling --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/persistent_decode:persistent_decode --profile deep_dive --single-gpu
+```
+
+- `minimal` is the fastest artifact-bearing path.
+- `deep_dive` is the profiler-backed path for Nsight Systems + Nsight Compute comparisons.
+- The benchmark harness now blocks more hot-path anti-patterns and follows imported helper code, so "clean benchmark" means more than it used to.
+
+## Cluster Evaluation
+Cluster evaluation has one supported artifact contract for new work:
+
+```text
+cluster/runs/<run_id>/
+  manifest.json
+  structured/
+  raw/
+  figures/
+  reports/
+```
+
+Start with:
+- [`cluster/README.md`](/home/cfregly/ai-performance-engineering/code/cluster/README.md) for the current commands and folder contract.
+- `python -m cli.aisp cluster common-eval --preset common-answer-fast ...` for the normal "evaluate this system" ask.
+- `python -m cli.aisp cluster common-eval --preset modern-llm ...` when you need the full canonical package.
+- `python -m cli.aisp cluster common-eval --preset multinode-readiness ...` before first real multi-node workloads.
+- `python -m cli.aisp cluster promote-run --run-id <run_id> ...` when one collected run should become the published localhost package.
+
+The current published canonical package lives under `cluster/published/current/`. New collection still happens under `cluster/runs/<run_id>/`.
+
 ## Learning Goals
 - Understand how the chapters, labs, and shared tooling fit together.
 - Stand up a reproducible environment for PyTorch 2.10-dev + CUDA 13 workloads on Blackwell GPUs.
@@ -29,6 +95,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements_latest.txt
 python -m cli.aisp bench list-targets --chapter ch01
 python -m cli.aisp bench run --targets ch01 --profile minimal
+python -m cli.aisp bench run-tier1 --single-gpu --profile minimal
 ```
 - `setup.sh` installs system prerequisites (drivers, CUDA, Nsight) and should be rerun after driver upgrades.
 - Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited hosts.
@@ -36,27 +103,6 @@ python -m cli.aisp bench run --targets ch01 --profile minimal
 - Use `python -m cli.aisp bench run --targets ch*` for automated regression suites.
 - Portable runs do not update expectation files unless `--allow-portable-expectations-update` is supplied.
 - `python core/analysis/analyze_expectations.py --artifacts-dir artifacts` compares new runs to stored thresholds.
-
-## Cluster Evaluation
-Cluster evaluation has one supported artifact contract for new work:
-
-```text
-cluster/runs/<run_id>/
-  manifest.json
-  structured/
-  raw/
-  figures/
-  reports/
-```
-
-Start with:
-- [`cluster/README.md`](/home/cfregly/ai-performance-engineering/code/cluster/README.md) for the current commands and folder contract.
-- `python -m cli.aisp cluster common-eval --preset common-answer-fast ...` for the normal "evaluate this system" ask.
-- `python -m cli.aisp cluster common-eval --preset modern-llm ...` when you need the full canonical package.
-- `python -m cli.aisp cluster common-eval --preset multinode-readiness ...` before first real multi-node workloads.
-- `python -m cli.aisp cluster promote-run --run-id <run_id> ...` when one collected run should become the published localhost package.
-
-The current published canonical package lives under `cluster/published/current/`. New collection still happens under `cluster/runs/<run_id>/`.
 
 ## Validation Checklist
 - `pytest tests/integration` succeeds to confirm harness discovery and CLI plumbing.

@@ -14,7 +14,6 @@ from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
 from core.utils.compile_utils import compile_model
 import contextlib
 import os
-import sys
 import time
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional, Tuple
@@ -23,7 +22,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ch19.arch_config import TORCH_COMPILE_KW
 
 

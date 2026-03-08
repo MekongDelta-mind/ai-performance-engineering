@@ -7,17 +7,11 @@ Triton-fused regional MLP in optimized_regional_triton.py.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
 from core.harness.benchmark_harness import (  # noqa: E402

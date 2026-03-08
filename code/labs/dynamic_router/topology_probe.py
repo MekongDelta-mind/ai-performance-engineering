@@ -17,13 +17,14 @@ from labs.dynamic_router.topology import detect_topology, write_topology
 class TopologyProbeBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Capture a snapshot of GPU↔NUMA mapping for downstream routing demos."""
 
+    # This benchmark's explicit purpose is to probe and materialize topology files.
+    allowed_benchmark_fn_antipatterns = ("io",)
+
     def __init__(self) -> None:
         super().__init__()
         self.snapshot = None
         self.output_path: Optional[Path] = None
-        self.metrics: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
-        self.verify_input: Optional[torch.Tensor] = None
 
     def setup(self) -> None:
         # Nothing to initialize besides ensuring artifacts dir exists (handled by write_topology).
@@ -39,18 +40,11 @@ class TopologyProbeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         metric_values = [float(v) for v in metrics_dict.values() if isinstance(v, Number)]
         if not metric_values:
             metric_values = [0.0]
-        summary_tensor = torch.tensor(metric_values, dtype=torch.float32).unsqueeze(0)
-        expected_shape = tuple(summary_tensor.shape)
-        if self.metrics is None or tuple(self.metrics.shape) != expected_shape:
-            self.metrics = torch.zeros(expected_shape, dtype=torch.float32)
-        if self.verify_input is None or tuple(self.verify_input.shape) != expected_shape:
-            self.verify_input = torch.ones(expected_shape, dtype=torch.float32)
-        self.output = (summary_tensor * self.verify_input + self.metrics).detach()
+        self.output = torch.tensor(metric_values, dtype=torch.float32).unsqueeze(0)
 
     def capture_verification_payload(self) -> None:
         self._set_verification_payload(
             inputs={
-                "verify_input": self.verify_input.detach(),
                 "num_gpus": torch.tensor([len(self.snapshot.gpu_numa) if self.snapshot else 0], dtype=torch.int64),
             },
             output=self.output,
@@ -73,9 +67,7 @@ class TopologyProbeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         return gpu_numa
 
     def teardown(self) -> None:
-        self.metrics = None
         self.output = None
-        self.verify_input = None
         self.snapshot = None
         self.output_path = None
         super().teardown()

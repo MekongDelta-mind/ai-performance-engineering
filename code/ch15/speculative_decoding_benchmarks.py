@@ -21,6 +21,8 @@ from ch15.speculative_decoding_common import (
 class SpeculativeDecodingBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Parameterized greedy or speculative decode benchmark."""
 
+    allowed_benchmark_fn_antipatterns = ("host_transfer",)
+
     def __init__(self, *, use_speculative: bool, label: str) -> None:
         super().__init__()
         self.use_speculative = bool(use_speculative)

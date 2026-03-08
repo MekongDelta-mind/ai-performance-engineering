@@ -19,6 +19,14 @@ class RunSection:
 
 
 @dataclass
+class MarkdownSection:
+    """Named markdown section rendered before the generic chapter/lab scaffolding."""
+
+    heading: str
+    body: str
+
+
+@dataclass
 class Entry:
     """README content definition."""
 
@@ -27,7 +35,14 @@ class Entry:
     goals: Sequence[str]
     contents: Sequence[Tuple[str, str]]
     validation: Sequence[str]
+    lead_sections: Sequence[MarkdownSection] = field(default_factory=tuple)
     run: Optional[RunSection] = None
+    run_heading: str = "Running the Benchmarks"
+    run_intro: str = (
+        "Use the benchmark harness for quick comparisons or drive the Typer CLI "
+        "when you need repeatable artifact capture."
+    )
+    validation_heading: str = "Validation Checklist"
     extra_sections: Sequence[str] = field(default_factory=tuple)
     notes: Sequence[str] = field(default_factory=tuple)
 
@@ -40,6 +55,10 @@ def _format_markdown(entry: Entry) -> str:
     lines.append("## Summary")
     lines.append(entry.summary.strip())
     lines.append("")
+    for section in entry.lead_sections:
+        lines.append(f"## {section.heading}")
+        lines.append(section.body.strip())
+        lines.append("")
     lines.append("## Learning Goals")
     for goal in entry.goals:
         lines.append(f"- {goal}")
@@ -51,8 +70,9 @@ def _format_markdown(entry: Entry) -> str:
         lines.append(f"| {path} | {desc} |")
     lines.append("")
     if entry.run:
-        lines.append("## Running the Benchmarks")
-        lines.append("Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.")
+        lines.append(f"## {entry.run_heading}")
+        if entry.run_intro:
+            lines.append(entry.run_intro)
         lines.append("```bash")
         for cmd in entry.run.commands:
             lines.append(cmd)
@@ -60,7 +80,7 @@ def _format_markdown(entry: Entry) -> str:
         for note in entry.run.notes:
             lines.append(f"- {note}")
         lines.append("")
-    lines.append("## Validation Checklist")
+    lines.append(f"## {entry.validation_heading}")
     for item in entry.validation:
         lines.append(f"- {item}")
     if entry.extra_sections:
@@ -81,7 +101,7 @@ def _format_markdown(entry: Entry) -> str:
 def _chapter_run_commands(slug: str) -> RunSection:
     """Default run commands for a chapter directory."""
     commands = [
-        f"python {slug}/compare.py --profile none",
+        f"python -m {slug}.compare",
         f"python -m cli.aisp bench list-targets --chapter {slug}",
         f"python -m cli.aisp bench run --targets {slug} --profile minimal",
     ]
@@ -115,7 +135,14 @@ def chapter_entry(
     goals: Sequence[str],
     contents: Sequence[Tuple[str, str]],
     validation: Sequence[str],
+    lead_sections: Sequence[MarkdownSection] = (),
     notes: Sequence[str] = (),
+    run_heading: str = "Running the Benchmarks",
+    run_intro: str = (
+        "Use the benchmark harness for quick comparisons or drive the Typer CLI "
+        "when you need repeatable artifact capture."
+    ),
+    validation_heading: str = "Validation Checklist",
 ) -> Entry:
     """Create a chapter README entry."""
     return Entry(
@@ -124,7 +151,11 @@ def chapter_entry(
         goals=goals,
         contents=contents,
         validation=validation,
+        lead_sections=lead_sections,
         run=_chapter_run_commands(slug),
+        run_heading=run_heading,
+        run_intro=run_intro,
+        validation_heading=validation_heading,
         notes=notes,
     )
 
@@ -136,8 +167,15 @@ def lab_entry(
     goals: Sequence[str],
     contents: Sequence[Tuple[str, str]],
     validation: Sequence[str],
+    lead_sections: Sequence[MarkdownSection] = (),
     notes: Sequence[str] = (),
     run: Optional[RunSection] = None,
+    run_heading: str = "Running the Benchmarks",
+    run_intro: str = (
+        "Use the benchmark harness for quick comparisons or drive the Typer CLI "
+        "when you need repeatable artifact capture."
+    ),
+    validation_heading: str = "Validation Checklist",
     extra_sections: Sequence[str] = (),
 ) -> Entry:
     """Create a lab README entry."""
@@ -147,7 +185,11 @@ def lab_entry(
         goals=goals,
         contents=contents,
         validation=validation,
+        lead_sections=lead_sections,
         run=run if run else _lab_run_commands(slug),
+        run_heading=run_heading,
+        run_intro=run_intro,
+        validation_heading=validation_heading,
         extra_sections=extra_sections,
         notes=notes,
     )
@@ -361,8 +403,98 @@ ENTRIES["README.md"] = Entry(
     summary=dedent(
         """\
         Reference implementation of high-performance PyTorch, CUDA, and Triton workloads for NVIDIA Blackwell platforms.
-        The repository packages 20 focused chapters, advanced labs, and the shared benchmarking harness so you can profile baselines, apply optimizations, and capture artifacts that prove performance gains."""
+        The repository packages 20 focused chapters, advanced labs, and the shared benchmarking harness so you can profile baselines, apply optimizations, and capture artifacts that prove performance gains.
+
+        Roadmap: [`docs/performance_repo_roadmap.md`](/home/cfregly/ai-performance-engineering/code/docs/performance_repo_roadmap.md) defines the prioritized plan for canonical suites, trend tracking, anti-pattern enforcement, shared benchmark bases, and evidence-first documentation."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Most performance repos are easy to browse and hard to trust. This one is meant to do the opposite:
+                - baseline and optimized paths live side-by-side
+                - correctness checks run before speedup claims matter
+                - profiler artifacts and benchmark manifests are first-class outputs, not optional extras"""
+            ),
+        ),
+        MarkdownSection(
+            "Tier-1 Canonical Suite",
+            dedent(
+                """\
+                The fastest way to answer "is this repo still delivering real wins?" is the canonical tier-1 suite.
+
+                ```bash
+                python -m cli.aisp bench run-tier1 --single-gpu --profile minimal
+                ```
+
+                That command now writes a stable history package under `artifacts/history/tier1/<run_id>/`:
+                - `summary.json`: per-target baseline, optimized path, and best speedup
+                - `regression_summary.md`: human-readable before/after summary against the previous tier-1 run
+                - `regression_summary.json`: machine-readable regressions and improvements
+                - `trend_snapshot.json`: run-history summary for dashboards and release notes
+                - `artifacts/history/tier1/index.json`: suite history index"""
+            ),
+        ),
+        MarkdownSection(
+            "Current Representative Deltas",
+            dedent(
+                """\
+                These are measured results from current validated benchmark artifacts in `artifacts/runs/`, not aspirational target numbers.
+
+                | Target | Baseline | Optimized | Measured delta | Artifact |
+                | --- | ---: | ---: | ---: | --- |
+                | `labs/block_scaling:block_scaling` | `0.198 ms` | `0.113 ms` | `1.76x` | `artifacts/runs/20260305_222139__bench__profile_none_targets_labs_block_scaling_block_scaling/...` |
+                | `labs/flashattention4:flashattention4_alibi` | `5.562 ms` | `0.385 ms` | `14.45x` | `artifacts/runs/20260306_023114__bench__profile_none_targets_labs_flashattention4_flashattention4_alibi/...` |
+                | `labs/persistent_decode:persistent_decode` | `1.411 ms` | `0.118 ms` | `11.94x` | `artifacts/runs/20260302_full_strict_all_singlegpu/...` |
+                | `labs/kv_optimization:kv_standard` | `1687.906 ms` | `1074.736 ms` | `1.57x` | `artifacts/runs/20260302_full_strict_all_singlegpu/...` |
+                | `ch04:gradient_fusion` | `3.931 ms` | `0.058 ms` | `67.63x` | `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/...` |
+                | `labs/real_world_models:llama_3_1_8b` | `13.143 ms` | `5.274 ms` | `2.49x` | `artifacts/runs/20260302_full_strict_all_singlegpu/...` |"""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                When you want proof beyond wall-clock timing, use the same harness target with a profiling mode instead of a different script.
+
+                ```bash
+                python -m cli.aisp bench run --targets labs/block_scaling:block_scaling --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/persistent_decode:persistent_decode --profile deep_dive --single-gpu
+                ```
+
+                - `minimal` is the fastest artifact-bearing path.
+                - `deep_dive` is the profiler-backed path for Nsight Systems + Nsight Compute comparisons.
+                - The benchmark harness now blocks more hot-path anti-patterns and follows imported helper code, so "clean benchmark" means more than it used to."""
+            ),
+        ),
+        MarkdownSection(
+            "Cluster Evaluation",
+            dedent(
+                """\
+                Cluster evaluation has one supported artifact contract for new work:
+
+                ```text
+                cluster/runs/<run_id>/
+                  manifest.json
+                  structured/
+                  raw/
+                  figures/
+                  reports/
+                ```
+
+                Start with:
+                - [`cluster/README.md`](/home/cfregly/ai-performance-engineering/code/cluster/README.md) for the current commands and folder contract.
+                - `python -m cli.aisp cluster common-eval --preset common-answer-fast ...` for the normal "evaluate this system" ask.
+                - `python -m cli.aisp cluster common-eval --preset modern-llm ...` when you need the full canonical package.
+                - `python -m cli.aisp cluster common-eval --preset multinode-readiness ...` before first real multi-node workloads.
+                - `python -m cli.aisp cluster promote-run --run-id <run_id> ...` when one collected run should become the published localhost package.
+
+                The current published canonical package lives under `cluster/published/current/`. New collection still happens under `cluster/runs/<run_id>/`."""
+            ),
+        ),
+    ],
     goals=[
         "Understand how the chapters, labs, and shared tooling fit together.",
         "Stand up a reproducible environment for PyTorch 2.10-dev + CUDA 13 workloads on Blackwell GPUs.",
@@ -383,6 +515,7 @@ ENTRIES["README.md"] = Entry(
             "pip install -r requirements_latest.txt",
             "python -m cli.aisp bench list-targets --chapter ch01",
             "python -m cli.aisp bench run --targets ch01 --profile minimal",
+            "python -m cli.aisp bench run-tier1 --single-gpu --profile minimal",
         ],
         notes=[
             "`setup.sh` installs system prerequisites (drivers, CUDA, Nsight) and should be rerun after driver upgrades.",
@@ -423,7 +556,7 @@ ENTRIES["ch01"] = chapter_entry(
         ("`compare.py`, `workload_config.py`, `arch_config.py`, `expectations_{hardware_key}.json`", "Harness entrypoint, workload shapes, architecture overrides, and stored expectation thresholds."),
     ],
     validation=[
-        "`python compare.py` reports optimized_performance achieving >=2x tokens/sec vs the baseline on default microbatch sizes.",
+        "`python -m ch01.compare` reports the chapter baseline/optimized training loop pair through the shared harness with consistent workloads.",
         "Running `make && ./baseline_gemm_sm100` vs `./optimized_gemm_batched_sm100` shows a substantial drop in launch count and total runtime.",
     ],
     notes=[
@@ -453,8 +586,8 @@ ENTRIES["ch02"] = chapter_entry(
         ("`compare.py`, `Makefile`, `expectations_{hardware_key}.json`", "Harness driver, CUDA build rules, and expectation file for automated pass/fail checks."),
     ],
     validation=[
-        "`python hardware_info.py` records the correct device name, SM count, and HBM size for every GPU in the system.",
-        "`python nvlink_c2c_bandwidth_benchmark.py --gpus 0 1` sustains ~250 GB/s unidirectional on NVLink-connected pairs; mismatches flag topology or driver issues.",
+        "`python -m ch02.hardware_info` records the correct device name, SM count, and HBM size for every GPU in the system.",
+        "`python -m ch02.nvlink_c2c_bandwidth_benchmark` reports the host↔device and bidirectional bandwidth table for the active topology.",
         "Running the coherency sample shows zero-copy benefiting sub-MB transfers while large transfers favor explicit H2D copies, matching the documented thresholds.",
     ],
     notes=[
@@ -485,9 +618,9 @@ ENTRIES["ch03"] = chapter_entry(
         ("`compare.py`, `requirements.txt`, `expectations_{hardware_key}.json`", "Harness entry, Python deps, and regression thresholds."),
     ],
     validation=[
-        "Run `python baseline_numa_unaware.py --diagnostics` before and after `bind_numa_affinity.py` to ensure cross-socket memory traffic drops to near zero.",
-        "`python optimized_docker.py --image docker_gpu_optimized.dockerfile` should sustain the same throughput as host runs while keeping GPU clocks pinned.",
-        "`python compare.py --examples gemm` shows optimized_gemm matching the measured host peak after applying `system_tuning.sh`.",
+        "`python -m ch03.mig_mps_tool --device 0` reports the active MIG/MPS state before you change host-level scheduling policy.",
+        "`python -m ch03.power_tuning_tool --power-limits 300,350 --iterations 5 --warmup 1` produces a short perf-per-watt sweep with the harness clock-lock path.",
+        "`python -m ch03.compare` keeps the chapter baseline/optimized tuning pairs runnable through the shared harness.",
     ],
     notes=[
         "`cpu_gpu_numa_optimizations.sh` is safe to rerun after every reboot; it re-applies irqbalance pinning and governor settings.",
@@ -556,8 +689,8 @@ ENTRIES["ch05"] = chapter_entry(
     ],
     validation=[
         "`python baseline_storage_cpu.py --inspect` exposes CPU wait time > GPU time; `optimized_storage_cpu.py` reverses the ratio with >=80% GPU utilization.",
-        "`python gds_cufile_minimal.py --bytes 1073741824` sustains multi-GB/s throughput when `/etc/cufile.json` is configured and NVMe advertises GPUDirect support.",
-        "`python compare.py --examples ai` shows optimized_ai eliminating CPU-side preprocessing from the critical path.",
+        "`python -m ch05.gds_cufile_minimal /tmp/gds_test_file.bin 1073741824 --generate` sustains multi-GB/s throughput when `/etc/cufile.json` is configured and NVMe advertises GPUDirect support.",
+        "`python -m ch05.compare` shows optimized_ai eliminating CPU-side preprocessing from the critical path.",
     ],
     notes=[
         "GPUDirect scripts fall back to host-mediated reads when `libcufile.so` is unavailable, making it safe to run on dev laptops.",
@@ -590,7 +723,7 @@ ENTRIES["ch06"] = chapter_entry(
     validation=[
         "`nvcc -o baseline_add_cuda_sm121 baseline_add_cuda.cu` vs the optimized vectorized version shows a clear bandwidth delta when inspected with Nsight Compute.",
         "`python optimized_autotuning.py --search` converges to the same schedule as the curated preset and logs the score table under `artifacts/`.",
-        "`python compare.py --examples ilp` confirms optimized ILP kernels achieving higher instructions-per-byte with identical outputs.",
+        "`python -m ch06.compare` confirms the chapter baseline/optimized pairs stay runnable through the harness after ILP and launch-bound refactors.",
     ],
     notes=[
         "`arch_config.py` forces SM-specific compile flags (e.g., disabling pipelines on unsupported GPUs) so targets fail gracefully on older hardware.",
@@ -621,8 +754,8 @@ ENTRIES["ch07"] = chapter_entry(
         ("`compare.py`, `Makefile`, `expectations_{hardware_key}.json`, `memory_access_pytorch.py`", "Harness entry, build recipes, expectation thresholds, and PyTorch validation scripts."),
     ],
     validation=[
-        "`python baseline_hbm_copy.py --bytes 1073741824` reports noticeably lower GB/s than `optimized_hbm_copy.py`, proving vectorization plus async copies work.",
-        "`python compare.py --examples async_prefetch` shows optimized_async_prefetch reducing total kernel count while preserving accuracy.",
+        "`python -m ch07.baseline_hbm_copy` reports noticeably lower GB/s than `python -m ch07.optimized_hbm_copy`, proving vectorization plus async copies work.",
+        "`python -m ch07.compare` runs the full baseline/optimized chapter sweep through the shared harness.",
         "Nsight Compute captures of `optimized_matmul_tiled.cu` hit >80% shared-memory bandwidth utilization with minimal bank conflicts.",
     ],
     notes=[
@@ -656,7 +789,7 @@ ENTRIES["ch08"] = chapter_entry(
     validation=[
         "Nsight Compute traces for `optimized_thresholdtma.py` should show overlapping TMA loads with minimal idle cycles.",
         "`python -m cli.aisp tools occupancy-tuning` prints preset timings + speedups for the occupancy tuning microbenchmark.",
-        "`python compare.py --examples threshold` confirms the TMA-backed kernels reducing latency vs scalar reference implementations.",
+        "`python -m ch08.compare --examples threshold` confirms the TMA-backed kernels reducing latency vs scalar reference implementations.",
     ],
     notes=[
         "`arch_config.py` exposes toggles for enabling/disabling tcgen05 lowering per GPU so the same scripts work on SM100 and SM121.",
@@ -687,9 +820,9 @@ ENTRIES["ch09"] = chapter_entry(
         ("`compare.py`, `requirements.txt`, `expectations_{hardware_key}.json`", "Harness hooks plus regression thresholds for every example."),
     ],
     validation=[
-        "`python baseline_compute_bound.py --summaries` reports much higher arithmetic intensity than `baseline_memory_bound.py`, matching the roofline plots.",
-        "`python optimized_cublaslt_gemm.py --sizes 4096 4096 8192` improves throughput relative to `baseline_cublaslt_gemm.py` on the same device.",
-        "`python compare.py --examples fused_l2norm` confirms numerically identical outputs before and after fusion.",
+        "`python -m ch09.baseline_compute_bound --summaries` reports much higher arithmetic intensity than `python -m ch09.baseline_memory_bound --summaries`, matching the roofline plots.",
+        "`python -m ch09.optimized_cublaslt_gemm` improves throughput relative to `python -m ch09.baseline_cublaslt_gemm` on the same device.",
+        "`python -m ch09.compare --examples fused_l2norm` confirms numerically identical outputs before and after fusion.",
     ],
     notes=[
         "`inline_ptx_example.cu` demonstrates how to wrap tcgen05 intrinsics safely with architecture guards.",
@@ -704,6 +837,69 @@ ENTRIES["ch10"] = chapter_entry(
         """\
         Applies tensor-core friendly scheduling on Blackwell: warp specialization, TMA-powered pipelines, persistent kernels, and thread-block clusters with DSMEM and NVLink-C2C awareness."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            "Chapter 10 is where the repo stops talking about tensor-core scheduling in the abstract and starts proving which pipeline and cluster choices actually matter on Blackwell.",
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - scalar-heavy or launch-heavy kernels that leave tensor cores underfed
+                - non-persistent pipelines that pay setup cost every iteration
+                - cluster-disabled variants that show the cost of ignoring DSMEM / multicast hardware"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - warp-specialized and persistent kernels that keep producer/consumer work separated
+                - TMA-fed pipelines that reduce staging overhead
+                - cluster-enabled kernels that exploit DSMEM and multicast when the hardware supports it"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `cluster_group_single_cta` | `2.203 ms` | `0.031 ms` | `71.42x` |
+                | `batch` | `10.061 ms` | `0.185 ms` | `54.44x` |
+
+                These are good chapter-level "does the optimization concept work?" numbers, not universal hardware ceilings."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use the harness target directly when you want reproducible Nsight evidence instead of ad hoc scripts:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch10:cluster_group_single_cta --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch10:batch --profile deep_dive --single-gpu
+                ```
+
+                The deep-dive path gives you a concrete before/after pairing for launch count, kernel duration, and memory/cluster behavior."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch10.compare --profile none
+                python -m cli.aisp bench list-targets --chapter ch10
+                python -m cli.aisp bench run --targets ch10 --profile minimal
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Use warp specialization and cp.async/TMA to keep tensor cores saturated.",
         "Prototype persistent matmuls that amortize launch overhead across iterations.",
@@ -726,8 +922,9 @@ ENTRIES["ch10"] = chapter_entry(
     ],
     validation=[
         "Cluster-enabled kernels fail fast on hardware without DSMEM support, while DSMEM-free variants still execute-use this to confirm cluster capability flags.",
-        "`python optimized_flash_attn_tma_micro_pipeline.py --profile` produces fewer kernel launches and higher achieved FLOP/s than the baseline script.",
-        "`bash demo_both_examples.sh` runs the CUDA memory pipeline and GDS demo, highlighting launch amortization and IO overlap.",
+        "`python -m ch10.optimized_flash_attention --profile minimal` produces fewer kernel launches and higher achieved FLOP/s than the baseline script.",
+        "`python -m ch10.analyze_scaling` summarizes the chapter's scaling behavior without relying on path surgery.",
+        "`python -m ch10.cufile_gds_example` runs the CUDA memory pipeline and GDS demo, highlighting launch amortization and IO overlap.",
     ],
     notes=[
         "`cufile_gds_example.py` demonstrates integrating GPUDirect Storage into tensor-core pipelines for IO-heavy training loops.",
@@ -826,9 +1023,9 @@ ENTRIES["ch13"] = chapter_entry(
         ("`compare.py`, `compare_perf.py`, `requirements.txt`, `expectations_{hardware_key}.json`, `workload_config.py`", "Harness entry, performance comparison helper, dependencies, and regression baselines."),
     ],
     validation=[
-        "`python compare.py --examples training_standard` shows optimized training runs producing higher goodput with identical metrics.",
-        "`python optimized_precisionfp8_te.py --validate` confirms Transformer Engine calibration plus NVFP8 execution with max error tolerances enforced.",
-        "`python memory_profiling.py --dump` and the optimized variant demonstrate allocator fragmentation dropping after applying the recommended knobs.",
+        "`python -m ch13.compare --examples training_standard` shows optimized training runs producing higher goodput with identical metrics.",
+        "`python -m ch13.optimized_precisionfp8_te --validate` confirms Transformer Engine calibration plus NVFP8 execution with max error tolerances enforced.",
+        "`python -m ch13.memory_profiling --dump` and the optimized variant demonstrate allocator fragmentation dropping after applying the recommended knobs.",
     ],
     notes=[
         "`custom_allocator.py` contains a standalone torch allocator shim that can be re-used in other chapters when debugging fragmentation.",
@@ -843,6 +1040,78 @@ ENTRIES["ch14"] = chapter_entry(
         """\
         Highlights compiler-driven acceleration: `torch.compile` workflows, Triton kernels, CUTLASS/TMA experimentation, and quantization-aware communication, all validated through the shared harness."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 14 is where compiler claims have to turn into measured wins. The useful question is not "can `torch.compile` or Triton work?" but "which compiler-driven optimizations still deliver real latency and memory reductions on current Blackwell-class hardware?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager or minimally fused PyTorch execution
+                - generic Triton/CUTLASS paths without persistent or regional specialization
+                - easier to reason about, but heavy on launch overhead, graph breaks, and redundant staging"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - `torch.compile` and regional compilation where the graph is stable enough to pay back compile cost
+                - Triton persistent kernels and TMA-fed schedules where memory movement dominates
+                - the same harness contract as every other benchmarked chapter, so the speedups are comparable instead of script-local"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `model_eager` | `29.873 ms` | `7.978 ms` | `3.74x` | compile-driven model execution |
+                | `regional_triton` | `1.944 ms` | `0.863 ms` | `2.25x` | regional compilation and Triton fusion |
+                | `triton_persistent` | `0.830 ms` | `0.086 ms` | `9.68x` | persistent Triton kernel scheduling |
+
+                These are chapter-level proof points, not vendor peak numbers. The chapter is most useful when you separate "compiler removes Python/graph overhead" from "kernel schedule removes memory-movement overhead." """
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use the same benchmark targets with deep-dive profiling when you want launch-count and kernel-attribution evidence instead of only the wall-clock delta:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch14:model_eager --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch14:regional_triton --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch14:triton_persistent --profile deep_dive --single-gpu
+                ```
+
+                The expected story is different per workload:
+                - `model_eager`: fewer graph breaks and lower framework overhead
+                - `regional_triton`: fewer unfused launches and better steady-state scheduling
+                - `triton_persistent`: materially longer-lived kernels with less relaunch churn"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch14.compare --profile none
+                python -m cli.aisp bench list-targets --chapter ch14
+                python -m cli.aisp bench run --targets ch14 --profile minimal
+                python -m cli.aisp bench run --targets ch14:triton_persistent --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Adopt `torch.compile` modes for large models while tracking compile-time and steady-state gains.",
         "Author Triton kernels (including TMA schedules) that rival custom CUDA.",
@@ -858,9 +1127,9 @@ ENTRIES["ch14"] = chapter_entry(
         ("`compare.py`, `requirements.txt`, `expectations_{hardware_key}.json`, `train.py`, `transformer.py`", "Harness entry plus model definitions and dependency pins."),
     ],
     validation=[
-        "`python optimized_model_eager.py --profile minimal` produces compile-time summaries followed by steady-state throughput gains vs the baseline.",
-        "`python triton_tma_blackwell.py --validate` compares Triton and CUDA outputs to double-check TMA scheduling logic.",
-        "`python compare.py --examples flex_attention` shows the compiled path significantly reducing kernel launch count without changing accuracy.",
+        "`python -m ch14.optimized_model_eager --profile minimal` produces compile-time summaries followed by steady-state throughput gains vs the baseline.",
+        "`python -m ch14.triton_tma_blackwell --validate` compares Triton and CUDA outputs to double-check TMA scheduling logic.",
+        "`python -m ch14.compare --examples flex_attention` shows the compiled path significantly reducing kernel launch count without changing accuracy.",
     ],
     notes=[
         "`inspect_compiled_code.py` dumps Triton/PTX/Graph captures for any target; edit the helper to introspect new workloads.",
@@ -979,6 +1248,75 @@ ENTRIES["ch18"] = chapter_entry(
         """\
         Collects modern decoder techniques-FlexAttention, FlexDecoding, speculative and paged attention workflows-implemented in both PyTorch and CUDA/Triton so you can iterate quickly while validating kernels on real hardware."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 18 is the "does decoder complexity actually buy you anything?" checkpoint. It puts flexible masking, speculative decoding, tensor-core kernels, and serving integration on the same chapter surface so you can see which tricks reduce latency and which ones only add engineering cost."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - straightforward FlexAttention / decode execution
+                - conservative serving integration without aggressive caching or graph replay
+                - good correctness anchor, but usually too much launch and data-movement overhead"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - FlexDecoding, tensor-core-specialized kernels, and cache-aware paths
+                - graph replay and serving-integrated decode paths where they help
+                - still benchmarked through the shared harness instead of one-off scripts"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `flexdecoding` | `161.596 ms` | `81.980 ms` | `1.97x` | optimized FlexDecoding path |
+                | `tensor_cores` | `3.805 ms` | `0.243 ms` | `15.65x` | tensor-core decode kernel |
+                | `rope_q_cache` | `106.429 ms` | `4.523 ms` | `23.53x` | cache-aware rope/Q-path reuse |
+
+                The chapter has a mix of "moderate but real" improvements and "big kernel-level" improvements. Treat those as different stories rather than averaging them together into one headline number."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want Nsight evidence for cache reuse, launch count, and kernel selection:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch18:flexdecoding --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch18:tensor_cores --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch18:rope_q_cache --profile deep_dive --single-gpu
+                ```
+
+                For serving integration, use the chapter-specific vLLM path only after the direct benchmark targets are clean, because the chapter harness gives you the more trustworthy baseline/optimized comparison."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch18.compare
+                python -m cli.aisp bench list-targets --chapter ch18
+                python -m cli.aisp bench run --targets ch18 --profile minimal
+                python -m cli.aisp bench run --targets ch18:flexdecoding --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Prototype FlexAttention/FlexDecoding workloads with custom masks, score mods, and KV-cache integration.",
         "Evaluate speculative decoding pipelines that trade extra compute for lower latency.",
@@ -994,9 +1332,9 @@ ENTRIES["ch18"] = chapter_entry(
         ("`compare.py`, `expectations_{hardware_key}.json`, `test_flex_attention.py`", "Harness entry, regression thresholds, and pytest coverage for FlexAttention APIs."),
     ],
     validation=[
-        "`python optimized_flexdecoding.py --profiling` reports significantly fewer kernels and lower latency than the baseline while matching decoded tokens.",
-        "`python run_vllm_decoder.py --spec-config spec_configs/draft_and_verify.json` completes with accuracy parity vs the native FlexAttention path.",
-        "`python test_flex_attention.py` passes locally, confirming mask/score-mod helpers are wired correctly.",
+        "`python -m ch18.compare` runs the chapter baseline/optimized sweep through the shared harness.",
+        "`python -m ch18.run_vllm_decoder --spec-config spec_configs/draft_and_verify.json` completes with accuracy parity vs the native FlexAttention path.",
+        "`python -m pytest -q ch18/test_flex_attention.py` passes locally, confirming mask/score-mod helpers are wired correctly.",
     ],
     notes=[
         "`flex_attention` scripts accept env vars like `BLOCK_SIZE`, `DOC_SPAN`, and `SEQ_LEN` so you can sweep shapes without editing code.",
@@ -1026,8 +1364,8 @@ ENTRIES["ch19"] = chapter_entry(
         ("`compare.py`, `arch_config.py`, `expectations_{hardware_key}.json`", "Harness entry, architecture toggles, and stored expectation data."),
     ],
     validation=[
-        "`python optimized_nvfp4_training.py --calibrate` warms up with FP8, then switches to NVFP4 and matches the baseline's accuracy thresholds.",
-        "`python optimized_dynamic_quantized_cache.py --trace` logs precision transitions with bounded error, confirming correctness of token-level switching.",
+        "`python -m ch19.compare` runs the chapter baseline/optimized sweep through the shared harness.",
+        "`python -m ch19.optimized_dynamic_quantized_cache --trace` logs precision transitions with bounded error, confirming correctness of token-level switching.",
         "`nvcc -o optimized_kv_prefetch_overlap_sm121 optimized_kv_prefetch_overlap.cu` plus the baseline binary show measurable overlap improvements in Nsight Compute.",
     ],
     notes=[
@@ -1199,6 +1537,216 @@ ENTRIES["labs/dynamic_router"] = lab_entry(
     ],
 )
 
+ENTRIES["labs/block_scaling"] = lab_entry(
+    slug="labs/block_scaling",
+    title="Lab - Blackwell Hardware Block Scaling",
+    summary=dedent(
+        """\
+        Recreates the practical flow of Colfax Research's article on hardware-supported block scaling with NVIDIA Blackwell GPUs inside this repo's lab structure. The baseline path is intentionally conservative: it materializes block scales in BF16, applies them as explicit elementwise multiplies, and then calls `matmul`. The optimized path compiles the CUTLASS/CuTe blockscaled GEMM once during setup and measures only the Blackwell hardware-supported execution path.
+
+        The lab now defaults to the larger Colfax-style workload:
+        - `MNKL = 8192,8192,1024,1`
+        - `mma_tiler_mn = 256,128`
+        - `cluster_shape_mn = 2,1`
+        - `sf_vec_size = 16`"""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Credit",
+            dedent(
+                """\
+                - Source article: Colfax Research, ["CUTLASS Tutorial: Hardware-supported Block Scaling with NVIDIA Blackwell GPUs"](<https://research.colfax-intl.com/cutlass-tutorial-hardware-supported-block-scaling-with-nvidia-blackwell-gpus/>)
+                - Kernel/source inspiration: NVIDIA CUTLASS `examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent.py` and the related `72_blackwell_narrow_precision_gemm` examples"""
+            ),
+        ),
+        MarkdownSection(
+            "Problem",
+            "This lab exists to answer one concrete question: how much faster is Blackwell's hardware-supported block scaling than a conservative software block-scaling path on the same workload?",
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - explicit scale expansion in BF16
+                - explicit elementwise scale application
+                - BF16 GEMM after the scale work is already paid for"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - compile-once CUTLASS/CuTe block-scaled GEMM in setup
+                - timed Blackwell hardware path in the measured loop
+                - separate microbenchmark path to compare the repo wrapper against the direct Colfax/CUTLASS run path"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Current validated measurements on this B200:
+
+                ### Harness Pair
+                From `artifacts/runs/20260305_222139__bench__profile_none_targets_labs_block_scaling_block_scaling/`:
+
+                | Path | Latency | Relative |
+                | --- | ---: | ---: |
+                | Baseline (`baseline_block_scaling`) | `0.198 ms` | `1.00x` |
+                | Optimized (`optimized_block_scaling`) | `0.113 ms` | `1.76x faster` |
+
+                ### Apples-to-Apples Microbenchmark
+                | Path | Latency | TFLOP/s | Relative to lab hardware |
+                | --- | ---: | ---: | ---: |
+                | Software blockscaled ref | `0.1566 ms` | `877.8` | `2.34x slower` |
+                | PyTorch BF16 GEMM | `0.1199 ms` | `1145.8` | `1.79x slower` |
+                | Lab CUTLASS hardware | `0.0670 ms` | `2050.5` | `1.00x` |
+                | Colfax/CUTLASS direct | `0.0711 ms` | `1934.0` | `1.06x slower` |"""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use the harness path when you want reproducible profiler artifacts instead of just a local timing number:
+
+                ```bash
+                python -m cli.aisp bench run -t labs/block_scaling:block_scaling -p deep_dive --single-gpu
+                ```
+
+                For the closest comparison to the Colfax article itself, use the standalone microbenchmark:
+
+                ```bash
+                python labs/block_scaling/microbenchmark_block_scaling.py --warmup 2 --iterations 10
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python labs/block_scaling/compare_block_scaling.py
+                python labs/block_scaling/microbenchmark_block_scaling.py --warmup 2 --iterations 10
+                python -m cli.aisp bench run -t labs/block_scaling:block_scaling -p none --iterations 10 --warmup 5 --timeout-seconds 900 --single-gpu
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "See how Blackwell's blockscaled tensor-core path changes the cost model versus a software dequantize-and-matmul baseline.",
+        "Run a CUTLASS/CuTe blockscaled kernel from the article in a repo-native, repeatable lab.",
+        "Validate the numerical output against a software reference before trusting the timing.",
+        "Sweep matrix shapes, tile shapes, and cluster shapes without rewriting the kernel code.",
+    ],
+    contents=[
+        ("`baseline_block_scaling.py`", "Conservative software baseline: expand scales, multiply in BF16, then matmul."),
+        ("`optimized_block_scaling.py`", "Compile-once Blackwell hardware blockscaled GEMM benchmark."),
+        ("`block_scaling_common.py`", "Shared config parsing, tensor prep, CUTLASS example loading, and timing helpers."),
+        ("`compare_block_scaling.py`", "Reproducible three-path runner: software blockscaled ref, pre-scaled BF16 GEMM, and hardware blockscaled GEMM."),
+        ("`microbenchmark_block_scaling.py`", "Apples-to-apples microbenchmark that adds the direct Colfax/CUTLASS `run()` path."),
+    ],
+    run=RunSection(
+        commands=[
+            "python labs/block_scaling/compare_block_scaling.py",
+            "python labs/block_scaling/compare_block_scaling.py --json-out /tmp/block_scaling_compare.json",
+            "python labs/block_scaling/microbenchmark_block_scaling.py",
+            "python labs/block_scaling/microbenchmark_block_scaling.py --warmup 2 --iterations 10 --json-out /tmp/block_scaling_microbench.json",
+            "python -m cli.aisp bench list-targets --chapter labs/block_scaling",
+            "python -m cli.aisp bench run -t labs/block_scaling:block_scaling -p none --iterations 10 --warmup 5 --timeout-seconds 900 --single-gpu",
+        ],
+        notes=[
+            "The standalone runners lock GPU clocks through the repo harness by default; use `--no-lock-gpu-clocks` only for quick local iteration when repeatability is not the goal.",
+            "Set `AISP_BLOCK_SCALING_SKIP_VERIFY=1` only for explicit timing-only sweeps; the default path verifies correctness.",
+        ],
+    ),
+    run_heading="Running the Lab",
+    run_intro="Use the comparison runner when you want a one-command answer on correctness plus speedup, and the harness path when you want standard repo artifacts.",
+    validation=[
+        "`python labs/block_scaling/compare_block_scaling.py` reports a hardware speedup greater than `1.0x` on a B200 / Blackwell system.",
+        "`python labs/block_scaling/microbenchmark_block_scaling.py` keeps the lab wrapper in the same range as the direct Colfax/CUTLASS example.",
+        "The comparison runner's correctness check passes before timing is reported.",
+        "`python -m cli.aisp bench run -t labs/block_scaling:block_scaling -p none ...` executes both paths without recompiling the hardware kernel inside each measured iteration.",
+    ],
+    extra_sections=[
+        dedent(
+            """\
+            ## Recommended Knobs
+            The defaults are tuned for the larger Colfax-style B200 workload:
+            - `AISP_BLOCK_SCALING_MNKL=8192,8192,1024,1`
+            - `AISP_BLOCK_SCALING_MMA_TILER_MN=256,128`
+            - `AISP_BLOCK_SCALING_CLUSTER_SHAPE_MN=2,1`
+            - `AISP_BLOCK_SCALING_SF_VEC_SIZE=16`
+
+            You can still override them explicitly:
+            ```bash
+            AISP_BLOCK_SCALING_MNKL=8192,8192,1024,1 \\
+            AISP_BLOCK_SCALING_MMA_TILER_MN=256,128 \\
+            AISP_BLOCK_SCALING_CLUSTER_SHAPE_MN=2,1 \\
+            python labs/block_scaling/compare_block_scaling.py
+            ```"""
+        ),
+        dedent(
+            """\
+            ## Default Tuning Pass
+            The current default tile/cluster pair came from a first-pass direct CUTLASS sweep on the article-sized workload (`warmup=1`, `iterations=10`, `skip_ref_check=True`):
+
+            | `mma_tiler_mn` | `cluster_shape_mn` | Direct CUTLASS latency |
+            | --- | --- | --- |
+            | `128,128` | `1,1` | `78.33 us` |
+            | `128,128` | `1,2` | `74.96 us` |
+            | `128,128` | `2,1` | `74.75 us` |
+            | `128,256` | `1,2` | `84.68 us` |
+            | `256,128` | `2,1` | `71.68 us` |
+            | `256,128` | `2,2` | `88.06 us` |
+
+            That keeps the default aligned with the article's representative command line while also matching the best result from the local sweep."""
+        ),
+        dedent(
+            """\
+            ## Microbenchmark View
+            The microbenchmark reports four distinct numbers on the same logical workload:
+
+            | Path | What it measures |
+            | --- | --- |
+            | `Software blockscaled ref` | PyTorch scale multiply plus BF16 GEMM every iteration. |
+            | `PyTorch BF16 GEMM` | BF16 GEMM after the scales were already applied. |
+            | `Lab CUTLASS hardware` | The repo-native compile-once wrapper around the blockscaled tensor-core kernel. |
+            | `Colfax/CUTLASS direct` | The original CUTLASS example's `run()` benchmark path. |
+
+            This is the apples-to-apples interpretation:
+            - `Software blockscaled ref` vs `Lab CUTLASS hardware` shows the real improvement from Blackwell's hardware-supported block scaling.
+            - `PyTorch BF16 GEMM` isolates how much of the software path is just GEMM versus scale application overhead.
+            - `Lab CUTLASS hardware` vs `Colfax/CUTLASS direct` checks whether the lab wrapper is staying in the same performance range as the original example.
+
+            ### Representative B200 Ranges
+            On this B200, with `python labs/block_scaling/microbenchmark_block_scaling.py --warmup 2 --iterations 10`, the lab produced:
+
+            | Path | Latency | TFLOP/s | Relative to lab hardware |
+            | --- | --- | --- | --- |
+            | `Software blockscaled ref` | `0.1566 ms` | `877.8` | `2.34x slower` |
+            | `PyTorch BF16 GEMM` | `0.1199 ms` | `1145.8` | `1.79x slower` |
+            | `Lab CUTLASS hardware` | `0.0670 ms` | `2050.5` | `1.00x` |
+            | `Colfax/CUTLASS direct` | `0.0711 ms` | `1934.0` | `1.06x slower` |"""
+        ),
+        dedent(
+            """\
+            ## Harness vs Microbenchmark
+            The repo harness and the standalone microbenchmark answer slightly different questions:
+            - `microbenchmark_block_scaling.py` uses CUDA-event timing around the direct call sites, so it is the right place to compare against Colfax/CUTLASS and PyTorch-reported kernel-adjacent ranges.
+            - `bench run` measures the benchmark pair through the generic harness, including the per-iteration synchronization the harness uses for correctness and stability. That number is expected to be higher than the direct microbenchmark.
+
+            On this B200, the harness run:
+            - `python -m cli.aisp bench run -t labs/block_scaling:block_scaling -p none --iterations 10 --warmup 5 --timeout-seconds 900 --single-gpu`
+            - reported `0.198 ms` baseline, `0.113 ms` optimized, and `1.76x` speedup
+            - updated `labs/block_scaling/expectations_b200.json` from `1.669x` to `1.762x`"""
+        ),
+    ],
+    notes=[
+        "The optimized path requires a Blackwell-class GPU (`sm100+`). The software baseline still requires CUDA because the lab is meant to be compared on the same device.",
+    ],
+)
+
 ENTRIES["labs/flashattention4"] = lab_entry(
     slug="labs/flashattention4",
     title="Lab - FlashAttention-4 Pipeline Co-Design",
@@ -1206,6 +1754,78 @@ ENTRIES["labs/flashattention4"] = lab_entry(
         """\
         Recreates the practical shape of the FlashAttention-4 article: eager FlexAttention as the scalar-heavy baseline, then a compiled Blackwell-friendly path that tries the FLASH backend and falls back to FlexAttention+TMA when needed. The default benchmark uses ALiBi because it is stable on the local stack and still exercises the FA4 score-mod path."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                This lab is here to test two different questions cleanly:
+                - does the fused FA4-style path beat the eager score-materializing baseline in this repo?
+                - does the local stack reproduce the Colfax / PyTorch FlashAttention-4 performance envelope?"""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager FlexAttention
+                - explicit score materialization
+                - good correctness reference, bad steady-state cost model"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - compiled Blackwell-oriented path
+                - prefers the experimental FLASH backend
+                - falls back to compiled FlexAttention + TMA when the backend/toolchain combination cannot lower cleanly"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Current validated harness result for the default `ALiBi` target from `artifacts/runs/20260306_023114__bench__profile_none_targets_labs_flashattention4_flashattention4_alibi/`:
+
+                | Path | Latency | Relative |
+                | --- | ---: | ---: |
+                | Baseline (`baseline_flashattention4`) | `5.562 ms` | `1.00x` |
+                | Optimized (`optimized_flashattention4_alibi`) | `0.385 ms` | `14.45x faster` |
+
+                This lab also carries an important negative result: the local stack does **not** currently reproduce the published Colfax/PyTorch FA4 envelope on the direct TFLOP/s microbench. That is a useful finding, not a documentation problem to hide."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use the harness for artifacted Nsight evidence:
+
+                ```bash
+                python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile deep_dive --single-gpu
+                ```
+
+                Use the microbenchmark when you want the closest backend-vs-backend comparison to the published articles:
+
+                ```bash
+                python labs/flashattention4/tflops_microbench.py --preset public_blog --mode dense causal alibi
+                python labs/flashattention4/tflops_microbench.py --preset peak_probe --mode dense causal --backends flash_backend triton_flex cudnn_sdpa
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/flashattention4
+                python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile minimal
+                python labs/flashattention4/tflops_microbench.py --preset public_blog --mode dense causal alibi
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Measure the delta between eager score materialization and a fused compiled attention kernel.",
         "Exercise FA4-style score modifiers such as ALiBi and soft-capped logits, and optionally probe sliding-window masks on a best-effort basis.",
@@ -1460,6 +2080,67 @@ ENTRIES["labs/persistent_decode"] = lab_entry(
         """\
         Demonstrates Blackwell-friendly persistent decode kernels and TMA-powered prefill paths, all validated via Python harnesses plus CUDA/Triton implementations."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            "Decode and prefill paths often die by launch overhead, staging overhead, or both. This lab exists to show which of those costs persistent kernels, CUDA Graphs, and TMA actually remove on the same logical workload.",
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - naive decode loops and non-persistent prefill paths
+                - higher launch overhead
+                - less efficient staging into shared memory"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - persistent decode kernels
+                - CUDA Graph replay where it helps
+                - TMA-powered prefill variants for lower staging cost"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260302_full_strict_all_singlegpu/`:
+
+                | Target | Baseline | Optimized | Measured delta | Best optimization |
+                | --- | ---: | ---: | ---: | --- |
+                | `persistent_decode` | `1.411 ms` | `0.118 ms` | `11.94x` | `graphs` |
+                | `tma_prefill_decode` | `1.588 ms` | `0.931 ms` | `1.71x` | `optimized_tma_prefill_decode` |
+
+                The decode win is a launch-overhead story. The prefill win is a staging/data-movement story. This lab is more useful when you keep those two categories separate."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want to see launch count and staging behavior instead of only the wall-clock delta:
+
+                ```bash
+                python -m cli.aisp bench run --targets labs/persistent_decode:persistent_decode --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/persistent_decode:tma_prefill_decode --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/persistent_decode
+                python -m cli.aisp bench run --targets labs/persistent_decode --profile minimal
+                python labs/persistent_decode/optimized_persistent_decode_graphs.py --iterations 50
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Contrast naive decode loops against persistent kernels that pin CTAs per sequence.",
         "Adopt TMA-based prefill to stream activations into shared memory with minimal latency.",
@@ -1483,6 +2164,111 @@ ENTRIES["labs/persistent_decode"] = lab_entry(
     notes=[
         "Set `TORCH_COMPILE_MODE` or `TMA_TILE_SIZE` via env vars before invoking the harness to sweep tile sizes.",
         "`tma_extension.py` caches builds under `~/.cache/torch_extensions`; clean the cache when switching CUDA versions.",
+    ],
+)
+
+ENTRIES["labs/real_world_models"] = lab_entry(
+    slug="labs/real_world_models",
+    title="Lab - Real-World Model Optimizations",
+    summary=dedent(
+        """\
+        Applies the course-wide optimization patterns to representative models (Llama 3.1 8B, DeepSeek-R1 MoE, GPT-4-style) so you can practice end-to-end tuning on Blackwell and Grace-Blackwell hardware."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            "Microbenchmarks are useful, but they can hide whether the repo's optimizations still matter on a real model path. This lab is the end-to-end check.",
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - representative model skeletons with conservative serving/training defaults
+                - enough realism to surface KV-cache, routing, and compile effects
+                - intentionally simpler than production deployment code so the optimization deltas stay readable"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - torch.compile and fused attention where they help
+                - topology-aware and memory-aware configuration choices
+                - the same benchmark harness contract as the lower-level labs"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Current validated result from `artifacts/runs/20260302_full_strict_all_singlegpu/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `llama_3_1_8b` | `13.143 ms` | `5.274 ms` | `2.49x` |
+
+                This is the right lab to use when you want to sanity-check that the lower-level wins still add up on a model-shaped workload."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/real_world_models:llama_3_1_8b --profile deep_dive --single-gpu
+                ```
+
+                That path keeps the same evidence model as the rest of the repo: baseline/optimized timing, validation, and profiler artifacts in one run tree."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/real_world_models
+                python -m cli.aisp bench run --targets labs/real_world_models --profile minimal
+                python labs/real_world_models/llama_3_1_8b_optimization.py --seq-length 8192 --use-compile
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Exercise attention, MoE, and memory optimizations on realistic architectures instead of toy kernels.",
+        "Use the benchmark harness to collect reproducible throughput/latency metrics across models.",
+        "Track expert balance, routing entropy, and KV-cache pressure while iterating on serving choices.",
+        "Compare FP8/FP16, torch.compile, and topology-aware placements without changing source code.",
+    ],
+    contents=[
+        ("`llama_3_1_8b_optimization.py`", "Single-node 8B walkthrough with `torch.compile`, FlexAttention, and Flash SDPA toggles."),
+        ("`deepseek_r1_moe_optimization.py`", "64-expert top-6 routing demo with balance/Gini/entropy metrics and auxiliary loss."),
+        ("`gpt4_architecture_optimization.py`", "GPT-4-style MoE + context-parallel sketch with FP8 support and memory estimation."),
+        ("`__init__.py`", "Exports harness targets for the CLI."),
+    ],
+    run=RunSection(
+        commands=[
+            "cd ai-performance-engineering",
+            "python -m cli.aisp bench list-targets --chapter labs/real_world_models",
+            "python -m cli.aisp bench run --targets labs/real_world_models --profile minimal",
+            "# Direct runs",
+            "python labs/real_world_models/llama_3_1_8b_optimization.py --seq-length 8192 --use-compile",
+            "python labs/real_world_models/deepseek_r1_moe_optimization.py --num-experts 64 --top-k 6 --batch-size 4",
+            "python labs/real_world_models/gpt4_architecture_optimization.py --seq-length 8192 --context-parallel",
+        ],
+        notes=[
+            "Override per-model flags via `--target-extra-arg labs/real_world_models:<target>=\"--flag value\"` when using the harness.",
+        ],
+    ),
+    validation=[
+        "`llama_3_1_8b_optimization.py` sustains ~20K tokens/sec on B200 with `--use-compile` enabled and stays memory-efficient at 8K+ context.",
+        "`deepseek_r1_moe_optimization.py` reports balanced experts (Gini < 0.2) and stable router entropy across batches.",
+        "`gpt4_architecture_optimization.py` runs the context-parallel path without OOM on appropriately sized clusters; memory estimates match the printed budget.",
+        "Harness runs emit comparable baseline/optimized timings for every target without manual wiring.",
+    ],
+    notes=[
+        "These scripts are intentionally weight-light sketches for benchmarking; swap in real checkpoints to validate production settings.",
+        "Hardware expectations: B200/GB200 for best results; GPT-4-scale examples assume 24+ GPUs with NVLink/NVL fabrics.",
+        "Metrics (balance loss, entropy, KV cache) are emitted alongside throughput so you can gate deployments with more than raw speed.",
     ],
 )
 

@@ -13,12 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, Any, Optional, Tuple
-import sys
-from pathlib import Path
 import time
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.harness.benchmark_harness import (
     BaseBenchmark,
@@ -187,6 +182,9 @@ class DeepSeekR1MoEOptimization(VerificationPayloadMixin, BaseBenchmark):
         self.top_k = top_k
         self._last_metrics: Dict[str, Any] = {}
         self.output: Optional[torch.Tensor] = None
+        self._timing_events: Optional[Tuple[torch.cuda.Event, torch.cuda.Event]] = None
+        self._last_aux_metrics: Dict[str, torch.Tensor] = {}
+        self._last_elapsed_ms: Optional[float] = None
 
         logger.info(f"DeepSeek-R1 MoE Optimization")
         logger.info(f"  Experts: {num_experts}, Top-K: {top_k}")
@@ -220,36 +218,36 @@ class DeepSeekR1MoEOptimization(VerificationPayloadMixin, BaseBenchmark):
             start_event = torch.cuda.Event(enable_timing=True)
             end_event = torch.cuda.Event(enable_timing=True)
             start_event.record()
+            self._timing_events = (start_event, end_event)
+            self._last_elapsed_ms = None
         else:
             start_time = time.perf_counter()
+            self._timing_events = None
 
         # Forward pass
         output, metrics = self.moe_layer(self.input)
         self.output = output[:1, : min(4, output.shape[1]), : min(8, output.shape[2])].detach().float().clone()
+        self._last_aux_metrics = {
+            key: value.detach().float()
+            for key, value in metrics.items()
+            if torch.is_tensor(value)
+        }
 
         if use_cuda_timing:
             end_event.record()
-            end_event.synchronize()
-            elapsed_ms = start_event.elapsed_time(end_event)
         else:
-            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
-
-        # Calculate throughput
-        tokens_per_sec = (self.batch_size * self.seq_length) / (elapsed_ms / 1000)
-
-        logger.info(f"Throughput: {tokens_per_sec:.2f} tokens/sec")
-        logger.info(f"Latency: {elapsed_ms:.2f} ms")
-        logger.info(f"Balance loss: {metrics['balance_loss'].item():.6f}")
-        logger.info(f"Gini coefficient: {metrics['gini_coefficient'].item():.4f}")
-        logger.info(f"Router entropy: {metrics['router_entropy'].item():.4f}")
-
-        self._last_metrics = {
-            "latency_ms": elapsed_ms,
-            "throughput": tokens_per_sec,
-            **{k: v.item() if torch.is_tensor(v) else v for k, v in metrics.items()}
-        }
+            self._last_elapsed_ms = (time.perf_counter() - start_time) * 1000.0
         if self.output is None:
             raise RuntimeError("benchmark_fn() did not produce output")
+
+    def finalize_iteration_metrics(self) -> Optional[Dict[str, list[float]]]:
+        if self.device.type != "cuda" or self._timing_events is None:
+            return None
+        start_event, end_event = self._timing_events
+        elapsed_ms = float(start_event.elapsed_time(end_event))
+        self._last_elapsed_ms = elapsed_ms
+        self._timing_events = None
+        return {"latency_ms": [elapsed_ms]}
 
     def capture_verification_payload(self) -> None:
         if self.output is None:
@@ -268,6 +266,17 @@ class DeepSeekR1MoEOptimization(VerificationPayloadMixin, BaseBenchmark):
         )
 
     def get_custom_metrics(self) -> Dict[str, Any]:
+        if self._last_elapsed_ms is None:
+            return self._last_metrics
+        tokens_per_sec = (self.batch_size * self.seq_length) / max(self._last_elapsed_ms / 1000.0, 1e-9)
+        self._last_metrics = {
+            "latency_ms": self._last_elapsed_ms,
+            "throughput": tokens_per_sec,
+            **{
+                key: float(value.detach())
+                for key, value in self._last_aux_metrics.items()
+            },
+        }
         return self._last_metrics
 
     def teardown(self):
@@ -275,6 +284,9 @@ class DeepSeekR1MoEOptimization(VerificationPayloadMixin, BaseBenchmark):
         del self.moe_layer
         del self.input
         self.output = None
+        self._timing_events = None
+        self._last_aux_metrics = {}
+        self._last_elapsed_ms = None
         super().teardown()
 
 

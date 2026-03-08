@@ -12,14 +12,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-from example_registry import (
+from core.scripts.harness.example_registry import (
     EXAMPLE_BY_NAME,
     EXAMPLES,
     BuildStep,
     Example,
     ExampleKind,
 )
-from metrics_config import (
+from core.scripts.harness.metrics_config import (
     BASE_NCU_METRICS,
     BASE_NSYS_EXTRA_ARGS,
     BASE_NSYS_TRACE_MODULES,
@@ -27,15 +27,11 @@ from metrics_config import (
     resolve_overrides,
 )
 
+from core.utils.python_entrypoints import build_python_entry_command, build_repo_python_env
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PYTHON = sys.executable
 DEFAULT_TIMEOUT = 900  # seconds
-
-# Add repo root to path for imports
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from core.utils.python_entrypoints import build_python_entry_command, build_repo_python_env
 
 CUDA_BIN_DIRS = [
     "/usr/local/cuda-13.0/bin",
@@ -509,14 +505,10 @@ def extract_nsys_metrics(nsys_rep_path: Path, output_csv: Path) -> bool:
     """
     if not nsys_rep_path.exists():
         return False
-    
+
     try:
-        # Import extraction functions (add REPO_ROOT to path for import)
-        import sys
-        if str(REPO_ROOT) not in sys.path:
-            sys.path.insert(0, str(REPO_ROOT))
         from core.profiling.extract_nsys_summary import harvest
-        
+
         # Extract metrics from this file
         metrics = harvest(nsys_rep_path)
         if not metrics:
@@ -1102,12 +1094,8 @@ def summarize(results: List[RunResult], session_dir: Path) -> None:
     
     # Aggregate all metrics using unified metric extractor
     try:
-        # REPO_ROOT is core/scripts/, need code/ for tools import
-        code_root = REPO_ROOT.parent if REPO_ROOT.name == "scripts" else REPO_ROOT
-        if str(code_root) not in sys.path:
-            sys.path.insert(0, str(code_root))
         from core.analysis.metric_extractor import discover_and_extract_all, flatten_metrics
-        
+
         all_metrics = discover_and_extract_all(session_dir)
         flattened = flatten_metrics(all_metrics)
         

@@ -128,7 +128,7 @@ def stage2_tcgen05_basic(A, B_T):
     - No auto-tuning for problem size
     """
     try:
-        from tcgen05_loader import matmul_tcgen05
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05
         return matmul_tcgen05(A, B_T)
     except Exception as e:
         print(f"  [tcgen05 unavailable: {e}]")
@@ -142,7 +142,7 @@ def stage3_tcgen05_pipelined(A, B_T):
     While computing tile K, we prefetch tile K+1 via TMA.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_pipelined
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_pipelined
         return matmul_tcgen05_pipelined(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_pipelined unavailable: {e}]")
@@ -157,7 +157,7 @@ def stage4_tcgen05_3stage(A, B_T):
     Better latency hiding than 2-stage.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_3stage
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_3stage
         return matmul_tcgen05_3stage(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_3stage unavailable: {e}]")
@@ -171,7 +171,7 @@ def stage5_tcgen05_swizzled(A, B_T):
     XOR swizzle pattern improves L2 hit rate by 10-20%.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_swizzled
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_swizzled
         return matmul_tcgen05_swizzled(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_swizzled unavailable: {e}]")
@@ -185,7 +185,7 @@ def stage6_cluster(A, B_T):
     Cluster launch enables L2 multicast for better cache utilization.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_cluster
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_cluster
         return matmul_tcgen05_cluster(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_cluster unavailable: {e}]")
@@ -203,7 +203,7 @@ def stage7_4stage_deep(A, B_T):
     This is the deepest pipeline we can practically use.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_warp_spec
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_warp_spec
         return matmul_tcgen05_warp_spec(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_warp_spec unavailable: {e}]")
@@ -219,7 +219,7 @@ def stage8_no_wait(A, B_T):
     +43% improvement over previous stage!
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_no_wait
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_no_wait
         return matmul_tcgen05_no_wait(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_no_wait unavailable: {e}]")
@@ -233,7 +233,7 @@ def stage9_no_wait_swizzle(A, B_T):
     for better L2 cache locality.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_no_wait_swizzle
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_no_wait_swizzle
         return matmul_tcgen05_no_wait_swizzle(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_no_wait_swizzle unavailable: {e}]")
@@ -247,7 +247,7 @@ def stage10_warp_parallel(A, B_T):
     Maximizes overlap - TMA k+3 runs while computing k.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_warp_parallel
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_warp_parallel
         return matmul_tcgen05_warp_parallel(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_warp_parallel unavailable: {e}]")
@@ -261,7 +261,7 @@ def stage11_cluster(A, B_T):
     Enables cooperative processing and potential TMA multicast.
     """
     try:
-        from tcgen05_loader import matmul_tcgen05_cluster
+        from labs.custom_vs_cublas.tcgen05_loader import matmul_tcgen05_cluster
         return matmul_tcgen05_cluster(A, B_T)
     except Exception as e:
         print(f"  [tcgen05_cluster unavailable: {e}]")
@@ -280,9 +280,7 @@ def stage12_cutlass(A, B_T):
     68% of cuBLAS - best achievable with public CUTLASS!
     """
     try:
-        import sys
-        sys.path.insert(0, str(_LAB_DIR))
-        from cutlass_gemm import cutlass_gemm
+        from labs.custom_vs_cublas.cutlass_gemm import cutlass_gemm
         return cutlass_gemm(A, B_T)
     except Exception as e:
         print(f"  [CUTLASS unavailable: {e}]")

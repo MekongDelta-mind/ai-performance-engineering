@@ -6,13 +6,6 @@ batched matrix multiplications, which persistent kernels optimize away.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 import torch
 import triton
 import triton.language as tl
@@ -69,7 +62,11 @@ def gemm_standard_kernel(
     tl.store(c_ptrs, acc, mask=mask_c)
 
 
-def matmul_standard_batched(a_batch: torch.Tensor, b_batch: torch.Tensor) -> torch.Tensor:
+def matmul_standard_batched(
+    a_batch: torch.Tensor,
+    b_batch: torch.Tensor,
+    out: torch.Tensor,
+) -> torch.Tensor:
     """Multiple individual kernel launches for batched GEMM.
     
     This demonstrates the overhead of launching many small kernels.
@@ -78,7 +75,9 @@ def matmul_standard_batched(a_batch: torch.Tensor, b_batch: torch.Tensor) -> tor
     M, K = a_batch.shape[1], a_batch.shape[2]
     K, N = b_batch.shape[1], b_batch.shape[2]
     
-    c_batch = torch.empty((batch_size, M, N), device=a_batch.device, dtype=a_batch.dtype)
+    if out.shape != (batch_size, M, N):
+        raise ValueError("matmul_standard_batched() requires a preallocated output buffer with matching shape")
+    c_batch = out
     
     BLOCK_M, BLOCK_N, BLOCK_K = 32, 32, 32
     
@@ -113,6 +112,7 @@ class BaselineTritonPersistentBenchmark(VerificationPayloadMixin, BaseBenchmark)
         super().__init__()
         self.a = None
         self.b = None
+        self._output_buffer = None
         self.batch_size = 32  # Many small operations
         self.M = 256
         self.N = 256
@@ -138,14 +138,17 @@ class BaselineTritonPersistentBenchmark(VerificationPayloadMixin, BaseBenchmark)
         
         self.a = torch.randn(self.batch_size, self.M, self.K, device=self.device, dtype=self.dtype)
         self.b = torch.randn(self.batch_size, self.K, self.N, device=self.device, dtype=self.dtype)
+        self._output_buffer = torch.empty(
+            (self.batch_size, self.M, self.N), device=self.device, dtype=self.dtype
+        )
         
         # Warmup
         for _ in range(3):
-            _ = matmul_standard_batched(self.a, self.b)
+            _ = matmul_standard_batched(self.a, self.b, out=self._output_buffer)
 
     def benchmark_fn(self) -> None:
         """Benchmark: Multiple kernel launches."""
-        self.output = matmul_standard_batched(self.a, self.b)
+        self.output = matmul_standard_batched(self.a, self.b, out=self._output_buffer)
         self._last = float(self.output.sum())
         if self.output is None or self.a is None or self.b is None:
             raise RuntimeError("benchmark_fn() must produce output")
@@ -169,6 +172,7 @@ class BaselineTritonPersistentBenchmark(VerificationPayloadMixin, BaseBenchmark)
         """Teardown: Clean up resources."""
         self.a = None
         self.b = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

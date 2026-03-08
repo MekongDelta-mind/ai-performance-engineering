@@ -3,14 +3,9 @@
 from __future__ import annotations
 from typing import Optional
 
-import sys
 from pathlib import Path
 
 import torch
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, BenchmarkMode
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark

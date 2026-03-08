@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import os
 import sys
+from importlib import util as importlib_util
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence
+from types import ModuleType
+from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Sequence
 
 
 def _dedupe_entries(entries: Iterable[str]) -> List[str]:
@@ -36,6 +39,47 @@ def build_repo_python_env(
         entries.extend(part for part in existing.split(os.pathsep) if part.strip())
     env["PYTHONPATH"] = os.pathsep.join(_dedupe_entries(entries))
     return env
+
+
+def find_repo_root(start: str | Path | None = None) -> Path:
+    """Find the repository root from ``start`` (or cwd)."""
+    current = Path.cwd() if start is None else Path(start).resolve()
+    if current.is_file():
+        current = current.parent
+    while current.parent != current:
+        if (current / ".git").exists() or (current / "core" / "common").exists():
+            return current
+        current = current.parent
+    return current
+
+
+@contextmanager
+def temporary_sys_path(*entries: str | Path) -> Iterator[None]:
+    """Temporarily prepend resolved entries to ``sys.path`` and restore it."""
+    original = list(sys.path)
+    try:
+        resolved_entries = [str(Path(entry).resolve()) for entry in entries]
+        sys.path[:] = _dedupe_entries([*resolved_entries, *original])
+        yield
+    finally:
+        sys.path[:] = original
+
+
+def install_local_module_override(module_name: str, package_path: str | Path) -> ModuleType:
+    """Load ``module_name`` directly from a local package path without mutating ``sys.path``."""
+    package_dir = Path(package_path).resolve()
+    init_py = package_dir / "__init__.py"
+    spec = importlib_util.spec_from_file_location(
+        module_name,
+        init_py,
+        submodule_search_locations=[str(package_dir)],
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to create import spec for {module_name} from {package_dir}")
+    module = importlib_util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def build_python_entry_command(

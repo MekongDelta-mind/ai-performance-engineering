@@ -28,11 +28,8 @@ from __future__ import annotations
 import argparse
 import datetime
 import os
-import sys
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.optimization.symmetric_memory_patch import (
     SymmetricMemoryHandle,
@@ -41,7 +38,7 @@ from core.optimization.symmetric_memory_patch import (
 )
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:

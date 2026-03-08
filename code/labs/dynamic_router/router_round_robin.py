@@ -9,14 +9,8 @@ control variant against the telemetry-driven router policy.
 from __future__ import annotations
 
 import itertools
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Dict, Iterable, List, Optional
-
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 
 @dataclass

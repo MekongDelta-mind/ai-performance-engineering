@@ -1,12 +1,3 @@
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """Lightweight transformer stub matching Chapter 14 trace paths."""
 
 import torch
@@ -40,4 +31,3 @@ def demo() -> None:
 
 if __name__ == "__main__":
     demo()
-

@@ -1,20 +1,17 @@
 """Generic baseline/optimized comparator using discovery + harness.
 
 Example:
-  python core/analysis/compare_benchmark_pairs.py --chapter labs/moe_parallelism
-  python core/analysis/compare_benchmark_pairs.py --chapter ch15 --targets expert_parallelism
+  python -m core.analysis.compare_benchmark_pairs --chapter labs/moe_parallelism
+  python -m core.analysis.compare_benchmark_pairs --chapter ch15 --targets expert_parallelism
 """
 
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.discovery import discover_benchmarks, normalize_chapter_token
 from core.harness.benchmark_harness import BenchmarkHarness, BenchmarkMode, BenchmarkConfig

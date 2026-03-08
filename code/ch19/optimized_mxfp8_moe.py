@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.utils import logger  # noqa: E402
 from core.harness.benchmark_harness import (  # noqa: E402
@@ -74,6 +69,8 @@ class OptimizedMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self._graph: Optional[torch.cuda.CUDAGraph] = None
         self._graph_out: Optional[torch.Tensor] = None
         self._graph_weight: Optional[torch.Tensor] = None
+        self._restored_out: Optional[torch.Tensor] = None
+        self._restored_weight: Optional[torch.Tensor] = None
         self._verification_payload = None
         self.register_workload_metadata(requests_per_iteration=1.0)
 
@@ -202,6 +199,10 @@ class OptimizedMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self._calibrate_fp8()
         if self.use_cuda_graphs:
             self._capture_graph()
+        self._restored_out = torch.empty(
+            (self.num_tokens, self.ffn_dim), device=self.device, dtype=torch.float16
+        )
+        self._restored_weight = torch.empty((self.num_tokens,), device=self.device, dtype=torch.float16)
         self.register_workload_metadata(tokens_per_iteration=float(self.num_tokens))
         torch.cuda.synchronize(self.device)
 
@@ -235,6 +236,8 @@ class OptimizedMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
             self.bucket_token_ids,
             num_tokens=self.num_tokens,
             weights=self.gating_weights,
+            out=self._restored_out,
+            weight_out=self._restored_weight,
         )
 
     def _capture_graph(self) -> None:
@@ -296,6 +299,8 @@ class OptimizedMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self._graph = None
         self._graph_out = None
         self._graph_weight = None
+        self._restored_out = None
+        self._restored_weight = None
         torch.cuda.empty_cache()
 
     def validate_result(self) -> Optional[str]:

@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """Minimal training script used for NUMA pinning examples in Chapter 3."""
+
+from __future__ import annotations
 
 import argparse
 import torch
@@ -40,4 +33,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

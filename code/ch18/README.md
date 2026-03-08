@@ -3,6 +3,49 @@
 ## Summary
 Collects modern decoder techniques-FlexAttention, FlexDecoding, speculative and paged attention workflows-implemented in both PyTorch and CUDA/Triton so you can iterate quickly while validating kernels on real hardware.
 
+## Problem
+Chapter 18 is the "does decoder complexity actually buy you anything?" checkpoint. It puts flexible masking, speculative decoding, tensor-core kernels, and serving integration on the same chapter surface so you can see which tricks reduce latency and which ones only add engineering cost.
+
+## Baseline Path
+- straightforward FlexAttention / decode execution
+- conservative serving integration without aggressive caching or graph replay
+- good correctness anchor, but usually too much launch and data-movement overhead
+
+## Optimized Path
+- FlexDecoding, tensor-core-specialized kernels, and cache-aware paths
+- graph replay and serving-integrated decode paths where they help
+- still benchmarked through the shared harness instead of one-off scripts
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `flexdecoding` | `161.596 ms` | `81.980 ms` | `1.97x` | optimized FlexDecoding path |
+| `tensor_cores` | `3.805 ms` | `0.243 ms` | `15.65x` | tensor-core decode kernel |
+| `rope_q_cache` | `106.429 ms` | `4.523 ms` | `23.53x` | cache-aware rope/Q-path reuse |
+
+The chapter has a mix of "moderate but real" improvements and "big kernel-level" improvements. Treat those as different stories rather than averaging them together into one headline number.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want Nsight evidence for cache reuse, launch count, and kernel selection:
+
+```bash
+python -m cli.aisp bench run --targets ch18:flexdecoding --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch18:tensor_cores --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch18:rope_q_cache --profile deep_dive --single-gpu
+```
+
+For serving integration, use the chapter-specific vLLM path only after the direct benchmark targets are clean, because the chapter harness gives you the more trustworthy baseline/optimized comparison.
+
+## Repro Commands
+```bash
+python -m ch18.compare
+python -m cli.aisp bench list-targets --chapter ch18
+python -m cli.aisp bench run --targets ch18 --profile minimal
+python -m cli.aisp bench run --targets ch18:flexdecoding --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Prototype FlexAttention/FlexDecoding workloads with custom masks, score mods, and KV-cache integration.
 - Evaluate speculative decoding pipelines that trade extra compute for lower latency.
@@ -22,7 +65,7 @@ Collects modern decoder techniques-FlexAttention, FlexDecoding, speculative and 
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch18/compare.py --profile none
+python -m ch18.compare
 python -m cli.aisp bench list-targets --chapter ch18
 python -m cli.aisp bench run --targets ch18 --profile minimal
 ```
@@ -31,9 +74,9 @@ python -m cli.aisp bench run --targets ch18 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python optimized_flexdecoding.py --profiling` reports significantly fewer kernels and lower latency than the baseline while matching decoded tokens.
-- `python run_vllm_decoder.py --spec-config spec_configs/draft_and_verify.json` completes with accuracy parity vs the native FlexAttention path.
-- `python test_flex_attention.py` passes locally, confirming mask/score-mod helpers are wired correctly.
+- `python -m ch18.compare` runs the chapter baseline/optimized sweep through the shared harness.
+- `python -m ch18.run_vllm_decoder --spec-config spec_configs/draft_and_verify.json` completes with accuracy parity vs the native FlexAttention path.
+- `python -m pytest -q ch18/test_flex_attention.py` passes locally, confirming mask/score-mod helpers are wired correctly.
 
 ## Notes
 - `flex_attention` scripts accept env vars like `BLOCK_SIZE`, `DOC_SPAN`, and `SEQ_LEN` so you can sweep shapes without editing code.

@@ -6,11 +6,6 @@ Standard PyTorch eager mode without compile, FP8, or FlexAttention.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from typing import Optional
 
 import torch

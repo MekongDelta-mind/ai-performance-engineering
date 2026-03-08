@@ -7,14 +7,7 @@ implementation from `ddp_overlap.py`.
 
 from __future__ import annotations
 
-from pathlib import Path
-import sys
-
-CHAPTER_DIR = Path(__file__).parent
-if str(CHAPTER_DIR) not in sys.path:
-    sys.path.insert(0, str(CHAPTER_DIR))
-
-from ddp_overlap import OptimizedOverlapDdpBenchmark
+from ch04.ddp_overlap import OptimizedOverlapDdpBenchmark
 
 
 def get_benchmark() -> OptimizedOverlapDdpBenchmark:

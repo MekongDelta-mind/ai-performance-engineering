@@ -43,10 +43,12 @@ class MoEBackendWorkload:
         self.gate_weight = torch.randn(cfg.hidden_size, cfg.num_experts, device=device, dtype=cfg.dtype)
         self.w1 = torch.randn(cfg.num_experts, cfg.hidden_size, cfg.intermediate_size, device=device, dtype=cfg.dtype)
         self.w2 = torch.randn(cfg.num_experts, cfg.intermediate_size, cfg.hidden_size, device=device, dtype=cfg.dtype)
+        self._naive_out = torch.empty_like(self.x)
 
     def forward_naive(self, x: torch.Tensor) -> torch.Tensor:
         idx, weights = _topk_gating(x, self.gate_weight, self.cfg.top_k)
-        out = torch.zeros_like(x)
+        out = self._naive_out
+        out.zero_()
         for expert in range(self.cfg.num_experts):
             mask = idx == expert
             if not torch.any(mask):

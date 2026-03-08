@@ -110,6 +110,7 @@ class BaselineIntegratedKVCacheBenchmark(VerificationPayloadMixin, BaseBenchmark
         self.model = None
         self.kv_cache = None
         self.inputs = None
+        self.request_ids: list[str] = []
         self.output: Optional[torch.Tensor] = None
         self._verify_input: Optional[torch.Tensor] = None
         self.max_seq_len = 8192
@@ -142,9 +143,13 @@ class BaselineIntegratedKVCacheBenchmark(VerificationPayloadMixin, BaseBenchmark
         )
         
         self.inputs = []
+        self.request_ids = []
         for seq_len in self.sequence_lengths:
             x = torch.randn(self.batch_size, seq_len, self.hidden_dim, device=self.device, dtype=dtype)
             self.inputs.append(x)
+            self.request_ids.append(f"req_{len(self.request_ids)}")
+        for request_id in self.request_ids:
+            self.kv_cache.allocate(request_id)
         self._verify_input = self.inputs[-1] if self.inputs else None
         self.output = None
         
@@ -162,18 +167,14 @@ class BaselineIntegratedKVCacheBenchmark(VerificationPayloadMixin, BaseBenchmark
 
 
         with nvtx_range("baseline_integrated_kv_cache", enable=enable_nvtx):
-            for seq_idx, x in enumerate(self.inputs):
-                request_id = f"req_{seq_idx}"
+            for request_id, x in zip(self.request_ids, self.inputs):
                 seq_len = x.size(1)
-                self.kv_cache.allocate(request_id)
                 
                 for pos in range(seq_len):
                     token = x[:, pos:pos+1, :]
                     hidden = token
                     for layer_idx, layer in enumerate(self.model):
                         hidden = layer(hidden, self.kv_cache, request_id, layer_idx, pos)
-                
-                self.kv_cache.free(request_id)
         # Capture last hidden state for verification (no cloning in the hot path).
         self.output = hidden.detach() if hidden is not None else None
 
@@ -193,6 +194,7 @@ class BaselineIntegratedKVCacheBenchmark(VerificationPayloadMixin, BaseBenchmark
     def teardown(self) -> None:
         """Cleanup."""
         del self.model, self.kv_cache, self.inputs
+        self.request_ids = []
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

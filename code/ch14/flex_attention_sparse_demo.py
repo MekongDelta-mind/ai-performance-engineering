@@ -23,13 +23,6 @@ REQUIREMENTS:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
 import math
 from typing import Optional, Callable
 
@@ -471,6 +464,7 @@ class FlexAttentionSparseDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.seq_len = 2048
         self._last = 0.0
         self.output = None
+        self._block_mask = None
         self._verification_payload = None
         
         tokens = self.batch_size * self.seq_len
@@ -490,9 +484,24 @@ class FlexAttentionSparseDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
             dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
             device=str(self.device),
         )
+        if HAS_FLEX_ATTENTION:
+            self._block_mask = create_block_mask(
+                causal_mask,
+                B=self.batch_size,
+                H=self.num_heads,
+                Q_LEN=self.seq_len,
+                KV_LEN=self.seq_len,
+                device=self.device,
+            )
         # Warmup with causal pattern
         if HAS_FLEX_ATTENTION:
-            _ = self.demo_benchmark.benchmark_pattern("warmup", causal_mask, num_warmup=10, num_iterations=2)
+            for _ in range(10):
+                _ = self.demo_benchmark._compiled_flex(
+                    self.demo_benchmark.q,
+                    self.demo_benchmark.k,
+                    self.demo_benchmark.v,
+                    block_mask=self._block_mask,
+                )
         torch.cuda.synchronize(self.device)
 
     def benchmark_fn(self) -> None:
@@ -502,25 +511,23 @@ class FlexAttentionSparseDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if self.demo_benchmark is None:
             raise RuntimeError("Benchmark not initialized")
 
-        result = self.demo_benchmark.benchmark_pattern(
-            "Causal",
-            causal_mask,
-            num_warmup=10,
-            num_iterations=1,
-            store_output=True,
-        )
-        self._last = result.get("elapsed_ms", 0.0)
-        self.output = self.demo_benchmark._last_output
+        with torch.no_grad():
+            self.output = self.demo_benchmark._compiled_flex(
+                self.demo_benchmark.q,
+                self.demo_benchmark.k,
+                self.demo_benchmark.v,
+                block_mask=self._block_mask,
+            )
+            self._last = float(self.output.detach().sum())
         if self.output is None:
             raise RuntimeError("benchmark_fn() must produce output for verification")
-        block_mask = getattr(self.demo_benchmark, "_last_block_mask", None)
         inputs = {
             "q": self.demo_benchmark.q,
             "k": self.demo_benchmark.k,
             "v": self.demo_benchmark.v,
         }
-        if block_mask is not None:
-            inputs["block_mask"] = block_mask
+        if self._block_mask is not None:
+            inputs["block_mask"] = self._block_mask
         self._payload_inputs = inputs
 
     def capture_verification_payload(self) -> None:
@@ -542,6 +549,7 @@ class FlexAttentionSparseDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def teardown(self) -> None:
         """Teardown: Clean up resources."""
         self.demo_benchmark = None
+        self._block_mask = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

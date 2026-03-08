@@ -43,6 +43,7 @@ class BaselinePagedAttentionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.inputs: Optional[torch.Tensor] = None
         self.dtype = torch.float16
         self._verify_input: Optional[torch.Tensor] = None
+        self._causal_mask: Optional[torch.Tensor] = None
         
         tokens = self.batch_size * self.max_seq_len
         self._workload = WorkloadMetadata(
@@ -80,6 +81,10 @@ class BaselinePagedAttentionBenchmark(VerificationPayloadMixin, BaseBenchmark):
             device=self.device,
             dtype=self.dtype,
         )
+        self._causal_mask = torch.triu(
+            torch.ones(self.max_seq_len, self.max_seq_len, device=self.device, dtype=torch.bool),
+            diagonal=1,
+        )
         self._verify_input = self.inputs.detach().clone()
         
         # Proper warmup
@@ -104,11 +109,9 @@ class BaselinePagedAttentionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         scores = torch.matmul(q, k.transpose(-2, -1)) * scale
         
         # Causal mask
-        causal_mask = torch.triu(
-            torch.ones(S, S, device=self.device, dtype=torch.bool),
-            diagonal=1
-        )
-        scores = scores.masked_fill(causal_mask, float('-inf'))
+        if self._causal_mask is None:
+            raise RuntimeError("Causal mask not initialized")
+        scores = scores.masked_fill(self._causal_mask[:S, :S], float('-inf'))
         
         attn = F.softmax(scores, dim=-1)
         output = torch.matmul(attn, v)
@@ -154,6 +157,7 @@ class BaselinePagedAttentionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.qkv_proj = None
         self.out_proj = None
         self.inputs = None
+        self._causal_mask = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

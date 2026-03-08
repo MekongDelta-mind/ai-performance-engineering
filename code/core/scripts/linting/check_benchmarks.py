@@ -2,9 +2,9 @@
 """Linter to check that all benchmarks follow the benchmark contract.
 
 Usage:
-    python core/scripts/linting/check_benchmarks.py                    # Check all benchmarks
-    python core/scripts/linting/check_benchmarks.py ch01/               # Check specific chapter
-    python core/scripts/linting/check_benchmarks.py --fix              # Auto-fix issues (if possible)
+    python -m core.scripts.linting.check_benchmarks                    # Check all benchmarks
+    python -m core.scripts.linting.check_benchmarks ch01/              # Check specific chapter
+    python -m core.scripts.linting.check_benchmarks --fix              # Auto-fix issues (if possible)
 """
 
 import argparse
@@ -12,9 +12,7 @@ import warnings
 import sys
 from pathlib import Path
 
-# Add repo root to path
 repo_root = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(repo_root))
 
 from core.benchmark.contract import check_benchmark_file
 from core.discovery import discover_benchmark_entrypoints, is_benchmark_entrypoint_file

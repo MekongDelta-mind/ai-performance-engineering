@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.harness.benchmark_harness import (  # noqa: E402
     BaseBenchmark,
@@ -72,6 +67,7 @@ class BaselineMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.m_splits: List[int] = []
         self.weights: Optional[torch.Tensor] = None
         self.matmul_ref: Optional[_NaiveMXFP8Matmul] = None
+        self._restored_out: Optional[torch.Tensor] = None
         self._verification_payload = None
         self.register_workload_metadata(requests_per_iteration=1.0)
 
@@ -102,6 +98,9 @@ class BaselineMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
             ffn_dim=self.ffn_dim,
             weights=self.weights,
         )
+        self._restored_out = torch.empty(
+            (self.num_tokens, self.ffn_dim), device=self.device, dtype=torch.float16
+        )
         tokens_per_iteration = float(self.num_tokens)
         self.register_workload_metadata(tokens_per_iteration=tokens_per_iteration)
 
@@ -121,7 +120,10 @@ class BaselineMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
             offset += m
         bucketed_out = torch.cat(outputs, dim=0)
         return restore_bucketed(
-            bucketed_out, self.bucket_indices, num_tokens=self.num_tokens
+            bucketed_out,
+            self.bucket_indices,
+            num_tokens=self.num_tokens,
+            out=self._restored_out,
         )
 
     def benchmark_fn(self) -> None:
@@ -151,6 +153,7 @@ class BaselineMXFP8MoEBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.expert_order_list = []
         self.m_splits = []
         self.matmul_ref = None
+        self._restored_out = None
         torch.cuda.empty_cache()
 
     def validate_result(self) -> Optional[str]:

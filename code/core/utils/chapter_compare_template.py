@@ -41,6 +41,7 @@ from core.harness.validity_profile import (
     VALIDITY_PROFILE_HELP_TEXT,
 )
 from core.discovery import discover_benchmarks
+from core.utils.python_entrypoints import temporary_sys_path
 
 # Import logger
 try:
@@ -79,7 +80,7 @@ def load_benchmark(module_path: Path, timeout_seconds: int = 120) -> Optional[Ba
     
     def load_internal():
         try:
-        # Add repo root (directory containing the benchmark package) to sys.path
+            # Add repo root (directory containing the benchmark package) only while loading.
             repo_root = module_path.resolve()
             while repo_root.parent != repo_root:
                 if (repo_root / "core" / "common").exists():
@@ -87,39 +88,36 @@ def load_benchmark(module_path: Path, timeout_seconds: int = 120) -> Optional[Ba
                 repo_root = repo_root.parent
             else:
                 repo_root = module_path.parent.parent
-            
-            if str(repo_root) not in sys.path:
-                sys.path.insert(0, str(repo_root))
-            
-            try:
-                rel_path = module_path.resolve().relative_to(repo_root).with_suffix("")
-                module_name = ".".join(rel_path.parts)
-            except ValueError:
-                module_name = module_path.stem
-            
-            spec = importlib.util.spec_from_file_location(module_name, module_path)
-            if spec is None or spec.loader is None:
-                result["error"] = "Failed to create module spec"
-                return
-            
-            module = importlib.util.module_from_spec(spec)
-            
-            # Register module in sys.modules BEFORE exec_module() - this is critical!
-            # Dataclasses and other introspection tools need the module to be registered
-            # during class definition, otherwise sys.modules.get(cls.__module__) returns None
-            # and causes "'NoneType' object has no attribute '__dict__'" errors.
-            simple_name = module_path.stem
-            if module_name and module_name not in sys.modules:
-                sys.modules[module_name] = module
-            if simple_name not in sys.modules:
-                sys.modules[simple_name] = module
-            
-            spec.loader.exec_module(module)
-            
-            if hasattr(module, 'get_benchmark'):
-                result["benchmark"] = module.get_benchmark()
-            else:
-                result["error"] = "Module does not have get_benchmark() function"
+            with temporary_sys_path(repo_root):
+                try:
+                    rel_path = module_path.resolve().relative_to(repo_root).with_suffix("")
+                    module_name = ".".join(rel_path.parts)
+                except ValueError:
+                    module_name = module_path.stem
+
+                spec = importlib.util.spec_from_file_location(module_name, module_path)
+                if spec is None or spec.loader is None:
+                    result["error"] = "Failed to create module spec"
+                    return
+
+                module = importlib.util.module_from_spec(spec)
+
+                # Register module in sys.modules BEFORE exec_module() - this is critical!
+                # Dataclasses and other introspection tools need the module to be registered
+                # during class definition, otherwise sys.modules.get(cls.__module__) returns None
+                # and causes "'NoneType' object has no attribute '__dict__'" errors.
+                simple_name = module_path.stem
+                if module_name and module_name not in sys.modules:
+                    sys.modules[module_name] = module
+                if simple_name not in sys.modules:
+                    sys.modules[simple_name] = module
+
+                spec.loader.exec_module(module)
+
+                if hasattr(module, 'get_benchmark'):
+                    result["benchmark"] = module.get_benchmark()
+                else:
+                    result["error"] = "Module does not have get_benchmark() function"
         except Exception as e:
             result["error"] = str(e)
         finally:

@@ -4,11 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
-import sys
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from ch08.baseline_occupancy_tuning import OccupancyBinaryBenchmark
 

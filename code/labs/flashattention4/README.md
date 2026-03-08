@@ -1,21 +1,66 @@
 # Lab - FlashAttention-4 Pipeline Co-Design
 
 ## Summary
-Recreates the practical shape of the Colfax FlashAttention-4 article on top of this repo's harness. The baseline path uses eager FlexAttention, which materializes scores and behaves like the unfused scalar-heavy path the article is trying to escape. The optimized path compiles a Blackwell-friendly kernel configuration, prefers the experimental FLASH backend when available, and falls back to a compiled TMA path when the local toolchain cannot lower the FLASH backend cleanly. The default benchmark focuses on `ALiBi`, which is one of the Flex-only patterns the upstream FA4 integration explicitly targets and is stable on this local stack.
+Recreates the practical shape of the FlashAttention-4 article: eager FlexAttention as the scalar-heavy baseline, then a compiled Blackwell-friendly path that tries the FLASH backend and falls back to FlexAttention+TMA when needed. The default benchmark uses ALiBi because it is stable on the local stack and still exercises the FA4 score-mod path.
+
+## Problem
+This lab is here to test two different questions cleanly:
+- does the fused FA4-style path beat the eager score-materializing baseline in this repo?
+- does the local stack reproduce the Colfax / PyTorch FlashAttention-4 performance envelope?
+
+## Baseline Path
+- eager FlexAttention
+- explicit score materialization
+- good correctness reference, bad steady-state cost model
+
+## Optimized Path
+- compiled Blackwell-oriented path
+- prefers the experimental FLASH backend
+- falls back to compiled FlexAttention + TMA when the backend/toolchain combination cannot lower cleanly
+
+## Measured Delta
+Current validated harness result for the default `ALiBi` target from `artifacts/runs/20260306_023114__bench__profile_none_targets_labs_flashattention4_flashattention4_alibi/`:
+
+| Path | Latency | Relative |
+| --- | ---: | ---: |
+| Baseline (`baseline_flashattention4`) | `5.562 ms` | `1.00x` |
+| Optimized (`optimized_flashattention4_alibi`) | `0.385 ms` | `14.45x faster` |
+
+This lab also carries an important negative result: the local stack does **not** currently reproduce the published Colfax/PyTorch FA4 envelope on the direct TFLOP/s microbench. That is a useful finding, not a documentation problem to hide.
+
+## Profiler Evidence
+Use the harness for artifacted Nsight evidence:
+
+```bash
+python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile deep_dive --single-gpu
+```
+
+Use the microbenchmark when you want the closest backend-vs-backend comparison to the published articles:
+
+```bash
+python labs/flashattention4/tflops_microbench.py --preset public_blog --mode dense causal alibi
+python labs/flashattention4/tflops_microbench.py --preset peak_probe --mode dense causal --backends flash_backend triton_flex cudnn_sdpa
+```
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/flashattention4
+python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile minimal
+python labs/flashattention4/tflops_microbench.py --preset public_blog --mode dense causal alibi
+```
 
 ## Learning Goals
-- Measure how much of the win comes from moving from eager score materialization to a fused, compiled attention kernel.
-- Exercise FA4-style workloads with non-trivial score modifiers such as ALiBi and soft-capped logits, and optionally probe sliding-window masks on a best-effort basis.
-- Inspect how TMA-oriented kernel options change the provider selected on Blackwell.
-- Use the coarse pipeline model to reason about why overlap matters more as tensor-core throughput scales faster than scalar/SFU throughput.
+- Measure the delta between eager score materialization and a fused compiled attention kernel.
+- Exercise FA4-style score modifiers such as ALiBi and soft-capped logits, and optionally probe sliding-window masks on a best-effort basis.
+- Inspect provider selection on Blackwell (`flash_backend` vs `flex_tma`).
+- Use a coarse pipeline model to explain why overlap matters more under asymmetric hardware scaling.
 
 ## Directory Layout
 | Path | Description |
 | --- | --- |
-| `baseline_flashattention4.py` | Eager FlexAttention baseline that materializes the score matrix. |
-| `optimized_flashattention4.py` | Compiled, Blackwell-oriented path that tries the FLASH backend first, then falls back to compiled FlexAttention+TMA. |
-| `flashattention4_common.py` | Shared QKV generation, mask/score-mod builders, and provider resolution. |
-| `pipeline_model.py` | Coarse latency model for FA4-style overlap and asymmetric scaling. |
+| `baseline_flashattention4.py`, `optimized_flashattention4.py` | Benchmark pair comparing eager FlexAttention to a compiled, provider-aware FA4 path. |
+| `flashattention4_common.py` | Shared input builders, score mods, mask construction, and provider resolution. |
+| `pipeline_model.py` | Latency model for serial versus overlapped attention tiles. |
 | `tflops_microbench.py` | Clock-locked TFLOPs/s microbenchmark for Colfax/PyTorch-style backend comparisons. |
 
 ## Running the Benchmarks
@@ -35,13 +80,13 @@ python labs/flashattention4/tflops_microbench.py --preset peak_probe --mode dens
 - `tflops_microbench.py` locks GPU clocks through `core.harness.benchmark_harness.lock_gpu_clocks()` by default; use `--no-lock-gpu-clocks` only for local debugging.
 
 ## Validation Checklist
-- `python -m cli.aisp bench run --targets labs/flashattention4 --profile minimal` shows a large baseline-to-optimized gap on B200 because the eager path materializes scores while the compiled path does not.
+- `python -m cli.aisp bench run --targets labs/flashattention4 --profile minimal` shows the eager baseline materializing scores while the optimized path stays fused.
 - `python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_alibi --profile minimal` succeeds on a cold-start process and exercises the FA4 score-mod path without relying on env vars.
 - `python -m cli.aisp bench run --targets labs/flashattention4:best_available_attention_dense --profile minimal` gives the clearest absolute-performance path for standard attention on this stack.
 - `python -m cli.aisp bench run --targets labs/flashattention4:flashattention4_windowed --profile minimal` and `labs/flashattention4:flashattention4_alibi_windowed` remain explicit experimental probes; treat failures there as a PyTorch/FA4 integration limitation on this stack rather than as a lab bug.
-- `python labs/flashattention4/pipeline_model.py --tiles 64 --tensor-core-scale 4 --scalar-scale 2` reports a larger overlap speedup than a balanced-scaling scenario.
-- `python labs/flashattention4/tflops_microbench.py --preset public_blog --mode dense causal alibi` runs the public-shape comparison against the local FLASH backend, the local Triton-style proxy, and cuDNN where supported.
-- `python labs/flashattention4/tflops_microbench.py --preset peak_probe --mode dense causal --backends flash_backend triton_flex cudnn_sdpa` checks whether a larger compute-bound shape moves the local stack toward the Colfax/PyTorch reported envelope.
+- `python labs/flashattention4/pipeline_model.py --tiles 64 --tensor-core-scale 4 --scalar-scale 2` demonstrates overlap becoming more valuable as tensor cores scale faster than scalar hardware.
+- `python labs/flashattention4/tflops_microbench.py --preset public_blog --mode dense causal alibi` runs the public-shape backend comparison against the local FLASH backend, the local Triton-style proxy, and cuDNN where supported.
+- `python labs/flashattention4/tflops_microbench.py --preset peak_probe --mode dense causal --backends flash_backend triton_flex cudnn_sdpa` checks whether a larger compute-bound shape moves the local stack toward the published Colfax/PyTorch envelope.
 
 ## TFLOPs/s Microbenchmark
 Use `tflops_microbench.py` when you want something closer to the published Colfax and PyTorch comparisons than the harness benchmark pair. The harness pair is intentionally end-to-end and compares eager score materialization against a fused kernel; the microbenchmark instead compares backend implementations on the same attention workload.
@@ -88,11 +133,9 @@ These measurements were taken on March 5, 2026 on the current local `torch 2.9.1
 The local conclusion is straightforward: this stack does not currently reproduce the published Colfax or PyTorch FlashAttention-4 envelope. The larger probe rules out a pure small-shape saturation explanation because the local FLASH path still tops out at `307.5 TFLOPs/s` on dense and `242.9 TFLOPs/s` on causal, well below both Colfax's `1605 TFLOPs/s` peak and the local cuDNN path.
 
 ## Notes
-- Primary source: [Colfax Research, "FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling"](https://research.colfax-intl.com/flashattention-4-algorithm-and-kernel-pipelining-co-design-for-asymmetric-hardware-scaling/).
-- Integration source: [PyTorch, "FlexAttention + FlashAttention-4: Fast and Flexible"](https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/).
+- Sources: Colfax Research's FlashAttention-4 article (`https://research.colfax-intl.com/flashattention-4-algorithm-and-kernel-pipelining-co-design-for-asymmetric-hardware-scaling/`) and the PyTorch FlexAttention + FlashAttention-4 integration post (`https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/`).
 - Colfax reports up to `1605 TFLOPs/s` on B200 BF16 at roughly `71%` utilization, plus up to `1.3x` over cuDNN 9.13 and `2.7x` over Triton for forward passes.
 - The PyTorch post reports `1.6x-3.2x` forward speedup over Triton for standard dense/causal attention on GB200, `1.2x-2.1x` for ALiBi, and `1.4x-2.1x` for sliding-window attention.
-- On the local `torch 2.9.1+cu130` stack, the experimental FLASH backend needs a quoted backend literal when passed through `kernel_options`; the lab hides that workaround and falls back automatically if the backend still fails.
-- The lab pins float32 accumulation to IEEE mode (`TF32` disabled) because the current `sm_100` FLASH/FlexAttention lowering produced non-finite outputs for this workload under TF32 accumulation.
-- The upstream PyTorch FA4 integration supports `ALiBi`, sliding-window masks, soft-capping, and combinations of those patterns; this lab exposes all of them, but the cold-start-stable benchmark default is `ALiBi`.
-- The optimized path is intentionally provider-aware. Check the benchmark metrics or NVTX range name to see whether the run used `flash_backend`, `flex_tma`, or the plain compiled FlexAttention fallback.
+- The local PyTorch/Triton stack needs a quoted backend literal for the experimental FLASH backend; the lab handles that workaround internally and falls back automatically if needed.
+- The lab pins float32 accumulation to IEEE mode because the current sm_100 lowering produced non-finite outputs under TF32 accumulation.
+- Sliding-window modes remain exposed as explicit benchmark targets, but the stable day-to-day harness path is `flashattention4_alibi`.

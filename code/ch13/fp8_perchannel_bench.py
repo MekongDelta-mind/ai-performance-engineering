@@ -6,12 +6,7 @@ for each output channel, preserving more accuracy than per-tensor scaling.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.nn as nn
@@ -158,8 +153,8 @@ class OptimizedFP8PerChannelBenchmark(VerificationPayloadMixin, BaseBenchmark):
             
             # Track error for accuracy comparison
             error = (output - ref_output).abs().mean() / ref_output.abs().mean()
-            self._error_sum = error.item()
-            self._last = float(output.sum())
+            self._error_sum = error.detach()
+            self._last = float(output.detach().sum())
             self.output = output.detach().clone()
         if self._verify_input is None:
             raise RuntimeError("Verification input not initialized")

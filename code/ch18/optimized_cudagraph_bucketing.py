@@ -14,17 +14,11 @@ Key Optimization (Ch18):
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-repo_root = Path(__file__).resolve().parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from ch18.baseline_cudagraph_bucketing import (  # noqa: E402
     BaselineCUDAGraphBucketing,

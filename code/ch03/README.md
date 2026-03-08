@@ -22,7 +22,7 @@ Captures the host-level changes-NUMA pinning, governor tweaks, container setting
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch03/compare.py --profile none
+python -m ch03.compare
 python -m cli.aisp bench list-targets --chapter ch03
 python -m cli.aisp bench run --targets ch03 --profile minimal
 ```
@@ -31,9 +31,9 @@ python -m cli.aisp bench run --targets ch03 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- Run `python baseline_numa_unaware.py --diagnostics` before and after `bind_numa_affinity.py` to ensure cross-socket memory traffic drops to near zero.
-- `python optimized_docker.py --image docker_gpu_optimized.dockerfile` should sustain the same throughput as host runs while keeping GPU clocks pinned.
-- `python compare.py --examples gemm` shows optimized_gemm matching the measured host peak after applying `system_tuning.sh`.
+- `python -m ch03.mig_mps_tool --device 0` reports the active MIG/MPS state before you change host-level scheduling policy.
+- `python -m ch03.power_tuning_tool --power-limits 300,350 --iterations 5 --warmup 1` produces a short perf-per-watt sweep with the harness clock-lock path.
+- `python -m ch03.compare` keeps the chapter baseline/optimized tuning pairs runnable through the shared harness.
 
 ## Notes
 - `cpu_gpu_numa_optimizations.sh` is safe to rerun after every reboot; it re-applies irqbalance pinning and governor settings.

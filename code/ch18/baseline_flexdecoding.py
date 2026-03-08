@@ -3,15 +3,9 @@
 from __future__ import annotations
 
 import statistics
-import sys
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.cuda_event_timing import elapsed_ms, elapsed_ms_list
 from core.harness.benchmark_harness import (  # noqa: E402

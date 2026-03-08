@@ -6,12 +6,6 @@ This is the integration point for the from-scratch Blackwell kernel work.
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 # Tuning knobs for the custom CUDA extension (kept explicit so harness defaults stay unchanged).
 os.environ.setdefault("AISP_NVFP4_GROUP_GEMM_BLOCK_M", "8")

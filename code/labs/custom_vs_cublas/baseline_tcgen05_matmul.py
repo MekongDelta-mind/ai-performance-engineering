@@ -9,6 +9,7 @@ This lab demonstrates progressive tcgen05 optimizations. The harness pair compar
 from __future__ import annotations
 
 from typing import Optional
+from types import ModuleType
 
 import torch
 
@@ -27,6 +28,7 @@ class BaselineTcgen05MatmulBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.a: Optional[torch.Tensor] = None
         self.b: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._module: Optional[ModuleType] = None
         self.register_workload_metadata(
             bytes_per_iteration=float(6 * self.size * self.size),
             custom_units_per_iteration=float(2 * self.size * self.size * self.size),
@@ -37,7 +39,7 @@ class BaselineTcgen05MatmulBenchmark(VerificationPayloadMixin, BaseBenchmark):
         ensure_tcgen05_supported(module_name="labs/custom_vs_cublas tcgen05 kernels")
 
         # Compile the extension (first time only) outside the timed hot path.
-        load_tcgen05_module()
+        self._module = load_tcgen05_module()
 
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
@@ -49,8 +51,10 @@ class BaselineTcgen05MatmulBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def benchmark_fn(self) -> None:
         if self.a is None or self.b is None:
             raise RuntimeError("setup() must run before benchmark_fn()")
+        if self._module is None:
+            raise RuntimeError("tcgen05 module was not compiled in setup()")
         with torch.inference_mode():
-            self.output = matmul_tcgen05(self.a, self.b)
+            self.output = self._module.matmul_tcgen05(self.a, self.b)
 
     def capture_verification_payload(self) -> None:
         if self.a is None or self.b is None or self.output is None:
@@ -80,4 +84,3 @@ if __name__ == "__main__":
     from core.harness.benchmark_harness import benchmark_main
 
     benchmark_main(get_benchmark)
-

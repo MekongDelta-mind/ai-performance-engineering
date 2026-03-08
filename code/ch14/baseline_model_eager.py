@@ -3,13 +3,6 @@
 from __future__ import annotations
 
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
-import sys
-from pathlib import Path
-
-# Add repo root to path for imports
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.nn as nn

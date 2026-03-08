@@ -11,10 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-import sys
-
-# Add common to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.utils.logger import get_logger
 from core.harness.hardware_capabilities import detect_capabilities
@@ -362,4 +358,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

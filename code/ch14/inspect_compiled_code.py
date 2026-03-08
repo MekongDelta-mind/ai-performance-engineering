@@ -7,17 +7,7 @@ Inspecting torch.compile Generated Code
 Shows how to dump and inspect compiled kernels to understand
 what optimizations torch.compile applies to transformer blocks.
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
 import os
-
-# Add parent directory to path to import arch_config
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 import torch

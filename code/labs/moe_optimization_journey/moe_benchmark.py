@@ -7,14 +7,8 @@ Optimizations are applied cumulatively based on level.
 
 from __future__ import annotations
 
-import sys
 import time
-from pathlib import Path
 from typing import Any, Dict, Optional
-
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 

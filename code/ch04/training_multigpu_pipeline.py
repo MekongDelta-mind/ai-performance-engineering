@@ -19,14 +19,6 @@ FORWARD REFERENCES:
 - torch.compile: See Chapter 14 for TorchInductor deep dive (ch14/*compile*.py)
 """
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """
 ======================================================
@@ -52,10 +44,9 @@ Usage:
 Author: AI Performance Engineering Team
 """
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -68,7 +59,6 @@ except ImportError:
 from core.benchmark.gpu_requirements import require_min_gpus, warn_optimal_gpu_count
 
 
-import os
 import time
 import argparse
 from typing import Tuple, Optional
@@ -87,11 +77,11 @@ from torch.distributed.device_mesh import init_device_mesh
 
 # Import our optimized configurations
 try:
-    from extras.ch04.nccl_blackwell_config import (
+    from ch04.nccl_blackwell_config import (
         configure_nccl_for_multigpu,
         detect_b200_multigpu_topology,
     )
-    from extras.ch04.gb200_grace_numa_optimization import setup_grace_affinity, detect_grace_cpu
+    from ch04.gb200_grace_numa_optimization import setup_grace_affinity, detect_grace_cpu
     CUSTOM_CONFIGS_AVAILABLE = True
 except ImportError:
     CUSTOM_CONFIGS_AVAILABLE = False

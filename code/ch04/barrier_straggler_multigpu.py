@@ -1,12 +1,4 @@
 from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """Demonstrate how monitored_barrier surfaces stragglers."""
 
@@ -19,7 +11,7 @@ import torch
 import torch.distributed as dist
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -29,7 +21,7 @@ except ImportError:
             os.environ.setdefault("MASTER_PORT", "29500")
             os.environ.setdefault("LOCAL_RANK", "0")
 
-from core.benchmark.gpu_requirements import require_min_gpus, warn_optimal_gpu_count
+from core.benchmark.gpu_requirements import require_min_gpus
 
 
 def init_distributed() -> tuple[int, int, torch.device]:

@@ -58,6 +58,9 @@ class OptimizedWideEPBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.expert: Optional[nn.Module] = None
         self.inputs: Optional[torch.Tensor] = None
         self.expert_ids: Optional[torch.Tensor] = None
+        self._recv_buf: Optional[torch.Tensor] = None
+        self._recv_back: Optional[torch.Tensor] = None
+        self._out_flat: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
         self._verify_probe: Optional[torch.Tensor] = None
         self._verify_meta: Optional[torch.Tensor] = None
@@ -81,6 +84,10 @@ class OptimizedWideEPBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
         token_ids = torch.arange(self.batch * self.seq, device=self.device, dtype=torch.int64)
         self.expert_ids = _pseudo_uniform_expert_ids(token_ids, self.num_experts).view(self.batch, self.seq)
+        flat = self.inputs.view(-1, self.hidden_size)
+        self._recv_buf = torch.empty_like(flat)
+        self._recv_back = torch.empty_like(flat)
+        self._out_flat = torch.empty_like(flat)
 
         self._verify_probe = self.inputs[:1, :1, :256].detach().cpu()
         self._verify_meta = torch.tensor(
@@ -93,7 +100,14 @@ class OptimizedWideEPBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 _ = self.expert(self.inputs.view(-1, self.hidden_size))
 
     def benchmark_fn(self) -> None:
-        if self.expert is None or self.inputs is None or self.expert_ids is None:
+        if (
+            self.expert is None
+            or self.inputs is None
+            or self.expert_ids is None
+            or self._recv_buf is None
+            or self._recv_back is None
+            or self._out_flat is None
+        ):
             raise RuntimeError("setup() must run before benchmark_fn()")
 
         flat = self.inputs.view(-1, self.hidden_size)
@@ -105,15 +119,15 @@ class OptimizedWideEPBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 perm = torch.argsort(dest_ranks)
                 send_buf = flat.index_select(0, perm)
 
-                recv_buf = torch.empty_like(send_buf)
+                recv_buf = self._recv_buf
                 recv_buf.copy_(send_buf)
 
                 recv_out = self.expert(recv_buf)
 
-                recv_back = torch.empty_like(recv_out)
+                recv_back = self._recv_back
                 recv_back.copy_(recv_out)
 
-                out_flat = torch.empty_like(flat)
+                out_flat = self._out_flat
                 out_flat.index_copy_(0, perm, recv_back)
                 self.output = out_flat.view(self.batch, self.seq, self.hidden_size)
 
@@ -145,6 +159,9 @@ class OptimizedWideEPBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.expert = None
         self.inputs = None
         self.expert_ids = None
+        self._recv_buf = None
+        self._recv_back = None
+        self._out_flat = None
         self.output = None
         super().teardown()
 

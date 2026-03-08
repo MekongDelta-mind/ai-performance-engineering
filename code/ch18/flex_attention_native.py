@@ -1,12 +1,3 @@
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 # Environment (Nov-2025): CUDA 13.x r580+, torch 2.10.0+cu130, triton 3.5.0, optional TE 2.9+
 """
 Optimized FlexAttention for Blackwell B200
@@ -16,9 +7,6 @@ performance. FlexAttention must be compiled to generate fused kernels;
 without compilation it materializes the full attention matrix.
 """
 import os
-
-# Add parent directory to path to import arch_config
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     pass

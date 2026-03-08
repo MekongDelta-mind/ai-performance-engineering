@@ -2,21 +2,16 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Optional
+from types import ModuleType
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
 from core.profiling.nvtx_helper import get_nvtx_enabled, nvtx_range
 
-from labs.moe_cuda.decode_kernels import run_baseline_kernel
+from labs.moe_cuda.decode_kernels import load_baseline_kernel_module
 
 
 class BaselineDecodeKernelBenchmark(VerificationPayloadMixin, BaseBenchmark):
@@ -31,6 +26,7 @@ class BaselineDecodeKernelBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.input: Optional[torch.Tensor] = None
         self._output_buffer: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._module: Optional[ModuleType] = None
         tokens = self.rows * self.cols
         self._workload = WorkloadMetadata(
             requests_per_iteration=1.0,
@@ -79,6 +75,7 @@ class BaselineDecodeKernelBenchmark(VerificationPayloadMixin, BaseBenchmark):
             self.cols,
             dtype=torch.float32,
         ).to(self.device)
+        self._module = load_baseline_kernel_module()
         self._output_buffer = torch.empty_like(self.input)
         self.output = None
         torch.cuda.synchronize(self.device)
@@ -86,10 +83,12 @@ class BaselineDecodeKernelBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def benchmark_fn(self) -> None:
         if self.input is None or self._output_buffer is None:
             raise RuntimeError("Decode tensors not initialized")
+        if self._module is None:
+            raise RuntimeError("Baseline decode kernel module not initialized")
 
         enable_nvtx = get_nvtx_enabled(self.get_config())
         with nvtx_range("moe_cuda_decode_kernel_baseline", enable=enable_nvtx):
-            run_baseline_kernel(self.input, self._output_buffer)
+            self._module.run_baseline(self.input, self._output_buffer)
         self.output = self._output_buffer
         if self.output is None:
             raise RuntimeError("benchmark_fn() did not produce output")
@@ -109,6 +108,7 @@ class BaselineDecodeKernelBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.input = None
         self._output_buffer = None
         self.output = None
+        self._module = None
 
     def get_config(self) -> BenchmarkConfig:
         # Use shorter runs to keep verification fast on slow builds/GPUs.

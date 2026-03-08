@@ -4,13 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict, List
-import sys
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from mcp.mcp_server import TOOLS
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 START_MARKER = "<!-- BEGIN MCP TOOL LIST -->"
 END_MARKER = "<!-- END MCP TOOL LIST -->"
@@ -93,7 +90,7 @@ def render_mcp_tool_block() -> str:
     lines: List[str] = []
     lines.append("## Tool Catalog (generated)")
     lines.append("")
-    lines.append("Generated from `mcp.mcp_server.TOOLS`. Run `python scripts/generate_mcp_docs.py` to refresh.")
+    lines.append("Generated from `mcp.mcp_server.TOOLS`. Run `python -m scripts.generate_mcp_docs` to refresh.")
     lines.append("")
 
     for category in CATEGORY_ORDER:

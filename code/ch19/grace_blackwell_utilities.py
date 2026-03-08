@@ -15,14 +15,8 @@ and NVLink-C2C, but will work on other CUDA systems with graceful degradation.
 from __future__ import annotations
 
 import os
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any, Callable
-
-# Add repo root to path
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 
@@ -506,4 +500,3 @@ if __name__ == "__main__":
         print(f"\nCache config: {config}")
     else:
         print("CUDA not available - skipping GPU tests")
-

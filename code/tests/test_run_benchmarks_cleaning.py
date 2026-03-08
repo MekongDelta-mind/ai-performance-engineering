@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import os
-import sys
 import logging
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.harness.run_benchmarks import clean_build_directories
 

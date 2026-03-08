@@ -25,7 +25,7 @@ Focuses on PyTorch-centric optimizations: compiled autograd, memory profiling, F
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch13/compare.py --profile none
+python -m ch13.compare
 python -m cli.aisp bench list-targets --chapter ch13
 python -m cli.aisp bench run --targets ch13 --profile minimal
 ```
@@ -34,9 +34,9 @@ python -m cli.aisp bench run --targets ch13 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python compare.py --examples training_standard` shows optimized training runs producing higher goodput with identical metrics.
-- `python optimized_precisionfp8_te.py --validate` confirms Transformer Engine calibration plus NVFP8 execution with max error tolerances enforced.
-- `python memory_profiling.py --dump` and the optimized variant demonstrate allocator fragmentation dropping after applying the recommended knobs.
+- `python -m ch13.compare --examples training_standard` shows optimized training runs producing higher goodput with identical metrics.
+- `python -m ch13.optimized_precisionfp8_te --validate` confirms Transformer Engine calibration plus NVFP8 execution with max error tolerances enforced.
+- `python -m ch13.memory_profiling --dump` and the optimized variant demonstrate allocator fragmentation dropping after applying the recommended knobs.
 
 ## Notes
 - `custom_allocator.py` contains a standalone torch allocator shim that can be re-used in other chapters when debugging fragmentation.

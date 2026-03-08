@@ -20,6 +20,7 @@ VLLM_GPU_MEMORY_UTILIZATION="${VLLM_GPU_MEMORY_UTILIZATION:-0.8}"
 VLLM_SERVER_READY_TIMEOUT="${VLLM_SERVER_READY_TIMEOUT:-1200}"
 VLLM_SWEEP_MAX_POINTS_PER_RUN="${VLLM_SWEEP_MAX_POINTS_PER_RUN:-0}"
 VLLM_SWEEP_STRICT_POINT_VALIDATION="${VLLM_SWEEP_STRICT_POINT_VALIDATION:-1}"
+VLLM_REQUEST_RATE_FORCE_CONNECTION_CLOSE="${VLLM_REQUEST_RATE_FORCE_CONNECTION_CLOSE:-1}"
 
 if ! python3 - "$VLLM_GPU_MEMORY_UTILIZATION" <<'PY'
 import sys
@@ -37,6 +38,10 @@ if ! [[ "$VLLM_SERVER_READY_TIMEOUT" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "$VLLM_SWEEP_MAX_POINTS_PER_RUN" =~ ^[0-9]+$ ]]; then
   echo "ERROR: VLLM_SWEEP_MAX_POINTS_PER_RUN must be a non-negative integer, got '${VLLM_SWEEP_MAX_POINTS_PER_RUN}'." >&2
+  exit 2
+fi
+if ! [[ "$VLLM_REQUEST_RATE_FORCE_CONNECTION_CLOSE" =~ ^[01]$ ]]; then
+  echo "ERROR: VLLM_REQUEST_RATE_FORCE_CONNECTION_CLOSE must be 0 or 1, got '${VLLM_REQUEST_RATE_FORCE_CONNECTION_CLOSE}'." >&2
   exit 2
 fi
 
@@ -292,6 +297,15 @@ for RATE in "${PENDING_RATES[@]}"; do
 
   ensure_server_healthy "before request_rate=${RATE}"
 
+  BENCH_HEADERS=()
+  # Slow request-rate sweeps can trip stale keepalive reuse inside the aiohttp
+  # client used by `vllm bench serve`, which surfaces as a spurious
+  # ServerDisconnectedError on an otherwise healthy server. Force fresh
+  # connections by default for canonical request-rate collection.
+  if [[ "$VLLM_REQUEST_RATE_FORCE_CONNECTION_CLOSE" == "1" ]]; then
+    BENCH_HEADERS+=(--header "Connection=close")
+  fi
+
   # Capture telemetry while request-rate benchmark executes.
   nvidia-smi --query-gpu=timestamp,index,utilization.gpu,utilization.memory,memory.used,memory.total,power.draw --format=csv,nounits >"${SWEEP_DIR}/${TELEMETRY_CSV}" || true
 
@@ -306,6 +320,7 @@ for RATE in "${PENDING_RATES[@]}"; do
     --num-prompts "$NUM_PROMPTS" \
     --max-concurrency "$MAX_CONCURRENCY" \
     --request-rate "$RATE" \
+    "${BENCH_HEADERS[@]}" \
     --save-result \
     --result-dir "$SWEEP_DIR" \
     --result-filename "$RESULT_JSON" > >(tee "${SWEEP_DIR}/${RESULT_TXT}") 2>&1 &

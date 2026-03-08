@@ -7,12 +7,13 @@ multi-stream workload using the default (synchronizing) allocator path.
 from __future__ import annotations
 
 from typing import Optional
+from types import ModuleType
 
 import torch
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
-from core.profiling.stream_ordered import run_standard_allocator_capture
+from core.profiling.stream_ordered import load_stream_ordered_module
 from core.profiling.nvtx_helper import canonicalize_nvtx_name
 
 
@@ -30,6 +31,7 @@ class BaselineStreamOrderedBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.num_streams = 8
         self.output: Optional[torch.Tensor] = None
         self._payload_inputs: Optional[dict] = None
+        self._module: Optional[ModuleType] = None
 
         bytes_per_buffer = float(self.elements * 4)
         # Each inner-iteration: one H2D + D2H per stream.
@@ -42,12 +44,15 @@ class BaselineStreamOrderedBenchmark(VerificationPayloadMixin, BaseBenchmark):
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
         # Compile + warm the extension outside the timed region.
-        _ = run_standard_allocator_capture(1024, 1)
+        self._module = load_stream_ordered_module()
+        _ = self._module.run_standard_allocator_capture(1024, 1)
         self._synchronize()
 
     def benchmark_fn(self) -> None:
+        if self._module is None:
+            raise RuntimeError("Stream-ordered allocator module not initialized")
         with self._nvtx_range("stream_ordered_baseline"):
-            self.output = run_standard_allocator_capture(self.elements, self.inner_iterations)
+            self.output = self._module.run_standard_allocator_capture(self.elements, self.inner_iterations)
         if self.output is None:
             raise RuntimeError("benchmark_fn() must produce output for verification")
         self._payload_inputs = {
@@ -81,6 +86,10 @@ class BaselineStreamOrderedBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if not torch.isfinite(self.output).all():
             return "Output contains non-finite values"
         return None
+
+    def teardown(self) -> None:
+        self._module = None
+        super().teardown()
 
 
 def get_benchmark() -> BaseBenchmark:

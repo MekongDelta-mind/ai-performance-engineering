@@ -8,13 +8,8 @@ Implements BaseBenchmark for harness integration.
 
 from __future__ import annotations
 
-import sys
 from functools import lru_cache
 from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 

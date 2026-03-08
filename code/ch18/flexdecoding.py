@@ -1,18 +1,9 @@
 from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 # Environment (Oct-2025): CUDA 13.x r580+, torch 2.10.0+cu130, optional TE 2.8+
 """FlexDecoding showcase aligned with PyTorch 2.10 (CUDA 13.0)."""
 
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     pass

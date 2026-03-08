@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
 
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """
 KV Cache Integration Example (Chapter 18)
 
@@ -508,4 +499,3 @@ if __name__ == '__main__':
     print("- Prefix sharing reduces redundant computation")
     print("- Dynamic ratio adjustment adapts to memory pressure")
     print("- Paged offload enables larger effective cache")
-

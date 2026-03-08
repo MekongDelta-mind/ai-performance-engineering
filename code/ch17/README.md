@@ -24,7 +24,7 @@ Blends router design, disaggregated inference, and profiling discipline so Black
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch17/compare.py --profile none
+python -m ch17.compare
 python -m cli.aisp bench list-targets --chapter ch17
 python -m cli.aisp bench run --targets ch17 --profile minimal
 ```

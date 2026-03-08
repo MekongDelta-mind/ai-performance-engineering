@@ -8,16 +8,6 @@ Blackwell B200 Optimizations Applied:
 - Deeper pipelines (num_stages=4-5) for better overlap
 - Direct broadcast for offset tensors to reduce register pressure
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
-
 import torch
 import triton
 import triton.language as tl

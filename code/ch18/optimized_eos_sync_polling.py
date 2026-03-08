@@ -6,13 +6,6 @@ https://chaimrand.medium.com/optimizing-token-generation-in-pytorch-decoder-mode
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.benchmark.hf_decoder_cache_benchmark import (  # noqa: E402
     HFDecoderCacheBenchmark,
     HFDecoderCacheConfig,

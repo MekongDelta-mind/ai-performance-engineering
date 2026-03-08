@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-import importlib
-import sys
 from pathlib import Path
 from typing import Any, Callable, Optional
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 LAB_DIR = Path(__file__).resolve().parent
-if str(LAB_DIR) not in sys.path:
-    sys.path.insert(0, str(LAB_DIR))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+from labs.nvfp4_dual_gemm.local_eval_loader import (
+    load_reference_module,
+    load_submission_module,
+    load_utils_module,
+)
 
 
 class BaselineNvfp4DualGemmBenchmark(VerificationPayloadMixin, BaseBenchmark):
@@ -49,10 +47,18 @@ class BaselineNvfp4DualGemmBenchmark(VerificationPayloadMixin, BaseBenchmark):
             raise RuntimeError("SKIPPED: CUDA is required for NVFP4 dual GEMM benchmarks")
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
-        for stale in ("task", "utils", "reference_submission", "baseline_submission", "optimized_submission"):
-            sys.modules.pop(stale, None)
-        reference_mod = importlib.import_module("reference_submission")
-        baseline_mod = importlib.import_module("baseline_submission")
+        utils_mod = load_utils_module(LAB_DIR / "utils.py", "nvfp4_dual_utils_for_baseline")
+        reference_mod = load_reference_module(
+            LAB_DIR / "reference_submission.py",
+            module_name="nvfp4_dual_reference_for_baseline",
+            utils_module=utils_mod,
+        )
+        baseline_mod = load_submission_module(
+            LAB_DIR / "baseline_submission.py",
+            module_name="nvfp4_dual_baseline_submission",
+            reference_module=reference_mod,
+            utils_module=utils_mod,
+        )
         generate_input = getattr(reference_mod, "generate_input", None)
         kernel_fn = getattr(baseline_mod, "custom_kernel", None)
         if not callable(generate_input):

@@ -15,13 +15,7 @@ Benefits:
 
 Cumulative: batched + fused + mem_efficient + grouped
 """
-import sys
-from pathlib import Path
-repo_root = Path(__file__).parent.parent.parent
 import torch
-
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from labs.moe_optimization_journey.moe_benchmark import MoEJourneyBenchmark, run_level
 
@@ -36,6 +30,5 @@ def get_benchmark() -> Level4Grouped:
 
 if __name__ == "__main__":
     run_level(4)
-
 
 

@@ -24,6 +24,14 @@ class ContextParallelConfig:
     causal: bool = True
 
 
+@dataclass
+class AttentionWorkspace:
+    gather_k: Optional[list[torch.Tensor]] = None
+    gather_v: Optional[list[torch.Tensor]] = None
+    recv_k: Optional[torch.Tensor] = None
+    recv_v: Optional[torch.Tensor] = None
+
+
 def dtype_from_name(name: str) -> torch.dtype:
     mapping = {"fp16": torch.float16, "bf16": torch.bfloat16, "fp32": torch.float32}
     if name not in mapping:
@@ -37,6 +45,27 @@ def align_seq_len(seq_len: int, world_size: int) -> int:
     if seq_len % world_size == 0:
         return seq_len
     return world_size * ((seq_len + world_size - 1) // world_size)
+
+
+def build_attention_workspace(
+    *,
+    batch_size: int,
+    num_heads: int,
+    seq_shard: int,
+    head_dim: int,
+    world_size: int,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> AttentionWorkspace:
+    shape = (batch_size, num_heads, seq_shard, head_dim)
+    if world_size <= 1:
+        return AttentionWorkspace()
+    return AttentionWorkspace(
+        gather_k=[torch.empty(shape, device=device, dtype=dtype) for _ in range(world_size)],
+        gather_v=[torch.empty(shape, device=device, dtype=dtype) for _ in range(world_size)],
+        recv_k=torch.empty(shape, device=device, dtype=dtype),
+        recv_v=torch.empty(shape, device=device, dtype=dtype),
+    )
 
 
 def init_distributed() -> Tuple[int, int, int]:
@@ -100,10 +129,13 @@ def all_gather_attention(
     causal: bool,
     seq_shard: int,
     scale: float,
+    workspace: Optional[AttentionWorkspace] = None,
 ) -> torch.Tensor:
     if world_size > 1 and dist.is_initialized():
-        gather_k = [torch.empty_like(k) for _ in range(world_size)]
-        gather_v = [torch.empty_like(v) for _ in range(world_size)]
+        if workspace is None or workspace.gather_k is None or workspace.gather_v is None:
+            raise RuntimeError("all_gather_attention() requires preallocated gather buffers when world_size > 1")
+        gather_k = workspace.gather_k
+        gather_v = workspace.gather_v
         dist.all_gather(gather_k, k, group=process_group)
         dist.all_gather(gather_v, v, group=process_group)
         k_full = torch.cat(gather_k, dim=2)
@@ -130,6 +162,7 @@ def ring_attention(
     causal: bool,
     seq_shard: int,
     scale: float,
+    workspace: Optional[AttentionWorkspace] = None,
 ) -> torch.Tensor:
     if world_size <= 1 or not dist.is_initialized():
         return all_gather_attention(
@@ -183,8 +216,10 @@ def ring_attention(
             next_rank = (rank + 1) % world_size
             prev_rank = (rank - 1) % world_size
 
-            k_recv = torch.empty_like(k_current)
-            v_recv = torch.empty_like(v_current)
+            if workspace is None or workspace.recv_k is None or workspace.recv_v is None:
+                raise RuntimeError("ring_attention() requires preallocated recv buffers when world_size > 1")
+            k_recv = workspace.recv_k
+            v_recv = workspace.recv_v
 
             ops = [
                 dist.P2POp(dist.isend, k_current, next_rank, group=process_group),
@@ -226,6 +261,15 @@ def run_context_parallel(
 
     device = torch.device(f"cuda:{local_rank}")
     layers = build_layers(config, device)
+    workspace = build_attention_workspace(
+        batch_size=config.batch_size,
+        num_heads=config.num_heads,
+        seq_shard=seq_shard,
+        head_dim=config.hidden_size // config.num_heads,
+        world_size=world_size,
+        dtype=config.dtype,
+        device=device,
+    )
     inputs = torch.randn(
         config.batch_size,
         seq_shard,
@@ -248,6 +292,7 @@ def run_context_parallel(
                 causal=config.causal,
                 seq_shard=seq_shard,
                 scale=layer.scale,
+                workspace=workspace,
             )
             x = layer.proj(layer.merge_heads(attn_out))
         return x

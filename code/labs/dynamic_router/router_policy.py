@@ -13,16 +13,10 @@ serving harness (vLLM, SGLang, TensorRT-LLM).
 
 from __future__ import annotations
 
-import sys
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Callable, Deque, Dict, Iterable, List, Optional, Set, Tuple
-
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 # -------------------------
 # EWMA helper
@@ -360,4 +354,3 @@ class Router:
                 best_score = score
                 best_gpu = gid
         return best_gpu
-

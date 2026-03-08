@@ -5,22 +5,8 @@ Demonstrates torch.compile configuration for optimal performance on Blackwell.
 Includes proper warmup, TF32 settings, and Inductor configuration.
 """
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 import os
-
-# Add repository root for shared modules
-_chapter_dir = os.path.dirname(os.path.abspath(__file__))
-_repo_root = os.path.dirname(_chapter_dir)
-sys.path.insert(0, _repo_root)
-
 
 import torch
 import torch.nn as nn
@@ -28,9 +14,9 @@ import triton.testing
 import time
 from contextlib import nullcontext
 from core.utils.compile_utils import compile_model, enable_tf32
-from arch_config import prefer_sdpa_backends
+from core.harness.arch_config import prefer_sdpa_backends
 
-from extras.ch14.torch_compile_large_model import create_model
+from ch14.torch_compile_large_model import create_model
 
 # Quick mode removed; always run full demo
 

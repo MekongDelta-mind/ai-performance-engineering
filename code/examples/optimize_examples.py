@@ -4,13 +4,6 @@ Auto-Optimizer Usage Examples
 
 Demonstrates how to use the auto-optimizer to improve GPU code performance.
 """
-
-import sys
-from pathlib import Path
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import torch
 import torch.nn as nn
 
@@ -311,5 +304,3 @@ if __name__ == "__main__":
         print("To run actual optimization examples, use: --run-optimization")
         print("(Requires ANTHROPIC_API_KEY or OPENAI_API_KEY)")
         print("=" * 60)
-
-

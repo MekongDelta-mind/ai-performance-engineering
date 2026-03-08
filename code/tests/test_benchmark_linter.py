@@ -217,6 +217,30 @@ def test_contract_ast_follows_imported_wrapper_benchmark_body():
     assert any("regenerates random inputs" in warning for warning in warnings)
 
 
+def test_contract_ast_follows_imported_helper_function_body() -> None:
+    """Imported helper functions called from benchmark_fn() should surface warnings."""
+    repo_root = Path(__file__).parent.parent
+    wrapper_path = repo_root / "tests" / "fixtures_contract" / "imported_helper_function_entry.py"
+
+    ok, errors, warnings = check_benchmark_file_ast(wrapper_path)
+
+    assert ok, errors
+    assert errors == []
+    assert any("regenerates random inputs" in warning for warning in warnings)
+
+
+def test_contract_ast_follows_imported_helper_object_method_body() -> None:
+    """Imported helper-object methods called from benchmark_fn() should surface warnings."""
+    repo_root = Path(__file__).parent.parent
+    wrapper_path = repo_root / "tests" / "fixtures_contract" / "imported_helper_object_entry.py"
+
+    ok, errors, warnings = check_benchmark_file_ast(wrapper_path)
+
+    assert ok, errors
+    assert errors == []
+    assert any("transfers tensors to CPU via .cpu()" in warning for warning in warnings)
+
+
 def test_contract_ast_ignores_style_only_noise(tmp_path: Path):
     """Missing docstrings/recommended helpers should not fail the contract gate."""
     ok, errors, warnings = _lint_tmp_file(

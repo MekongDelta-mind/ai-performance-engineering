@@ -81,14 +81,22 @@ def _literal_string_collection(
     attribute_name: str,
 ) -> Set[str]:
     for item in class_node.body:
-        if not isinstance(item, ast.Assign):
-            continue
-        if len(item.targets) != 1 or not isinstance(item.targets[0], ast.Name):
-            continue
-        if item.targets[0].id != attribute_name:
+        if isinstance(item, ast.Assign):
+            if len(item.targets) != 1 or not isinstance(item.targets[0], ast.Name):
+                continue
+            if item.targets[0].id != attribute_name:
+                continue
+            value_node = item.value
+        elif isinstance(item, ast.AnnAssign):
+            if not isinstance(item.target, ast.Name):
+                continue
+            if item.target.id != attribute_name or item.value is None:
+                continue
+            value_node = item.value
+        else:
             continue
         try:
-            value = ast.literal_eval(item.value)
+            value = ast.literal_eval(value_node)
         except Exception:
             return set()
         if isinstance(value, (list, tuple, set, frozenset)):
@@ -488,12 +496,24 @@ class BenchmarkContract:
                     benchmark_fn_sync_warnings_for_class(
                         class_node,
                         allowed_codes=allowed_antipatterns,
+                        module_path=(
+                            class_info.ref.module_path
+                            if class_info.ref.module_path.exists()
+                            else None
+                        ),
+                        class_name=class_info.ref.class_name,
                     )
                 )
                 warnings.extend(
                     benchmark_fn_antipattern_warnings_for_class(
                         class_node,
                         allowed_codes=allowed_antipatterns,
+                        module_path=(
+                            class_info.ref.module_path
+                            if class_info.ref.module_path.exists()
+                            else None
+                        ),
+                        class_name=class_info.ref.class_name,
                     )
                 )
                 break

@@ -2,7 +2,10 @@
 #!POPCORN gpu B200
 
 import torch
-from task import input_t, output_t
+try:
+    from task import input_t, output_t
+except ModuleNotFoundError:
+    from labs.nvfp4_dual_gemm.task import input_t, output_t
 from torch.utils.cpp_extension import load_inline
 
 CUDA_SRC = r"""

@@ -53,6 +53,7 @@ class WrapperFactory(Protocol):
         ...
 
 import torch
+from core.utils.python_entrypoints import build_repo_python_env
 
 def _unavailable_wrapper(*args, **kwargs) -> Optional[Path]:
     return None
@@ -73,6 +74,10 @@ except ImportError:
     def extract_ncu_metrics(ncu_rep_path: Path, timeout: int = 60) -> NcuMetrics:
         raise ImportError("metrics_extractor not available")
     _profiler_config = None
+
+
+def _repo_env() -> Dict[str, str]:
+    return build_repo_python_env(Path(__file__).resolve().parents[2], base_env=os.environ.copy())
 
 
 def check_nsys_available() -> bool:
@@ -273,7 +278,7 @@ def run_nsys_profiling(
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
-            env=os.environ.copy()
+            env=_repo_env(),
         )
         
         if result.returncode != 0:
@@ -361,7 +366,7 @@ def run_ncu_profiling(
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
-            env=os.environ.copy()
+            env=_repo_env(),
         )
         
         if result.returncode != 0:
@@ -433,7 +438,7 @@ def run_proton_profiling(
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
-            env=os.environ.copy(),
+            env=_repo_env(),
         )
         if result.returncode != 0:
             return None

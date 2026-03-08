@@ -20,6 +20,11 @@ def _load_module():
     )
 
 
+def load_stream_ordered_module():
+    """Load and return the stream-ordered allocator extension module."""
+    return _load_module()
+
+
 def run_standard_allocator(elements: int, iterations: int = 5) -> None:
     """Execute the cudaMalloc baseline workload."""
     _load_module().run_standard_allocator(int(elements), int(iterations))

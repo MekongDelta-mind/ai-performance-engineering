@@ -68,9 +68,9 @@ def dispatch_shared_expert_active_experts(
 
     out.zero_()
     active = torch.unique(expert_ids)
-    active_cpu: Iterable[int] = active.detach().to("cpu", non_blocking=False).tolist()
-    for expert_id in active_cpu:
-        indices = (expert_ids == int(expert_id)).nonzero(as_tuple=False).squeeze(-1)
+    for idx in range(active.numel()):
+        expert_id = active[idx]
+        indices = (expert_ids == expert_id).nonzero(as_tuple=False).squeeze(-1)
         if indices.numel() == 0:
             continue
         out.index_copy_(0, indices, expert(flat_tokens.index_select(0, indices)))

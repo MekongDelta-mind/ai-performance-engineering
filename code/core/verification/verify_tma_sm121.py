@@ -10,7 +10,7 @@ and engaged on Grace-Blackwell GB10 (SM 12.1) across:
 3. PyTorch torch.compile
 
 Usage:
-    python verify_tma_sm121.py
+    python -m core.verification.verify_tma_sm121
 
 Requirements:
     - Grace-Blackwell GB10 GPU (SM 12.1)
@@ -21,7 +21,6 @@ Requirements:
 
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import subprocess
 import torch
@@ -38,7 +37,7 @@ from core.harness.hardware_capabilities import (
 
 # Import architecture configuration
 try:
-    from arch_config import ArchitectureConfig, configure_optimizations
+    from core.harness.arch_config import ArchitectureConfig, configure_optimizations
     configure_optimizations()
 except ImportError:
     print("WARNING: Warning: Could not import arch_config, continuing without optimizations")

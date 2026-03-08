@@ -3,12 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
-import sys
-
-repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import BaseBenchmark
 from labs.block_scaling.block_scaling_benchmarks import (

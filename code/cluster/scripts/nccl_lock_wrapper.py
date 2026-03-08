@@ -7,8 +7,16 @@ import sys
 from pathlib import Path
 from typing import Dict, Any
 
-CODE_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(CODE_ROOT))
+if __package__ in {None, ""}:
+    _repo_root = Path(__file__).resolve().parents[2]
+    _env = os.environ.copy()
+    _pythonpath = _env.get("PYTHONPATH")
+    _env["PYTHONPATH"] = str(_repo_root) if not _pythonpath else os.pathsep.join([str(_repo_root), _pythonpath])
+    os.execvpe(
+        sys.executable,
+        [sys.executable, "-m", "cluster.scripts.nccl_lock_wrapper", *sys.argv[1:]],
+        _env,
+    )
 
 from core.harness.benchmark_harness import (  # type: ignore
     lock_gpu_clocks,

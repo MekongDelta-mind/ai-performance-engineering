@@ -1,21 +1,7 @@
 from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """PyTorch memory access patterns benchmark."""
 
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-
-import time
 import torch
 
 N = 1 << 20
@@ -40,6 +26,8 @@ def benchmark_copy(style: str) -> float:
 
 
 def main() -> None:
+    if not torch.cuda.is_available():
+        raise SystemExit("CUDA is required for ch07.memory_access_pytorch")
     torch.cuda.init()
     ms = benchmark_copy("scalar")
     print(f"scalar copy: {ms:.2f} ms")

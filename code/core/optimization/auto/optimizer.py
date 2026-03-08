@@ -6,7 +6,9 @@ Profiles GPU code, uses LLM to analyze bottlenecks, generates and validates opti
 
 import ast
 import json
+import os
 import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
@@ -395,8 +397,6 @@ class AutoOptimizer:
             profile_script = f'''
 import torch
 import time
-import sys
-sys.path.insert(0, "{Path.cwd()}")
 
 # Reset memory stats
 if torch.cuda.is_available():
@@ -442,13 +442,20 @@ if benchmarks:
     print(f"TIME_MS:{{total_time}}")
     print(f"MEMORY_MB:{{memory_peak}}")
 '''
-            
+
+            env = dict(os.environ)
+            pythonpath_parts = [str(Path.cwd())]
+            existing_pythonpath = env.get("PYTHONPATH")
+            if existing_pythonpath:
+                pythonpath_parts.append(existing_pythonpath)
+            env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
             result = subprocess.run(
-                ["python3", "-c", profile_script],
+                [sys.executable, "-c", profile_script],
                 capture_output=True,
                 text=True,
                 timeout=60,
                 cwd=str(Path.cwd()),
+                env=env,
             )
             
             # Parse output
@@ -719,6 +726,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 

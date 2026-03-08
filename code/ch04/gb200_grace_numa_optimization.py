@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
 
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """
 GB200/GB300 Grace CPU NUMA Optimization for PyTorch 2.10
 =======================================================
@@ -41,11 +32,8 @@ Usage:
     from extras.ch04.gb200_grace_numa_optimization import setup_grace_affinity
     setup_grace_affinity(gpu_id=0, num_workers=8)
 """
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -55,8 +43,6 @@ except ImportError:
             os.environ.setdefault("MASTER_PORT", "29500")
             os.environ.setdefault("LOCAL_RANK", "0")  # Graceful fallback if arch_config not available
 
-
-import os
 import platform
 import psutil
 import torch

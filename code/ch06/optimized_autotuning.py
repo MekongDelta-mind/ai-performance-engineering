@@ -38,7 +38,7 @@ class OptimizedAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize tensors and perform autotuning."""
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = None
+        self.output = torch.empty_like(self.input)
         scratch = torch.empty_like(self.input)
         self.optimal_chunk = self._autotune_chunk_size(scratch)
         self._synchronize()
@@ -75,8 +75,7 @@ class OptimizedAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def benchmark_fn(self) -> None:
         """Benchmark: Operations with autotuned parameters."""
         assert self.input is not None and self.optimal_chunk is not None
-        if self.output is None or self.output.shape != self.input.shape:
-            self.output = torch.empty_like(self.input)
+        assert self.output is not None and self.output.shape == self.input.shape
         with self._nvtx_range("optimized_autotuning"):
             chunk = self.optimal_chunk
             for offset in range(0, self.N, chunk):

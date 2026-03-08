@@ -34,7 +34,7 @@ except Exception as exc:  # pragma: no cover - optional dep
 else:
     _IMPORT_ERROR = None
 
-from labs.dynamic_router.topology import detect_topology
+from labs.dynamic_router.topology import TopologySnapshot, detect_topology
 from labs.dynamic_router.router_policy import Router, SequenceInfo
 from labs.dynamic_router.router_round_robin import Request
 
@@ -433,10 +433,15 @@ def _build_handles(
     return handles
 
 
-def run_vllm_routing(
-    mode: str, req_count: Optional[int] = None, max_tokens: Optional[int] = None, cli_args: Optional[argparse.Namespace] = None
+def run_vllm_routing_with_topology(
+    mode: str,
+    *,
+    topology_snapshot: TopologySnapshot,
+    req_count: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    cli_args: Optional[argparse.Namespace] = None,
 ) -> Dict[str, float]:
-    """Run a small vLLM-backed routing demo. Raises SKIPPED if prerequisites missing."""
+    """Run a small vLLM-backed routing demo with a precomputed topology snapshot."""
     if not torch.cuda.is_available():
         _skip("CUDA is required for vLLM routing demo.")
     if torch.cuda.device_count() < 2:
@@ -451,7 +456,7 @@ def run_vllm_routing(
     req_count_val = req_count or args.req_count
     max_tokens_val = max_tokens or args.max_tokens
 
-    topo = detect_topology(max_gpus=torch.cuda.device_count())
+    topo = topology_snapshot
     gpu_numa = topo.gpu_numa
 
     decode_ids = _parse_device_list(args.decode_gpus, "0,1", torch.cuda.device_count())
@@ -519,8 +524,8 @@ def run_vllm_routing(
         "ttft_ms_mean": float(sum(ttft_samples) / len(ttft_samples)) if ttft_samples else 0.0,
     }
     if ttft_samples:
-        summary["ttft_ms_p50"] = float(torch.tensor(ttft_samples).kthvalue(len(ttft_samples) // 2 + 1).item())
-        summary["ttft_ms_p95"] = float(torch.tensor(ttft_samples).kthvalue(int(len(ttft_samples) * 0.95)).item())
+        summary["ttft_ms_p50"] = _percentile(ttft_samples, 50.0)
+        summary["ttft_ms_p95"] = _percentile(ttft_samples, 95.0)
     else:
         summary["ttft_ms_p50"] = 0.0
         summary["ttft_ms_p95"] = 0.0
@@ -529,8 +534,27 @@ def run_vllm_routing(
     return summary
 
 
-def run_dual_pool_vllm(
+def run_vllm_routing(
     mode: str,
+    req_count: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    cli_args: Optional[argparse.Namespace] = None,
+    topology_snapshot: Optional[TopologySnapshot] = None,
+) -> Dict[str, float]:
+    topo = topology_snapshot or detect_topology(max_gpus=torch.cuda.device_count())
+    return run_vllm_routing_with_topology(
+        mode,
+        topology_snapshot=topo,
+        req_count=req_count,
+        max_tokens=max_tokens,
+        cli_args=cli_args,
+    )
+
+
+def run_dual_pool_vllm_with_topology(
+    mode: str,
+    *,
+    topology_snapshot: TopologySnapshot,
     long_prompt_tokens: Optional[int] = None,
     short_prompt_tokens: Optional[int] = None,
     prefill_burst: Optional[int] = None,
@@ -588,7 +612,7 @@ def run_dual_pool_vllm(
         if not (set(prefill_ids) - set(decode_ids)) or not (set(decode_ids) - set(prefill_ids)):
             _skip("Dual mode needs at least one GPU dedicated to prefill and one to decode. Adjust VLLM_PREFILL_GPUS/VLLM_DECODE_GPUS.")
 
-    topo = detect_topology(max_gpus=total_gpus)
+    topo = topology_snapshot
     handles = _build_handles(normalized_mode, prefill_ids, decode_ids, gpu_numa=topo.gpu_numa)
     prefill_handles = [h for h in handles if h.is_prefill]
     decode_handles = [h for h in handles if h.is_decode]
@@ -729,3 +753,30 @@ def run_dual_pool_vllm(
     for gid in engines:
         summary[f"tpot_tok_per_step_{gid}"] = tpot_ema[gid]
     return summary
+
+
+def run_dual_pool_vllm(
+    mode: str,
+    long_prompt_tokens: Optional[int] = None,
+    short_prompt_tokens: Optional[int] = None,
+    prefill_burst: Optional[int] = None,
+    decode_requests: Optional[int] = None,
+    continue_requests: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    prefill_ctx_thresh: Optional[int] = None,
+    cli_args: Optional[argparse.Namespace] = None,
+    topology_snapshot: Optional[TopologySnapshot] = None,
+) -> Dict[str, float]:
+    topo = topology_snapshot or detect_topology(max_gpus=torch.cuda.device_count())
+    return run_dual_pool_vllm_with_topology(
+        mode,
+        topology_snapshot=topo,
+        long_prompt_tokens=long_prompt_tokens,
+        short_prompt_tokens=short_prompt_tokens,
+        prefill_burst=prefill_burst,
+        decode_requests=decode_requests,
+        continue_requests=continue_requests,
+        max_tokens=max_tokens,
+        prefill_ctx_thresh=prefill_ctx_thresh,
+        cli_args=cli_args,
+    )

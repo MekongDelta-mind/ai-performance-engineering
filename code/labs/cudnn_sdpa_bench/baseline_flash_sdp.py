@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 from typing import List, Optional
 from contextlib import nullcontext
 
@@ -13,10 +11,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.attention import SDPBackend, sdpa_kernel
 from torch.backends.cuda import SDPAParams, can_use_cudnn_attention
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata

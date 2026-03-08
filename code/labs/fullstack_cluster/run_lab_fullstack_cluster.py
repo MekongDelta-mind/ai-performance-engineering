@@ -2,15 +2,9 @@
 from __future__ import annotations
 
 import argparse
-import sys
 import time
-from pathlib import Path
 
 import torch
-
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 from labs.fullstack_cluster.capstone_extension import load_capstone_module
 

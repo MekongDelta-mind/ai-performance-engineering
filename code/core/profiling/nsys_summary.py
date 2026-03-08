@@ -3,21 +3,15 @@
 Utility to summarise Nsight Systems reports across the Blackwell codebase.
 
 Example:
-    python core/profiling/nsys_summary.py --glob "artifacts/runs/**/*.nsys-rep" \
+    python -m core.profiling.nsys_summary --glob "artifacts/runs/**/*.nsys-rep" \
         --kernel-regex "attn|mma" --top-k 8 --output artifacts/runs/analysis/nsys_summary.txt
 """
 
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import Iterable
-
-# Ensure project root on path
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from ch17.blackwell_profiling_guide import NsightSystemsProfiler  # noqa: E402
 

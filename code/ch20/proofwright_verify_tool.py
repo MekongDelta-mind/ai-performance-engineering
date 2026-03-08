@@ -332,6 +332,14 @@ class OptimizedProofwrightBenchmark(VerificationPayloadMixin, BaseBenchmark):
     
     Expected: 5-10x more thorough than manual testing, with proofs.
     """
+
+    # This benchmark intentionally materializes adversarial concrete test cases
+    # and host-visible proof discrepancies as part of the verification workflow.
+    allowed_benchmark_fn_antipatterns = (
+        "allocation",
+        "host_transfer",
+        "random_input_regeneration",
+    )
     
     def __init__(self):
         super().__init__()

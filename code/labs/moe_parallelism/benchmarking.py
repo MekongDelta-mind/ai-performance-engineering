@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import List, Optional
 
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin  # noqa: E402
 from core.harness.benchmark_harness import (  # noqa: E402
@@ -117,6 +111,8 @@ class PlanBenchmark(VerificationPayloadMixin, BaseBenchmark):
         torch.manual_seed(42)
         self.report = None
         self._summary = None
+        if self.metrics is None or tuple(self.metrics.shape) != (1, 3):
+            self.metrics = torch.zeros((1, 3), dtype=torch.float32)
 
     def benchmark_fn(self) -> None:
         report = self.evaluator.analyze(self.plan)
@@ -186,7 +182,7 @@ class PlanBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def _finalize_output(self, metric_values: List[float]) -> None:
         expected_shape = (1, len(metric_values))
         if self.metrics is None or tuple(self.metrics.shape) != expected_shape:
-            self.metrics = torch.randn(expected_shape, dtype=torch.float32)
+            raise RuntimeError("setup() must preallocate metric buffers for PlanBenchmark")
         summary_tensor = torch.tensor([metric_values], dtype=torch.float32)
         self.output = (summary_tensor + self.metrics).detach()
 

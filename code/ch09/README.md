@@ -23,7 +23,7 @@ Explores how to move workloads along the roofline: raise arithmetic intensity wi
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch09/compare.py --profile none
+python -m ch09.compare
 python -m cli.aisp bench list-targets --chapter ch09
 python -m cli.aisp bench run --targets ch09 --profile minimal
 ```
@@ -32,12 +32,10 @@ python -m cli.aisp bench run --targets ch09 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python baseline_compute_bound.py --summaries` reports much higher arithmetic intensity than `baseline_memory_bound.py`, matching the roofline plots.
-- `python optimized_cublaslt_gemm.py --sizes 4096 4096 8192` improves throughput relative to `baseline_cublaslt_gemm.py` on the same device.
-- `python compare.py --examples fused_l2norm` confirms numerically identical outputs before and after fusion.
+- `python -m ch09.baseline_compute_bound --summaries` reports much higher arithmetic intensity than `python -m ch09.baseline_memory_bound --summaries`, matching the roofline plots.
+- `python -m ch09.optimized_cublaslt_gemm` improves throughput relative to `python -m ch09.baseline_cublaslt_gemm` on the same device.
+- `python -m ch09.compare --examples fused_l2norm` confirms numerically identical outputs before and after fusion.
 
 ## Notes
 - `inline_ptx_example.cu` demonstrates how to wrap tcgen05 intrinsics safely with architecture guards.
 - `requirements.txt` includes Triton nightly pinning so the kernels track PyTorch 2.10-dev features.
-- `baseline_cutlass_gemm_fp8.py` and `optimized_cutlass_gemm_fp8.py` currently target a SM90 CUTLASS FP8 kernel.
-  On SM100+ (for example B200), the wrappers automatically route to FP8 cuBLASLt binaries (`*_cublaslt_gemm_fp8`) instead of skipping.

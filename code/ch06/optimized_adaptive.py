@@ -32,7 +32,7 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize with adaptive configuration."""
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = None
+        self.output = torch.empty_like(self.input)
         props = torch.cuda.get_device_properties(self.device)
         sm_count = props.multi_processor_count
         warp_allocation = props.warp_size * sm_count
@@ -55,8 +55,7 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         assert self.prefetch_stream is not None
         assert self.input is not None
         assert self.adaptive_chunk is not None
-        if self.output is None or self.output.shape != self.input.shape:
-            self.output = torch.empty_like(self.input)
+        assert self.output is not None and self.output.shape == self.input.shape
         with self._nvtx_range("optimized_adaptive"):
             chunk_plan = []
             start = 0

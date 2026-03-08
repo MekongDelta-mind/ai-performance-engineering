@@ -37,6 +37,16 @@ def _load_optimized_module():
     )
 
 
+def load_baseline_kernel_module():
+    """Load and return the baseline kernel extension module."""
+    return _load_baseline_module()
+
+
+def load_optimized_kernel_module():
+    """Load and return the optimized kernel extension module."""
+    return _load_optimized_module()
+
+
 def run_baseline_kernel(input_tensor, output_tensor) -> None:
     """Run the baseline CUDA decode kernel."""
     module = _load_baseline_module()

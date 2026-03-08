@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import ast
 import importlib.util
-import sys
 import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -21,11 +20,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 
 from core.benchmark.verification import InputSignature
-
-# Add repo root to path
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 
 def _scan_source_compliance(filepath: Path) -> Dict[str, bool]:

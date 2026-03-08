@@ -11,15 +11,10 @@ import json
 import re
 import statistics
 import subprocess
-import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.harness.benchmark_harness import lock_gpu_clocks
 

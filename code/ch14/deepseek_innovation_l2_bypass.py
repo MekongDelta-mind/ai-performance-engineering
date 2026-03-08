@@ -28,19 +28,6 @@ DeepSeek's Innovation:
 Hardware: NVIDIA B200 (SM 10.0, 178 GB HBM3e, 5th-gen Tensor Cores)
 Reference: DeepSeek-V3 Technical Report, Section 4.2
 """
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
-import os
-
-# Add parent directory to path to import arch_config
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 import torch

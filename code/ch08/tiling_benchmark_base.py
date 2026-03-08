@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Optional
 
 import torch
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
@@ -69,7 +64,12 @@ class TilingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
             device=self.device,
             dtype=self.tensor_dtype,
         )
-        self.output = None
+        self.output = torch.empty(
+            self.matrix_rows,
+            self.matrix_cols,
+            device=self.device,
+            dtype=self.tensor_dtype,
+        )
         torch.cuda.synchronize()
 
     def benchmark_fn(self) -> None:
@@ -80,12 +80,7 @@ class TilingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         enable_nvtx = get_nvtx_enabled(config) if config else False
 
         if self.output is None:
-            self.output = torch.empty(
-                self.matrix_rows,
-                self.matrix_cols,
-                device=self.device,
-                dtype=self.tensor_dtype,
-            )
+            raise RuntimeError("setup() must initialize the output buffer")
 
         with nvtx_range(self.nvtx_label, enable=enable_nvtx):
             for _ in range(self.inner_iterations):

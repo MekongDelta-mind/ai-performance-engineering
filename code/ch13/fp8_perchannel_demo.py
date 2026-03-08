@@ -29,12 +29,7 @@ REQUIREMENTS:
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.nn as nn
@@ -491,14 +486,14 @@ class FP8PerChannelDemoBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
     def benchmark_fn(self) -> None:
         """Benchmark: Per-channel FP8 forward pass."""
-        results = self.demo_benchmark.measure_throughput(num_warmup=5, num_iterations=1)
-        self._last = results.get("per_channel", {}).get("elapsed_ms", 0.0)
         if self.demo_benchmark is None or not hasattr(self.demo_benchmark, "per_channel_linear"):
             raise RuntimeError("Demo benchmark not initialized")
         if self._verify_input is None:
             raise RuntimeError("Verification input not initialized")
         with torch.no_grad():
-            self.output = self.demo_benchmark.per_channel_linear(self._verify_input).detach().float().clone()
+            output = self.demo_benchmark.per_channel_linear(self._verify_input)
+            self._last = float(output.detach().sum())
+            self.output = output.detach().float().clone()
 
     def capture_verification_payload(self) -> None:
         verify_input = self._payload_verify_input

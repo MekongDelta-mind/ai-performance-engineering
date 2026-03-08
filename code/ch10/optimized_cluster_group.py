@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Optional
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, BenchmarkMode
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
@@ -20,6 +15,8 @@ from ch10.cluster_group_utils import should_skip_cluster_error, raise_cluster_sk
 
 class OptimizedClusterGroupBenchmark(CudaBinaryBenchmark):
     """Runs the DSMEM-enabled optimized kernel and fails fast when unsupported."""
+
+    allowed_benchmark_fn_antipatterns = ("io",)
 
     def __init__(self) -> None:
         chapter_dir = Path(__file__).parent

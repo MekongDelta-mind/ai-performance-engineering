@@ -31,6 +31,7 @@ class BaselineGemmBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.left: Optional[torch.Tensor] = None
         self.right: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         
         # Register workload metadata in __init__ for compliance checks
         self.register_workload_metadata(
@@ -44,6 +45,7 @@ class BaselineGemmBenchmark(VerificationPayloadMixin, BaseBenchmark):
         # Create input matrices - same as optimized version
         self.left = torch.randn(self.m, self.k, device=self.device, dtype=torch.float32)
         self.right = torch.randn(self.k, self.n, device=self.device, dtype=torch.float32)
+        self._output_buffer = torch.zeros(self.m, self.n, device=self.device, dtype=torch.float32)
         self.output = None
         self._synchronize()
 
@@ -61,7 +63,10 @@ class BaselineGemmBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
         # Accumulate result from blocked matmul operations
         # C = A @ B = sum over blocks of (A[:, block_i] @ B[block_i, :])
-        result = torch.zeros(self.m, self.n, device=self.device, dtype=torch.float32)
+        result = self._output_buffer
+        if result is None:
+            raise RuntimeError("Output buffer not initialized")
+        result.zero_()
         
         with nvtx_range("baseline_gemm", enable=enable_nvtx):
             for i in range(self.num_blocks):
@@ -96,6 +101,7 @@ class BaselineGemmBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.left = None
         self.right = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

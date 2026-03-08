@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from core.utils.python_entrypoints import (
     build_python_entry_command,
     build_repo_python_env,
     build_torchrun_entry_command,
+    install_local_module_override,
 )
 
 
@@ -68,10 +70,25 @@ def test_build_torchrun_entry_command_supports_module_launch() -> None:
     ]
 
 
-def test_ch11_ch12_ch15_ch16_ch17_and_ch20_are_free_of_local_sys_path_bootstrap() -> None:
+def test_install_local_module_override_loads_package_without_sys_path_mutation(tmp_path: Path) -> None:
+    package_dir = tmp_path / "numba"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text("VALUE = 7\n", encoding="utf-8")
+
+    original_sys_path = list(sys.path)
+    sys.modules.pop("numba", None)
+    try:
+        module = install_local_module_override("numba", package_dir)
+        assert module.VALUE == 7
+        assert sys.path == original_sys_path
+    finally:
+        sys.modules.pop("numba", None)
+
+
+def test_ch01_ch02_ch03_ch04_ch05_ch06_ch07_ch08_ch09_ch10_ch11_ch12_ch13_ch14_ch15_ch16_ch17_ch18_ch19_and_ch20_are_free_of_local_sys_path_bootstrap() -> None:
     repo_root = Path(__file__).resolve().parent.parent
     offenders = []
-    for chapter in ("ch11", "ch12", "ch15", "ch16", "ch17", "ch20"):
+    for chapter in ("ch01", "ch02", "ch03", "ch04", "ch05", "ch06", "ch07", "ch08", "ch09", "ch10", "ch11", "ch12", "ch13", "ch14", "ch15", "ch16", "ch17", "ch18", "ch19", "ch20"):
         for path in sorted((repo_root / chapter).glob("*.py")):
             if "sys.path.insert" in path.read_text(encoding="utf-8"):
                 offenders.append(str(path.relative_to(repo_root)))
@@ -82,6 +99,18 @@ def test_selected_public_entrypoints_no_longer_carry_local_arch_bootstrap() -> N
     repo_root = Path(__file__).resolve().parent.parent
     paths = [
         "ch05/gpudirect_storage_example.py",
+        "ch09/compare.py",
+        "ch10/compare.py",
+        "ch10/analyze_scaling.py",
+        "ch10/cufile_gds_example.py",
+        "ch13/compare.py",
+        "ch13/custom_allocator.py",
+        "ch13/memory_profiling.py",
+        "ch13/fsdp_example.py",
+        "ch13/train_deepseek_coder.py",
+        "ch14/compare.py",
+        "ch14/torch_compiler_examples.py",
+        "ch14/triton_examples.py",
         "ch09/fusion_pytorch.py",
         "ch16/compare.py",
         "ch16/gpt_large_benchmark.py",
@@ -99,8 +128,201 @@ def test_selected_public_entrypoints_no_longer_carry_local_arch_bootstrap() -> N
         "ch17/compare.py",
         "ch17/dynamic_routing.py",
         "ch17/early_rejection.py",
+        "ch18/speculative_decode/spec_config_sweep.py",
+        "ch15/moe_validation/moe_validation.py",
     ]
     for relpath in paths:
         text = (repo_root / relpath).read_text(encoding="utf-8")
         assert "sys.path.insert" not in text
         assert "from arch_config import ArchitectureConfig" not in text
+
+
+def test_selected_public_lab_families_are_free_of_local_sys_path_bootstrap() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    offenders = []
+    for lab in (
+        "block_scaling",
+        "blackwell_matmul",
+        "cudnn_sdpa_bench",
+        "custom_vs_cublas",
+        "decode_optimization",
+        "dynamic_router",
+        "flexattention",
+        "flashattention4",
+        "flashinfer_attention",
+        "fullstack_cluster",
+        "kv_optimization",
+        "moe_cuda",
+        "moe_optimization_journey",
+        "moe_parallelism",
+        "nanochat_fullstack",
+        "nvfp4_dual_gemm",
+        "nvfp4_gemm",
+        "nvfp4_group_gemm",
+        "occupancy_tuning",
+        "real_world_models",
+        "async_input_pipeline",
+        "persistent_decode",
+        "speculative_decode",
+        "train_distributed",
+        "trtllm_phi_3_5_moe",
+        "uma_memory",
+    ):
+        for path in sorted((repo_root / "labs" / lab).rglob("*.py")):
+            if "sys.path.insert" in path.read_text(encoding="utf-8"):
+                offenders.append(str(path.relative_to(repo_root)))
+    assert offenders == []
+
+
+def test_selected_public_examples_and_monitoring_tools_are_free_of_local_sys_path_bootstrap() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    paths = [
+        "examples/profiling_examples.py",
+        "examples/mcp_client_example.py",
+        "examples/optimize_examples.py",
+        "monitoring/prometheus_exporter.py",
+        "scripts/generate_mcp_docs.py",
+        "tests/test_mcp_docs.py",
+    ]
+    for relpath in paths:
+        text = (repo_root / relpath).read_text(encoding="utf-8")
+        assert "sys.path.insert" not in text
+
+
+def test_selected_infra_entrypoints_are_free_of_local_sys_path_bootstrap() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    paths = [
+        "cli/aisp.py",
+        "mcp/mcp_server.py",
+        "scripts/linting/check_benchmarks.py",
+        "tools/linting/check_benchmarks.py",
+    ]
+    for relpath in paths:
+        text = (repo_root / relpath).read_text(encoding="utf-8")
+        assert "sys.path.insert" not in text
+
+
+def test_cluster_scripts_are_free_of_local_sys_path_bootstrap() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    offenders = []
+    for path in sorted((repo_root / "cluster" / "scripts").glob("*.py")):
+        if "sys.path.insert" in path.read_text(encoding="utf-8"):
+            offenders.append(str(path.relative_to(repo_root)))
+    assert offenders == []
+
+
+def test_cluster_scripts_support_direct_and_module_help_entrypoints() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    direct = subprocess.run(
+        [sys.executable, "cluster/scripts/lock_and_run.py", "--help"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert direct.returncode == 0
+    assert "Lock GPU clocks and run a command" in direct.stdout
+
+    module = subprocess.run(
+        [sys.executable, "-m", "cluster.scripts.torchrun_connectivity_probe", "--help"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert module.returncode == 0
+    assert "Fast torchrun NCCL connectivity probe" in module.stdout
+
+
+def test_selected_test_modules_are_free_of_local_sys_path_bootstrap() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    paths = [
+        "tests/test_benchmark_report_llm_transparency.py",
+        "tests/test_discovery.py",
+        "tests/test_benchmark_metrics.py",
+        "tests/test_seed_config_immutability.py",
+        "tests/test_benchmark_comparison.py",
+        "tests/test_benchmark_correctness.py",
+        "tests/test_benchmark_defaults.py",
+        "tests/test_benchmark_harness.py",
+        "tests/test_benchmark_regression.py",
+        "tests/test_benchmark_verification.py",
+        "tests/test_blackwell_optimizations.py",
+        "tests/test_blackwell_stack.py",
+        "tests/test_differential_profile_analyzer.py",
+        "tests/test_get_benchmark_presence.py",
+        "tests/test_harness_protection_failures.py",
+        "tests/test_hta_analyzer.py",
+        "tests/test_interface_consistency.py",
+        "tests/test_metrics_extractor.py",
+        "tests/test_microbench.py",
+        "tests/test_occupancy_tuning.py",
+        "tests/test_profiler_config.py",
+        "tests/test_warp_specialization.py",
+        "tests/test_run_benchmarks_cleaning.py",
+        "tests/test_run_benchmarks_config_merge.py",
+        "tests/test_profile_harness_entrypoints.py",
+        "tests/test_update_custom_metrics.py",
+        "tests/integration/test_bench_commands_manifest.py",
+        "tests/integration/test_benchmark_discovery.py",
+        "tests/integration/test_benchmark_execution.py",
+        "tests/integration/test_ch20_multiple_all_techniques.py",
+        "tests/integration/test_comparison_workflow.py",
+        "tests/integration/test_metrics_collection.py",
+    ]
+    for relpath in paths:
+        text = (repo_root / relpath).read_text(encoding="utf-8")
+        assert "sys.path.insert" not in text
+
+
+def test_selected_core_package_modules_are_free_of_local_sys_path_bootstrap() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    paths = [
+        "core/analysis/analyze_results.py",
+        "core/analysis/check_benchmark_alignment.py",
+        "core/analysis/compare_benchmark_pairs.py",
+        "core/analysis/deep_profiling_report.py",
+        "core/analysis/differential_profile_analyzer.py",
+        "core/analysis/hta_analyzer.py",
+        "core/analysis/llm_profile_analyzer.py",
+        "core/analysis/reporting/verification_report.py",
+        "core/analysis/roofline_automation.py",
+        "core/benchmark/async_input_pipeline_sweep.py",
+        "core/optimization/auto/optimizer.py",
+        "core/harness/benchmark_harness.py",
+        "core/harness/isolated_runner.py",
+        "core/harness/run_benchmarks.py",
+        "core/harness/torchrun_wrapper.py",
+        "core/profiling/memory_profiler.py",
+        "core/profiling/cutlass_profiler_integration.py",
+        "core/profiling/extract_ncu_metrics.py",
+        "core/profiling/metrics_extractor.py",
+        "core/profiling/profiler_wrapper.py",
+        "core/profiling/profiling_runner.py",
+        "core/profiling/nsys_summary.py",
+        "core/scripts/alert_dependency_updates.py",
+        "core/scripts/audit_verification_compliance.py",
+        "core/scripts/ci/generate_quarantine_report.py",
+        "core/scripts/generate_concept_mapping.py",
+        "core/scripts/generate_file_registry.py",
+        "core/scripts/harness/master_profile.py",
+        "core/scripts/harness/profile_harness.py",
+        "core/scripts/linting/check_benchmarks.py",
+        "core/scripts/test_protection_effectiveness.py",
+        "core/scripts/utilities/dump_hardware_capabilities.py",
+        "core/scripts/utilities/precompile_cuda_extensions.py",
+        "core/scripts/validate_imports.py",
+        "core/profiling/nsight_automation.py",
+        "core/utils/chapter_compare_template.py",
+        "core/utils/extension_loader_template.py",
+        "core/utils/extension_prewarm.py",
+        "core/verification/review_baseline_optimized_pairs.py",
+        "core/verification/verify_cutlass.py",
+        "core/verification/verify_tma_sm121.py",
+        "core/verification/verify_triton_blackwell_features.py",
+        "core/verification/verify_triton_sm121_patch.py",
+        "core/verification/verify_working_optimizations.py",
+    ]
+    for relpath in paths:
+        text = (repo_root / relpath).read_text(encoding="utf-8")
+        assert "sys.path.insert" not in text

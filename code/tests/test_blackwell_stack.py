@@ -4,19 +4,14 @@ Blackwell validation suite covering PyTorch 2.10, CUDA 13.0, and Triton 3.5 feat
 """
 
 import torch
-from arch_config import ArchitectureConfig
+from core.harness.arch_config import ArchitectureConfig
 import torch.distributed as dist
 import torch.profiler as profiler
 from torch.profiler import profile, record_function, ProfilerActivity, schedule
 import torch.cuda.nvtx as nvtx
 import time
 import numpy as np
-import sys
-from pathlib import Path
 from types import SimpleNamespace
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
     import triton as triton

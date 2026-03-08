@@ -23,7 +23,7 @@ Covers modern CUDA Graph capabilities-conditional capture, graph memory tuning, 
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch12/compare.py --profile none
+python -m ch12.compare
 python -m cli.aisp bench list-targets --chapter ch12
 python -m cli.aisp bench run --targets ch12 --profile minimal
 ```

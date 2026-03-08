@@ -9,24 +9,23 @@ Semantics intentionally mirror the official benchmark flow:
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import math
 import statistics
-import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.harness.benchmark_harness import lock_gpu_clocks
 from core.harness.l2_cache_utils import create_l2_flush_buffer, flush_l2_cache
-from gpu_isolation import ensure_gpu_isolation
+from labs.nvfp4_dual_gemm.gpu_isolation import ensure_gpu_isolation
+from labs.nvfp4_dual_gemm.local_eval_loader import (
+    load_reference_module,
+    load_submission_module,
+    load_utils_module,
+)
 
 
 BENCHMARKS = (
@@ -39,15 +38,6 @@ BENCHMARKS = (
 # Queried from GPUMODE/kernelbot-data on 2026-02-28.
 TOP_SCORE_SECONDS_598 = 1.2913403524642259e-05
 TOP_SCORE_US_598 = TOP_SCORE_SECONDS_598 * 1e6
-
-
-def _load_module(path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Failed to load module from {path}")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def _clone_tree(x: Any) -> Any:
@@ -207,13 +197,18 @@ def main() -> int:
             allow_cmd_substrings=args.isolation_allow_cmd_substring,
         )
 
-    for p in (args.submission_file.parent.resolve(), args.reference_file.parent.resolve()):
-        s = str(p)
-        if s not in sys.path:
-            sys.path.insert(0, s)
-
-    submission_mod = _load_module(args.submission_file, "nvfp4_dual_submission")
-    reference_mod = _load_module(args.reference_file, "nvfp4_dual_reference")
+    utils_mod = load_utils_module(args.submission_file.parent / "utils.py", "nvfp4_dual_utils_for_local_eval")
+    reference_mod = load_reference_module(
+        args.reference_file,
+        module_name="nvfp4_dual_reference_for_local_eval",
+        utils_module=utils_mod,
+    )
+    submission_mod = load_submission_module(
+        args.submission_file,
+        module_name="nvfp4_dual_submission_for_local_eval",
+        reference_module=reference_mod,
+        utils_module=utils_mod,
+    )
 
     if not callable(getattr(submission_mod, "custom_kernel", None)):
         raise RuntimeError(f"{args.submission_file} does not define callable custom_kernel(data)")

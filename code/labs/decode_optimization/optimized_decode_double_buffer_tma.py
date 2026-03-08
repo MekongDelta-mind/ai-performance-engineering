@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import torch
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.harness.cuda_capabilities import tma_support_status
-from labs.moe_cuda.optimized_decode_kernel import OptimizedDecodeKernelBenchmark  # noqa: E402
+from labs.moe_cuda.optimized_decode_kernel import OptimizedDecodeKernelBenchmark
 from labs.moe_cuda.decode_kernels import is_optimized_available, get_optimized_error
 
 

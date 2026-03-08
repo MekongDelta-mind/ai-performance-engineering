@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import pickle
+import sys
 from pathlib import Path
 
 
@@ -17,7 +18,7 @@ def main() -> int:
     factory_path = sys.argv[1]
     request_file = Path(sys.argv[2])
 
-    import dynamic_memory_allocator as dma  # local module import
+    from ch19 import dynamic_memory_allocator as dma
 
     factory = dma._resolve_factory(factory_path)
     request = pickle.loads(request_file.read_bytes())
@@ -29,10 +30,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-

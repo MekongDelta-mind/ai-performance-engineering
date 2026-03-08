@@ -2,25 +2,25 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HARNESS="${SCRIPT_DIR}/profile_harness.py"
 PYTORCH_RUNNER="${SCRIPT_DIR}/pytorch_profiler_runner.py"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 DEFAULT_OUTPUT_ROOT="${REPO_ROOT}/artifacts/runs/profile_manual"
 PYTHON_DEFAULT="${PYTHON:-python}"
+HARNESS_MODULE="core.scripts.harness.profile_harness"
 
-DEFAULT_NCU_METRICS_RAW="$($PYTHON_DEFAULT -c "import sys; sys.path.insert(0, '$SCRIPT_DIR'); from metrics_config import BASE_NCU_METRICS; print(','.join(BASE_NCU_METRICS))" 2>/dev/null || true)"
+DEFAULT_NCU_METRICS_RAW="$(PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" "$PYTHON_DEFAULT" -c "from core.scripts.harness.metrics_config import BASE_NCU_METRICS; print(','.join(BASE_NCU_METRICS))" 2>/dev/null || true)"
 DEFAULT_NCU_METRICS="${DEFAULT_NCU_METRICS_RAW//$'\n'/}"
 if [[ -z "$DEFAULT_NCU_METRICS" ]]; then
     DEFAULT_NCU_METRICS="sm__throughput.avg.pct_of_peak_sustained_elapsed,sm__warps_active.avg.pct_of_peak_sustained_active,smsp__sass_average_branch_divergence.pct,dram__throughput.avg.pct_of_peak_sustained_elapsed,lts__t_sectors.avg.pct_of_peak_sustained_elapsed,shared_load_sectors,shared_store_sectors,flop_count_sp,flop_count_hp,gpu__time_elapsed.avg"
 fi
 
-DEFAULT_NSYS_TRACE_RAW="$($PYTHON_DEFAULT -c "import sys; sys.path.insert(0, '$SCRIPT_DIR'); from metrics_config import BASE_NSYS_TRACE_MODULES; print(','.join(BASE_NSYS_TRACE_MODULES))" 2>/dev/null || true)"
+DEFAULT_NSYS_TRACE_RAW="$(PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" "$PYTHON_DEFAULT" -c "from core.scripts.harness.metrics_config import BASE_NSYS_TRACE_MODULES; print(','.join(BASE_NSYS_TRACE_MODULES))" 2>/dev/null || true)"
 DEFAULT_NSYS_TRACE="${DEFAULT_NSYS_TRACE_RAW//$'\n'/}"
 if [[ -z "$DEFAULT_NSYS_TRACE" ]]; then
     DEFAULT_NSYS_TRACE="cuda,nvtx,osrt,cublas,cudnn,nvlink"
 fi
 
-DEFAULT_NSYS_EXTRA_RAW="$($PYTHON_DEFAULT -c "import sys; sys.path.insert(0, '$SCRIPT_DIR'); from metrics_config import BASE_NSYS_EXTRA_ARGS; print(' '.join(BASE_NSYS_EXTRA_ARGS))" 2>/dev/null || true)"
+DEFAULT_NSYS_EXTRA_RAW="$(PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" "$PYTHON_DEFAULT" -c "from core.scripts.harness.metrics_config import BASE_NSYS_EXTRA_ARGS; print(' '.join(BASE_NSYS_EXTRA_ARGS))" 2>/dev/null || true)"
 DEFAULT_NSYS_EXTRA_RAW="${DEFAULT_NSYS_EXTRA_RAW//$'\n'/}"
 DEFAULT_NSYS_EXTRA_OPTS=()
 if [[ -n "$DEFAULT_NSYS_EXTRA_RAW" ]]; then
@@ -37,7 +37,7 @@ Usage:
                          [-- script-args ...]
 
 Harness mode (preferred):
-  For registered examples, forward directly to profile_harness.py. Any
+  For registered examples, forward directly to the module-backed profile harness. Any
   of the harness arguments (--examples, --tags, --profile, --profile-mode,
   --dry-run, --skip-existing, --force-build, etc.) can be passed through.
 
@@ -221,11 +221,13 @@ case "$1" in
         exit 0
         ;;
     --list)
-        "$PYTHON_DEFAULT" "$HARNESS" --list
+        env PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" \
+            "$PYTHON_DEFAULT" -m "$HARNESS_MODULE" --list
         exit $?
         ;;
     --examples|--example|--tags|--tag|--profile|--profile-mode|--output-root|--dry-run|--skip-existing|--max-examples|--force-build)
-        "$PYTHON_DEFAULT" "$HARNESS" "$@"
+        env PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" \
+            "$PYTHON_DEFAULT" -m "$HARNESS_MODULE" "$@"
         exit $?
         ;;
 esac

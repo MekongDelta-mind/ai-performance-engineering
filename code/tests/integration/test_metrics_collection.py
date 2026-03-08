@@ -5,14 +5,10 @@ serialized properly, and can be compared.
 """
 
 import pytest
-import sys
 import json
 from pathlib import Path
 
-# Add repo root to path
 repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.env import apply_env_defaults
 apply_env_defaults()

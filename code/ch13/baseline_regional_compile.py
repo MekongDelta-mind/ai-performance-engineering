@@ -7,18 +7,12 @@ lengths change, providing a baseline for regional compilation.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-# Ensure repo root is importable when running as a script
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
 from core.benchmark.verification_mixin import VerificationPayloadMixin

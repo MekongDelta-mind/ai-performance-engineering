@@ -11,13 +11,11 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-import importlib.util
 import json
 import math
 import multiprocessing
 import os
 import statistics
-import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -25,11 +23,12 @@ from typing import Any
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 from core.harness.benchmark_harness import lock_gpu_clocks
+from labs.nvfp4_gemm.local_eval_loader import (
+    load_reference_module,
+    load_submission_module,
+    load_utils_module,
+)
 
 NUM_ITERATIONS_PER_BENCHMARK = 50
 DEFAULT_WARMUP_MAX_REPEATS = 1000
@@ -94,15 +93,6 @@ def _clone_data(x: Any) -> Any:
     return x
 
 
-def _load_module(path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Failed to load module from {path}")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
 _WORKER_SUBMISSION: Any | None = None
 _WORKER_REFERENCE: Any | None = None
 _WORKER_UTILS: Any | None = None
@@ -116,18 +106,21 @@ def _init_worker(submission_file: str, reference_file: str, utils_file: str) -> 
     reference_path = Path(reference_file).resolve()
     utils_path = Path(utils_file).resolve()
 
-    # Ensure sibling imports like `task` resolve.
-    for parent in {submission_path.parent, reference_path.parent, utils_path.parent}:
-        p = str(parent)
-        if p not in sys.path:
-            sys.path.insert(0, p)
-
     global _WORKER_SUBMISSION
     global _WORKER_REFERENCE
     global _WORKER_UTILS
-    _WORKER_SUBMISSION = _load_module(submission_path, f"submission_worker_{os.getpid()}")
-    _WORKER_REFERENCE = _load_module(reference_path, f"reference_worker_{os.getpid()}")
-    _WORKER_UTILS = _load_module(utils_path, f"utils_worker_{os.getpid()}")
+    _WORKER_UTILS = load_utils_module(utils_path, f"utils_worker_{os.getpid()}")
+    _WORKER_REFERENCE = load_reference_module(
+        reference_path,
+        module_name=f"reference_worker_{os.getpid()}",
+        utils_module=_WORKER_UTILS,
+    )
+    _WORKER_SUBMISSION = load_submission_module(
+        submission_path,
+        module_name=f"submission_worker_{os.getpid()}",
+        reference_module=_WORKER_REFERENCE,
+        utils_module=_WORKER_UTILS,
+    )
 
     set_seed = getattr(_WORKER_UTILS, "set_seed", None)
     if callable(set_seed):

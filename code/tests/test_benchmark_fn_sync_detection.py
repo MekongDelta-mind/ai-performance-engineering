@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
+from pathlib import Path
 import textwrap
 
 from core.benchmark.contract import BenchmarkContract
@@ -13,6 +15,16 @@ from core.harness.validity_checks import (
 def _parse_class(source: str) -> ast.ClassDef:
     tree = ast.parse(textwrap.dedent(source))
     return next(node for node in ast.walk(tree) if isinstance(node, ast.ClassDef))
+
+
+def _load_fixture_module(relative_path: str):
+    repo_root = Path(__file__).resolve().parent.parent
+    module_path = repo_root / relative_path
+    spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_contract_warns_on_sync_inside_benchmark_fn() -> None:
@@ -364,16 +376,38 @@ def test_runtime_antipattern_check_detects_same_class_helper_antipattern() -> No
     assert any("regenerates random inputs" in finding for finding in findings)
 
 
+def test_runtime_antipattern_check_detects_imported_helper_function_antipattern() -> None:
+    module = _load_fixture_module("tests/fixtures_contract/imported_helper_function_entry.py")
+    bench = module.get_benchmark()
+
+    ok, findings = check_benchmark_fn_antipatterns(bench.benchmark_fn)
+
+    assert not ok
+    assert any("regenerates random inputs" in finding for finding in findings)
+
+
+def test_runtime_antipattern_check_detects_imported_helper_object_antipattern() -> None:
+    module = _load_fixture_module("tests/fixtures_contract/imported_helper_object_entry.py")
+    bench = module.get_benchmark()
+
+    ok, findings = check_benchmark_fn_antipatterns(bench.benchmark_fn)
+
+    assert not ok
+    assert any(".cpu()" in finding for finding in findings)
+
+
 def test_runtime_antipattern_check_detects_host_transfer() -> None:
     class AntiPatternBench:
         def benchmark_fn(self) -> None:
             value.cpu()
+            value.item()
             value.to("cpu")
 
     ok, findings = check_benchmark_fn_antipatterns(AntiPatternBench().benchmark_fn)
 
     assert not ok
     assert any(".cpu()" in finding for finding in findings)
+    assert any(".item()" in finding for finding in findings)
     assert any(".to('cpu')" in finding for finding in findings)
 
 

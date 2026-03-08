@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 import torch
-
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.env import apply_env_defaults
 apply_env_defaults()
@@ -26,14 +21,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def _write_benchmark(path: Path) -> None:
-    code = f"""\
-import sys
-from pathlib import Path
-
-repo_root = Path({str(repo_root)!r})
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
+    code = """\
 import torch
 from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
@@ -52,8 +40,10 @@ class SimpleMatmulBenchmark(VerificationPayloadMixin, BaseBenchmark):
         torch.manual_seed(42)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(42)
-        self.input = torch.randn(128, 128, device=self.device, dtype=torch.float16)
-        self.weight = torch.randn(128, 128, device=self.device, dtype=torch.float16)
+        # Keep the synthetic workload large enough that timing cross-validation
+        # remains stable under the real harness.
+        self.input = torch.randn(1024, 1024, device=self.device, dtype=torch.float16)
+        self.weight = torch.randn(1024, 1024, device=self.device, dtype=torch.float16)
 
     def benchmark_fn(self) -> None:
         if self.input is None or self.weight is None:
@@ -64,16 +54,21 @@ class SimpleMatmulBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if self.input is None or self.weight is None or self.output is None:
             raise RuntimeError("benchmark_fn() must run before capture_verification_payload()")
         self._set_verification_payload(
-            inputs={{"input": self.input, "weight": self.weight}},
+            inputs={"input": self.input, "weight": self.weight},
             output=self.output,
             batch_size=self.input.shape[0],
             parameter_count=0,
-            precision_flags={{"fp16": True, "bf16": False, "fp8": False, "tf32": False}},
+            precision_flags={"fp16": True, "bf16": False, "fp8": False, "tf32": False},
             output_tolerance=(1e-3, 1e-3),
         )
 
     def get_config(self) -> BenchmarkConfig:
-        return BenchmarkConfig(iterations=5, warmup=5)
+        return BenchmarkConfig(
+            iterations=5,
+            warmup=5,
+            full_device_sync=True,
+            timing_method="wall_clock",
+        )
 
 
 def get_benchmark() -> BaseBenchmark:
@@ -82,7 +77,10 @@ def get_benchmark() -> BaseBenchmark:
     path.write_text(code, encoding="utf-8")
 
 
-def test_bench_commands_writes_manifest(tmp_path: Path) -> None:
+def test_bench_commands_writes_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     bench_root = tmp_path / "bench_root"
     chapter_dir = bench_root / "ch01"
     chapter_dir.mkdir(parents=True)
@@ -91,6 +89,10 @@ def test_bench_commands_writes_manifest(tmp_path: Path) -> None:
     _write_benchmark(chapter_dir / "optimized_manifest_demo.py")
 
     artifacts_dir = tmp_path / "artifacts"
+    # This test validates manifest persistence, not host isolation enforcement.
+    # Allow foreign GPU workloads so an unrelated local vLLM service does not make
+    # the integration test nondeterministic on shared development hosts.
+    monkeypatch.setenv("AISP_ALLOW_FOREIGN_GPU_PROCESSES", "1")
     _execute_benchmarks(
         targets=["ch01:manifest_demo"],
         bench_root=bench_root,

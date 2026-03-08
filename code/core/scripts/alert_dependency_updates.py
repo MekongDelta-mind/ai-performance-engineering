@@ -11,22 +11,22 @@ Supports multiple notification channels:
 
 Usage:
     # Console only (default)
-    python core/scripts/alert_dependency_updates.py
+    python -m core.scripts.alert_dependency_updates
 
     # Slack webhook
-    python core/scripts/alert_dependency_updates.py --slack-webhook https://hooks.slack.com/services/XXX
+    python -m core.scripts.alert_dependency_updates --slack-webhook https://hooks.slack.com/services/XXX
 
     # Email
-    python core/scripts/alert_dependency_updates.py --email admin@example.com --smtp-server smtp.example.com
+    python -m core.scripts.alert_dependency_updates --email admin@example.com --smtp-server smtp.example.com
 
     # Multiple channels
-    python core/scripts/alert_dependency_updates.py --slack-webhook $SLACK_URL --email admin@example.com
+    python -m core.scripts.alert_dependency_updates --slack-webhook $SLACK_URL --email admin@example.com
 
     # Write status to file (for dashboard)
-    python core/scripts/alert_dependency_updates.py --status-file /tmp/dep_status.json
+    python -m core.scripts.alert_dependency_updates --status-file /tmp/dep_status.json
 
     # Quiet mode (only alert if updates available)
-    python core/scripts/alert_dependency_updates.py --quiet --slack-webhook $SLACK_URL
+    python -m core.scripts.alert_dependency_updates --quiet --slack-webhook $SLACK_URL
 
 Environment variables:
     SLACK_WEBHOOK_URL - Default Slack webhook URL
@@ -37,7 +37,7 @@ Environment variables:
     SMTP_PASSWORD - SMTP password (optional)
 
 Cron example (check daily at 9am):
-    0 9 * * * cd /path/to/code && python core/scripts/alert_dependency_updates.py --quiet --slack-webhook $SLACK_URL
+    0 9 * * * cd /path/to/code && python -m core.scripts.alert_dependency_updates --quiet --slack-webhook $SLACK_URL
 """
 
 from __future__ import annotations
@@ -78,12 +78,9 @@ class UpdateStatus:
 
 def check_updates() -> UpdateStatus:
     """Run the version checker and return status."""
-    script_dir = Path(__file__).resolve().parent
-    project_root = script_dir.parent
-    
-    # Import the checker
-    sys.path.insert(0, str(script_dir))
-    from check_upstream_versions import (
+    project_root = Path(__file__).resolve().parents[2]
+
+    from core.scripts.check_upstream_versions import (
         get_current_versions,
         check_cutlass_updates,
         check_transformer_engine_updates,
@@ -421,4 +418,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

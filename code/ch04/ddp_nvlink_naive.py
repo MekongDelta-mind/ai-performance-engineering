@@ -25,6 +25,7 @@ class BaselineDdpNvlinkNaiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().__init__()
         self.models: List[nn.Linear] = []
         self._inputs: List[List[torch.Tensor]] = []
+        self._allreduce_buffer: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
         self.microbatches = 2
         self.batch_size = 8
@@ -49,6 +50,7 @@ class BaselineDdpNvlinkNaiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
             for model in self.models:
                 micro_inputs.append(torch.randn(self.batch_size, self.hidden, device=model.weight.device))
             self._inputs.append(micro_inputs)
+        self._allreduce_buffer = torch.zeros_like(self.models[0].weight, device=self.models[0].weight.device)
         self._synchronize()
 
     def _simulate_allreduce(self, grads: List[torch.Tensor]) -> None:
@@ -56,7 +58,10 @@ class BaselineDdpNvlinkNaiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         if len(grads) == 1:
             return
         root = grads[0].device
-        buf = torch.zeros_like(grads[0], device=root)
+        buf = self._allreduce_buffer
+        if buf is None:
+            raise RuntimeError("Allreduce buffer not initialized")
+        buf.zero_()
         for g in grads:
             buf.add_(g.to(root))
         buf.mul_(1.0 / len(grads))
@@ -106,6 +111,7 @@ class BaselineDdpNvlinkNaiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def teardown(self) -> None:
         self.models.clear()
         self._inputs = []
+        self._allreduce_buffer = None
         self.output = None
         torch.cuda.empty_cache()
 

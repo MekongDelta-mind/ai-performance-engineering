@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
-import sys
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -17,10 +16,6 @@ from typing import Dict, List, Optional
 
 import torch
 import torch.nn.functional as F
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.optimization.moe_inference import MoeInferenceConfig, SimpleMoEGPT, allocate_kv_cache  # noqa: E402
 
@@ -322,4 +317,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

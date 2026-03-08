@@ -14,14 +14,8 @@ Expected speedup: 1.2-1.5x over Level 2
 
 from __future__ import annotations
 
-import sys
 import time
-from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
-
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 import torch
 import torch.nn as nn

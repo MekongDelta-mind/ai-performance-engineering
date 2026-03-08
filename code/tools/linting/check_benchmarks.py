@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
 """Thin wrapper to run the core benchmark linter."""
 
+from __future__ import annotations
+
+import os
+import subprocess
 import sys
 from pathlib import Path
 
-repo_root = Path(__file__).resolve().parents[2]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
-from core.scripts.linting.check_benchmarks import main
+def main() -> int:
+    repo_root = Path(__file__).resolve().parents[2]
+    env = dict(os.environ)
+    pythonpath = [str(repo_root)]
+    existing = env.get("PYTHONPATH", "")
+    if existing:
+        pythonpath.extend(part for part in existing.split(os.pathsep) if part)
+    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(pythonpath))
+    result = subprocess.run(
+        [sys.executable, "-m", "core.scripts.linting.check_benchmarks", *sys.argv[1:]],
+        env=env,
+    )
+    return int(result.returncode)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

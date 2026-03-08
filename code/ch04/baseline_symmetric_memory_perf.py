@@ -24,6 +24,7 @@ class BaselineSymmetricMemoryPerfBenchmark(VerificationPayloadMixin, BaseBenchma
         self.numel = int((size_mb * 1024 * 1024) / 4)  # float32
         self.tensor: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._copy_buffer: Optional[torch.Tensor] = None
         self._last_avg_ms = 0.0
         self._bytes_transferred = 0.0
         self._pending_timing_pair: Optional[tuple[torch.cuda.Event, torch.cuda.Event]] = None
@@ -36,6 +37,7 @@ class BaselineSymmetricMemoryPerfBenchmark(VerificationPayloadMixin, BaseBenchma
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
         self.tensor = torch.randn(self.numel, device=self.device, dtype=torch.float32)
+        self._copy_buffer = torch.empty_like(self.tensor)
         self._verify_input = self.tensor[: 256 * 256].view(256, 256).detach()
         torch.cuda.synchronize(self.device)
 
@@ -47,7 +49,9 @@ class BaselineSymmetricMemoryPerfBenchmark(VerificationPayloadMixin, BaseBenchma
         end = torch.cuda.Event(enable_timing=True)
 
         start.record()
-        output = torch.empty_like(self.tensor)
+        output = self._copy_buffer
+        if output is None:
+            raise RuntimeError("Copy buffer not initialized")
         output.copy_(self.tensor, non_blocking=False)
         end.record()
         self._pending_timing_pair = (start, end)
@@ -94,6 +98,7 @@ class BaselineSymmetricMemoryPerfBenchmark(VerificationPayloadMixin, BaseBenchma
     def teardown(self) -> None:
         self.tensor = None
         self.output = None
+        self._copy_buffer = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 

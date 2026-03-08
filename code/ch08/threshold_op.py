@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
 
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
-
 """Branch-free ReLU-style threshold operation example referenced in Chapter 8."""
 
 import torch
@@ -33,4 +24,3 @@ if __name__ == "__main__":
     if not torch.cuda.is_available():
         raise SystemExit("CUDA device required for threshold_op demo.")
     main()
-

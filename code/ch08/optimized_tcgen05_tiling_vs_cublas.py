@@ -2,13 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 import torch
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from ch08.tcgen05_tiling_vs_cublas_benchmark_base import Tcgen05TilingVsCublasBase
 from core.harness.benchmark_harness import BaseBenchmark

@@ -1,11 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-import sys
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.generate_mcp_docs import END_MARKER, START_MARKER, render_mcp_tool_block
 
@@ -21,4 +17,4 @@ def test_mcp_tools_doc_is_current():
     content = doc_path.read_text(encoding="utf-8")
     generated = render_mcp_tool_block().strip()
     existing = _extract_block(content)
-    assert existing == generated, "docs/mcp_tools.md is out of date; run scripts/generate_mcp_docs.py"
+    assert existing == generated, "docs/mcp_tools.md is out of date; run python -m scripts.generate_mcp_docs"

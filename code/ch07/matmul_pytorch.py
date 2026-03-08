@@ -1,21 +1,7 @@
 from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """PyTorch naive vs vectorized matmul benchmark."""
 
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-
-import time
 import torch
 
 M = 512
@@ -40,6 +26,8 @@ def benchmark(op) -> float:
 
 
 def main() -> None:
+    if not torch.cuda.is_available():
+        raise SystemExit("CUDA is required for ch07.matmul_pytorch")
     torch.cuda.init()
     naive_time = benchmark(lambda x, y: torch.einsum("ik,kj->ij", x, y))
     optimized_time = benchmark(lambda x, y: torch.matmul(x, y))

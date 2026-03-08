@@ -1,16 +1,12 @@
 """Dynamic allocator retry helper for Chapter 19."""
 
 from __future__ import annotations
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-
 import argparse
 import contextlib
 import gc
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -107,10 +103,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-

@@ -26,14 +26,9 @@ Author: Blackwell Optimization Project
 import pytest
 import torch
 import torch.nn as nn
-import sys
 import os
-from pathlib import Path
 
 from core.utils.compile_utils import enable_tf32
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Prefer TF32 tensor cores when available using the shared helper.
 enable_tf32()

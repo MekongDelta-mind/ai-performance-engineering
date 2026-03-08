@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-
-from pathlib import Path
 
 """
 NVSHMEM vs NCCL Benchmark (Conceptual)
@@ -29,7 +21,6 @@ Usage:
 """
 
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.optimization.symmetric_memory_patch import (
     maybe_create_symmetric_memory_handle,
@@ -37,7 +28,7 @@ from core.optimization.symmetric_memory_patch import (
 )
 
 try:
-    from distributed_helper import setup_single_gpu_env
+    from ch04.distributed_helper import setup_single_gpu_env
 except ImportError:
     def setup_single_gpu_env():
         if "RANK" not in os.environ:
@@ -51,7 +42,6 @@ except ImportError:
 import argparse
 import datetime
 import math
-import os
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -223,13 +213,14 @@ def _measure_symmetric_broadcast(bytes_per_rank: int, iterations: int) -> Option
 def sweep_sizes(min_bytes: int, max_bytes: int, steps: int) -> List[int]:
     if steps <= 1:
         return [min_bytes]
-    ratios = torch.logspace(
-        start=math.log10(min_bytes),
-        end=math.log10(max_bytes),
-        steps=steps,
-        base=10.0,
-    )
-    return [int(r.item()) for r in ratios]
+    start_exp = math.log10(min_bytes)
+    end_exp = math.log10(max_bytes)
+    if steps == 2:
+        return [min_bytes, max_bytes]
+    return [
+        int(round(10 ** (start_exp + (end_exp - start_exp) * idx / (steps - 1))))
+        for idx in range(steps)
+    ]
 
 
 def benchmark(args: argparse.Namespace) -> Dict[str, List[BenchmarkResult]]:

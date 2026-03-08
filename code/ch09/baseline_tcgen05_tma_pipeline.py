@@ -2,14 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import sys
-
 import torch
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from core.benchmark.tcgen05_matmul_base import Tcgen05MatmulBenchmarkBase
 from core.benchmark.tcgen05_requirements import ensure_tcgen05_supported

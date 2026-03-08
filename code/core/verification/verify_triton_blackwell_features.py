@@ -12,19 +12,13 @@ Tests Triton's support for SM100 (Blackwell) features including:
 - torch.compile integration
 
 Usage:
-    python verify_triton_blackwell_features.py [--verbose] [--benchmark]
+    python -m core.verification.verify_triton_blackwell_features [--verbose] [--benchmark]
 """
 
 import argparse
 import sys
 import time
-from pathlib import Path
 from typing import Dict, List, Tuple, Optional
-
-# Add repo root to path
-repo_root = Path(__file__).parent.parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 # Apply compile patches before importing torch/triton
 from core.utils import compile_utils as _compile_utils_patch  # noqa: F401
@@ -627,4 +621,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

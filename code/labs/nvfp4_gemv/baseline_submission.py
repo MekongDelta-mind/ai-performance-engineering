@@ -1,6 +1,10 @@
 import torch
-from task import input_t, output_t
-from utils import make_match_reference
+try:
+    from task import input_t, output_t
+    from utils import make_match_reference
+except ModuleNotFoundError:
+    from labs.nvfp4_gemv.task import input_t, output_t
+    from labs.nvfp4_gemv.utils import make_match_reference
 
 # Scaling factor vector size
 sf_vec_size = 16

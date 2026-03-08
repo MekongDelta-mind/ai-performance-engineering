@@ -13,10 +13,6 @@ import warnings
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Add code root to path
-code_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(code_root))
-
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness
 
 

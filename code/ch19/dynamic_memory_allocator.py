@@ -8,9 +8,12 @@ import importlib
 import os
 import pickle
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Callable
+
+from core.utils.python_entrypoints import build_python_entry_command, build_repo_python_env
 
 
 def _resolve_factory(factory_path: str) -> Callable[[], Any]:
@@ -24,11 +27,11 @@ def _spawn_with_allocator(factory_path: str, request_blob: bytes, allocator_conf
         tmp.write(request_blob)
         req_path = tmp.name
 
-    env = os.environ.copy()
+    repo_root = Path(__file__).resolve().parent.parent
+    env = build_repo_python_env(repo_root, base_env=os.environ)
     env["PYTORCH_ALLOC_CONF"] = allocator_conf
 
-    helper = Path(__file__).with_name("_allocator_worker.py")
-    cmd = [sys.executable, str(helper), factory_path, req_path]
+    cmd = build_python_entry_command(module_name="ch19._allocator_worker", argv=[factory_path, req_path])
     completed = subprocess.run(cmd, check=True, env=env, capture_output=True)
     os.unlink(req_path)
     return completed.stdout
@@ -54,10 +57,3 @@ def generate_with_allocator_retry(
 
 if __name__ == "__main__":
     print("dynamic_memory_allocator helper module; see book for usage.")
-import pathlib
-import sys
-
-_EXTRAS_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(_EXTRAS_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_EXTRAS_REPO_ROOT))
-

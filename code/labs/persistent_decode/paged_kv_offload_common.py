@@ -31,12 +31,8 @@ import torch
 import torch.nn.functional as F
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.harness.arch_config import prefer_sdpa_backends
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
-
-try:  # Prefer the Blackwell-aware SDPA selector when available.
-    from arch_config import prefer_sdpa_backends  # type: ignore
-except Exception:  # pragma: no cover - defensive import
-    prefer_sdpa_backends = None  # type: ignore
 
 
 

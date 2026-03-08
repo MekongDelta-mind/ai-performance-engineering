@@ -3,6 +3,44 @@
 ## Summary
 Demonstrates Blackwell-friendly persistent decode kernels and TMA-powered prefill paths, all validated via Python harnesses plus CUDA/Triton implementations.
 
+## Problem
+Decode and prefill paths often die by launch overhead, staging overhead, or both. This lab exists to show which of those costs persistent kernels, CUDA Graphs, and TMA actually remove on the same logical workload.
+
+## Baseline Path
+- naive decode loops and non-persistent prefill paths
+- higher launch overhead
+- less efficient staging into shared memory
+
+## Optimized Path
+- persistent decode kernels
+- CUDA Graph replay where it helps
+- TMA-powered prefill variants for lower staging cost
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260302_full_strict_all_singlegpu/`:
+
+| Target | Baseline | Optimized | Measured delta | Best optimization |
+| --- | ---: | ---: | ---: | --- |
+| `persistent_decode` | `1.411 ms` | `0.118 ms` | `11.94x` | `graphs` |
+| `tma_prefill_decode` | `1.588 ms` | `0.931 ms` | `1.71x` | `optimized_tma_prefill_decode` |
+
+The decode win is a launch-overhead story. The prefill win is a staging/data-movement story. This lab is more useful when you keep those two categories separate.
+
+## Profiler Evidence
+Use deep-dive runs when you want to see launch count and staging behavior instead of only the wall-clock delta:
+
+```bash
+python -m cli.aisp bench run --targets labs/persistent_decode:persistent_decode --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/persistent_decode:tma_prefill_decode --profile deep_dive --single-gpu
+```
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/persistent_decode
+python -m cli.aisp bench run --targets labs/persistent_decode --profile minimal
+python labs/persistent_decode/optimized_persistent_decode_graphs.py --iterations 50
+```
+
 ## Learning Goals
 - Contrast naive decode loops against persistent kernels that pin CTAs per sequence.
 - Adopt TMA-based prefill to stream activations into shared memory with minimal latency.

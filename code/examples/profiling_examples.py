@@ -5,12 +5,6 @@ GPU Profiling Suite Examples
 Demonstrates how to use the profiling tools for performance analysis.
 """
 
-import sys
-from pathlib import Path
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import torch
 import torch.nn as nn
 
@@ -461,6 +455,4 @@ if __name__ == "__main__":
         print("\nExamples:")
         for i, (name, _) in enumerate(examples, 1):
             print(f"  {i}. {name}")
-
-
 

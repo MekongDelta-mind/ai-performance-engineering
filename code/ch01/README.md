@@ -18,7 +18,7 @@ Establishes the baseline benchmarking discipline with a simple training-loop goo
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch01/compare.py --profile none
+python -m ch01.compare
 python -m cli.aisp bench list-targets --chapter ch01
 python -m cli.aisp bench run --targets ch01 --profile minimal
 ```
@@ -27,7 +27,7 @@ python -m cli.aisp bench run --targets ch01 --profile minimal
 - Expectation baselines live next to each chapter in `expectations_{hardware_key}.json`; refresh with `--update-expectations` after validating new hardware. In portable mode, add `--allow-portable-expectations-update` to write expectation files explicitly.
 
 ## Validation Checklist
-- `python compare.py` reports optimized_performance achieving >=2x tokens/sec vs the baseline on default microbatch sizes.
+- `python -m ch01.compare` reports the chapter baseline/optimized training loop pair through the shared harness with consistent workloads.
 - Running `make && ./baseline_gemm_sm100` vs `./optimized_gemm_batched_sm100` shows a substantial drop in launch count and total runtime.
 
 ## Notes

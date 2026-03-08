@@ -6,12 +6,7 @@ the `tmem_cutlass` example name within Chapter 10 (no cross-chapter aliasing).
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-
-repo_root = Path(__file__).parent.parent
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
 
 from ch10.baseline_matmul_tcgen05 import BaselineMatmulTCGen05Benchmark
 

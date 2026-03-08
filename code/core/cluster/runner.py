@@ -4,6 +4,7 @@ import socket
 import subprocess
 import time
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -571,3 +572,86 @@ def promote_cluster_run(
         rc = payload.get("returncode")
         payload["error"] = f"promote run failed (returncode={rc})"
     return payload
+
+
+def watch_cluster_run_for_promotion(
+    *,
+    run_id: str,
+    pid: int,
+    label: str = "localhost",
+    allow_run_ids: Optional[List[str]] = None,
+    publish_report_path: Optional[str] = None,
+    publish_notes_path: Optional[str] = None,
+    skip_render_localhost_report: bool = False,
+    skip_validate_localhost_report: bool = False,
+    cleanup: bool = False,
+    poll_interval_seconds: float = 30.0,
+) -> Dict[str, Any]:
+    """Attach a detached watcher that promotes a completed run once required artifacts are present."""
+    run_id_value = (run_id or "").strip()
+    if not run_id_value:
+        return {"success": False, "error": "run_id is required"}
+    if not isinstance(pid, int) or pid <= 0:
+        return {"success": False, "error": "pid must be a positive integer"}
+
+    root = _repo_root()
+    cluster_root = _cluster_root()
+    script = cluster_root / "scripts" / "watch_run_for_promotion.py"
+    run_dir = _cluster_run_dir(run_id_value)
+    if not script.exists():
+        return {"success": False, "error": f"Missing script: {script}"}
+    if not run_dir.exists():
+        return {"success": False, "error": f"Missing run dir: {run_dir}"}
+
+    publish_report_value = (publish_report_path or "cluster/field-report-localhost.md").strip()
+    publish_notes_value = (publish_notes_path or "cluster/field-report-localhost-notes.md").strip()
+    allow = [rid.strip() for rid in (allow_run_ids or []) if isinstance(rid, str) and rid.strip()]
+
+    raw_dir = run_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    launch_log_path = raw_dir / f"{run_id_value}_postrun_promote_watch.launch.log"
+    watch_status_path = raw_dir / f"{run_id_value}_postrun_promote_watch_status.json"
+
+    cmd: List[str] = [
+        sys.executable,
+        str(script),
+        "--run-id",
+        run_id_value,
+        "--pid",
+        str(pid),
+        "--label",
+        label or "localhost",
+        "--publish-report-path",
+        publish_report_value,
+        "--publish-notes-path",
+        publish_notes_value,
+        "--poll-interval-seconds",
+        str(poll_interval_seconds),
+    ]
+    if skip_render_localhost_report:
+        cmd.append("--skip-render-localhost-report")
+    if skip_validate_localhost_report:
+        cmd.append("--skip-validate-localhost-report")
+    if cleanup:
+        cmd.append("--cleanup")
+    for rid in allow:
+        cmd.extend(["--allow-run-id", rid])
+
+    with launch_log_path.open("a", encoding="utf-8") as log_handle:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(root),
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+
+    return {
+        "success": True,
+        "run_id": run_id_value,
+        "watcher_pid": proc.pid,
+        "watch_command": cmd,
+        "watch_status_path": str(watch_status_path),
+        "launch_log_path": str(launch_log_path),
+        **_cluster_run_layout(run_id_value),
+    }

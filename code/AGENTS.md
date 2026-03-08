@@ -370,7 +370,7 @@
 ## Interface Parity & Documentation Consistency (CRITICAL)
 - Keep CLI, MCP, dashboard API, and docs in sync. If you add or change a capability, update all surfaces in the same change.
 - The dashboard API should expose **only** what the dashboard UI currently uses; do not expand API scope without explicit request.
-- Prefer a single source of truth for tool metadata (descriptions, args, defaults). Regenerate `docs/mcp_tools.md` via `scripts/generate_mcp_docs.py` and update `docs/api-reference.md` in the same change to avoid drift.
+- Prefer a single source of truth for tool metadata (descriptions, args, defaults). Regenerate `docs/mcp_tools.md` via `python -m scripts.generate_mcp_docs` and update `docs/api-reference.md` in the same change to avoid drift.
 - Tool descriptions and argument docs must be precise and agent-friendly: include *when to use*, *not for*, units, defaults, enum choices, and short examples to enable accurate tool selection in chat loops.
 - Postmortem (parity drift): CLI/MCP/docs/dashboard evolved independently, defaults diverged, and no enforced single-source catalog or regeneration step existed. Prevention: keep a single catalog, regenerate docs, and run parity tests whenever tool surfaces change.
 

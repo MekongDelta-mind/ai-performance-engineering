@@ -11,12 +11,10 @@ Tests ONLY the features that are currently functional:
 Does NOT test TMA descriptors (they're broken in CUDA 13.0 driver).
 
 Usage:
-    python verify_working_optimizations.py
+    python -m core.verification.verify_working_optimizations
 """
 
 import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import torch
 import torch.nn as nn
@@ -25,7 +23,7 @@ from typing import Dict
 
 # Import architecture configuration
 try:
-    from arch_config import ArchitectureConfig, configure_optimizations
+    from core.harness.arch_config import ArchitectureConfig, configure_optimizations
     configure_optimizations()
     print("Architecture optimizations configured\n")
 except ImportError:
@@ -328,4 +326,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

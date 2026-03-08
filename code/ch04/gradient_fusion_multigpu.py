@@ -6,29 +6,13 @@ from __future__ import annotations
 import argparse
 import datetime
 import os
-import sys
-from pathlib import Path
 from typing import Tuple
 
 import torch
 import torch.distributed as dist
 
 from core.benchmark.gpu_requirements import require_min_gpus
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-try:
-    from distributed_helper import setup_single_gpu_env
-except ImportError:
-    def setup_single_gpu_env() -> None:
-        if "RANK" not in os.environ:
-            os.environ.setdefault("RANK", "0")
-            os.environ.setdefault("WORLD_SIZE", "1")
-            os.environ.setdefault("MASTER_ADDR", "localhost")
-            os.environ.setdefault("MASTER_PORT", "29500")
-            os.environ.setdefault("LOCAL_RANK", "0")
+from ch04.distributed_helper import setup_single_gpu_env
 
 
 def init_distributed() -> Tuple[int, int, torch.device]:

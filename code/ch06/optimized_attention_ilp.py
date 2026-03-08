@@ -46,6 +46,7 @@ class OptimizedAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.tokens = self.workload.attention_tokens
         self._last_sum: Optional[torch.Tensor] = None
         self.streams = [torch.cuda.Stream() for _ in range(2)]
+        self.partial_sums: list[torch.Tensor] = []
         token_count = self.batch * self.tokens
         self._workload = WorkloadMetadata(
             requests_per_iteration=1.0,
@@ -81,17 +82,23 @@ class OptimizedAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
             device=self.device,
             dtype=torch.float16,
         )
+        self.partial_sums = [
+            torch.zeros(1, device=self.device, dtype=torch.float16)
+            for _ in self.streams
+        ]
         self._synchronize()
     
     def benchmark_fn(self) -> None:
         """Benchmark: Attention with high ILP optimization."""
         assert self.qkv is not None and self.out_proj is not None and self.input is not None
+        assert len(self.partial_sums) == len(self.streams)
         with self._nvtx_range("optimized_attention_ilp"):
             with torch.no_grad():
                 chunks = self.input.chunk(len(self.streams), dim=0)
-                self._last_sum = torch.zeros(1, device=self.device, dtype=self.input.dtype)
+                for partial in self.partial_sums:
+                    partial.zero_()
 
-                for stream, chunk in zip(self.streams, chunks):
+                for stream, chunk, partial_sum in zip(self.streams, chunks, self.partial_sums):
                     with torch.cuda.stream(stream):
                         qkv = self.qkv(chunk)
                         q, k, v = qkv.chunk(3, dim=-1)
@@ -106,7 +113,12 @@ class OptimizedAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
                         )
                         merged = attn.transpose(1, 2).reshape(chunk.size(0), chunk.size(1), self.embed_dim)
                         out = self.out_proj(merged)
-                        self._last_sum += out.sum()
+                        partial_sum.add_(out.sum())
+
+                current_stream = torch.cuda.current_stream()
+                for stream in self.streams:
+                    current_stream.wait_stream(stream)
+                self._last_sum = torch.stack(self.partial_sums).sum(dim=0)
 
 
     def capture_verification_payload(self) -> None:
@@ -126,6 +138,7 @@ class OptimizedAttentionILPBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.qkv = None
         self.out_proj = None
         self.input = None
+        self.partial_sums = []
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:

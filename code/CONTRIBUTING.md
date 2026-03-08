@@ -146,8 +146,6 @@ def get_config(self):
 ```python
 # Standard library
 from __future__ import annotations
-import sys
-from pathlib import Path
 from typing import Optional, Dict, Any
 
 # Third-party
@@ -155,7 +153,6 @@ import torch
 import torch.nn as nn
 
 # Local
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.harness.benchmark_harness import BaseBenchmark
 from core.benchmark.metrics import compute_memory_transfer_metrics
 ```

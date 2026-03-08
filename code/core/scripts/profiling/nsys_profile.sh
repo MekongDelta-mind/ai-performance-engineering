@@ -6,15 +6,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 PYTHON_BIN="${PYTHON:-python3}"
 
-BASE_TRACE_RAW="$($PYTHON_BIN -c "import sys; sys.path.insert(0, '$SCRIPT_DIR'); from metrics_config import BASE_NSYS_TRACE_MODULES; print(','.join(BASE_NSYS_TRACE_MODULES))" 2>/dev/null || true)"
+BASE_TRACE_RAW="$(PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" $PYTHON_BIN -c "from core.scripts.harness.metrics_config import BASE_NSYS_TRACE_MODULES; print(','.join(BASE_NSYS_TRACE_MODULES))" 2>/dev/null || true)"
 BASE_TRACE="${BASE_TRACE_RAW//$'\n'/}"
 if [[ -z "$BASE_TRACE" ]]; then
     BASE_TRACE="cuda,nvtx,osrt,cublas,cudnn,nvlink"
 fi
 
-BASE_EXTRA_RAW="$($PYTHON_BIN -c "import sys; sys.path.insert(0, '$SCRIPT_DIR'); from metrics_config import BASE_NSYS_EXTRA_ARGS; print(' '.join(BASE_NSYS_EXTRA_ARGS))" 2>/dev/null || true)"
+BASE_EXTRA_RAW="$(PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}" $PYTHON_BIN -c "from core.scripts.harness.metrics_config import BASE_NSYS_EXTRA_ARGS; print(' '.join(BASE_NSYS_EXTRA_ARGS))" 2>/dev/null || true)"
 BASE_EXTRA_RAW="${BASE_EXTRA_RAW//$'\n'/}"
 BASE_EXTRA_OPTS=()
 if [[ -n "$BASE_EXTRA_RAW" ]]; then

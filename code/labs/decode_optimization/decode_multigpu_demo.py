@@ -8,25 +8,19 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 import time
-from pathlib import Path
 from typing import Optional
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from core.benchmark.verification_mixin import VerificationPayloadMixin  # noqa: E402
-from core.harness.benchmark_harness import (  # noqa: E402
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.harness.benchmark_harness import (
     BaseBenchmark,
     BenchmarkConfig,
     LaunchVia,
     TorchrunLaunchSpec,
 )
-from labs.decode_optimization.decode_common import DecodeBenchmark, DecodeConfig  # noqa: E402
+from labs.decode_optimization.decode_common import DecodeBenchmark, DecodeConfig
 
 
 def _resolve_world_size() -> int:
@@ -72,9 +66,8 @@ class MultiGPUDecodeBenchmark(VerificationPayloadMixin, BaseBenchmark):
         }
 
     def get_torchrun_spec(self, config: BenchmarkConfig | None = None) -> TorchrunLaunchSpec:
-        script_path = Path(__file__).resolve()
         return TorchrunLaunchSpec(
-            script_path=script_path,
+            module_name="labs.decode_optimization.decode_multigpu_demo",
             script_args=[],
             env={
                 "NCCL_DEBUG": "WARN",

@@ -27,7 +27,7 @@ Demonstrates how to scale training and inference across multiple Blackwell GPUs 
 ## Running the Benchmarks
 Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python ch04/compare.py --profile none
+python -m ch04.compare
 python -m cli.aisp bench list-targets --chapter ch04
 python -m cli.aisp bench run --targets ch04 --profile minimal
 ```

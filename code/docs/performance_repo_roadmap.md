@@ -29,11 +29,11 @@ The target state is:
 ## Current Status
 | Phase | Status | Notes |
 | --- | --- | --- |
-| Tier-1 canonical benchmark suite | In progress | `python -m cli.aisp bench run-tier1` now exists, backed by `configs/benchmark_suites/tier1.yaml` and `core/benchmark/suites/tier1.py`. |
-| Historical trend and regression artifacts | In progress | `summary.json`, `regression_summary.md`, `regression_summary.json`, `trend_snapshot.json`, and `artifacts/history/tier1/index.json` are implemented. |
-| Performance anti-pattern checks | In progress | Cross-module helper traversal is live in `core/benchmark/hot_path_checks.py`; repo-wide sync-only gate is clean, and the broader audit is now exposing real remaining debt. |
+| Tier-1 canonical benchmark suite | In progress | `python -m cli.aisp bench run-tier1` exists, backed by `configs/benchmark_suites/tier1.yaml` and `core/benchmark/suites/tier1.py`, and `.github/workflows/tier1-nightly.yml` now provides the recurring CI entrypoint. The first real canonical local run is currently blocked by a root-owned `VLLM::EngineCore` process on the only local B200. |
+| Historical trend and regression artifacts | In progress | `summary.json`, `regression_summary.md`, `regression_summary.json`, `trend_snapshot.json`, and `artifacts/history/tier1/index.json` are implemented; the root README now prefers tier-1 history artifacts automatically when they exist. |
+| Performance anti-pattern checks | In progress | Cross-module helper traversal is live in `core/benchmark/hot_path_checks.py`, and the full repo-wide benchmark contract audit is blocking CI again with `856` benchmark entrypoints clean. |
 | Shared benchmark bases | In progress | High-traffic families have already been moved onto shared/common benchmark scaffolding; more consolidation is still possible. |
-| Evidence-first docs | In progress | Root README plus the first benchmark-facing lab/chapter READMEs have been rewritten around measured deltas and reproducible commands. |
+| Evidence-first docs | In progress | Root README plus the benchmark-facing lab/chapter READMEs are now being generated around measured deltas and reproducible commands; `ch04`, `ch07`, `ch08`, `ch09`, `ch10`, `ch11`, `ch12`, `ch13`, `ch14`, `ch15`, `ch16`, `ch17`, `ch18`, `ch19`, `ch20`, and the priority labs are in that format. |
 
 ## Phase 1: Tier-1 Canonical Benchmark Suite
 ### Objective

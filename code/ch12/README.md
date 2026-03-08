@@ -3,6 +3,52 @@
 ## Summary
 Covers modern CUDA Graph capabilities-conditional capture, graph memory tuning, dynamic parallelism, and work queues-to keep irregular workloads performant without per-launch overhead.
 
+## Problem
+Chapter 12 is where launch overhead and dynamic work management have to justify themselves with measured wins. The useful question is not "can we capture a graph?" but "which graph or dynamic-work techniques actually reduce the real runtime once correctness and workload shape stay fixed?"
+
+## Baseline Path
+- eager launches and more CPU-visible scheduling work
+- less reuse of graph capture or GPU-resident work management
+- easy to inspect, but often too expensive for irregular steady-state workloads
+
+## Optimized Path
+- CUDA Graph replay where the steady-state workload is stable enough
+- fused or GPU-resident queueing/dispatch where it actually removes launch overhead
+- measured through the shared harness instead of hand-timed one-off scripts
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `cuda_graphs` | `529.532 ms` | `125.874 ms` | `4.21x` | graph replay instead of repeated eager launch overhead |
+| `kernel_fusion` | `1.776 ms` | `0.654 ms` | `2.72x` | fewer launches through fused graph-friendly execution |
+| `work_queue` | `2.100 ms` | `0.442 ms` | `4.75x` | GPU-resident work queue path |
+
+This chapter is useful because it separates "graphs help" from "graphs help on a workload that is actually stable enough to benefit." The work-queue target also keeps the chapter from being only about graph replay.
+
+## Profiler Evidence
+Use deep-dive runs when you want hard evidence for launch reduction and work scheduling changes:
+
+```bash
+python -m cli.aisp bench run --targets ch12:cuda_graphs --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch12:kernel_fusion --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch12:work_queue --profile deep_dive --single-gpu
+```
+
+Those targets answer slightly different questions:
+- `cuda_graphs`: replay payoff
+- `kernel_fusion`: launch-count reduction
+- `work_queue`: GPU-side dynamic dispatch effectiveness
+
+## Repro Commands
+```bash
+python -m ch12.compare
+python -m cli.aisp bench list-targets --chapter ch12
+python -m cli.aisp bench run --targets ch12 --profile minimal
+python -m cli.aisp bench run --targets ch12:cuda_graphs --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Capture steady-state workloads into CUDA Graphs and study the delta vs eager launches.
 - Use conditional nodes and graph memory pools for adaptive pipelines.

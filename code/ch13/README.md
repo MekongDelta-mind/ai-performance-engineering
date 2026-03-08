@@ -3,6 +3,52 @@
 ## Summary
 Focuses on PyTorch-centric optimizations: compiled autograd, memory profiling, FSDP/context/expert parallelism, and FP8/quantization workflows backed by the same harness infrastructure.
 
+## Problem
+Chapter 13 is where high-level PyTorch optimizations have to prove they are doing more than rearranging framework overhead. The useful question is not "can PyTorch do this optimization?" but "which profiling, compilation, precision, and memory changes actually improve the workload under the shared harness?"
+
+## Baseline Path
+- eager or less-optimized PyTorch execution
+- higher-overhead cache, precision, and dataloader paths
+- easier to debug, but often too expensive once memory and framework overhead dominate
+
+## Optimized Path
+- compiled, quantized, or allocator-aware PyTorch paths where they produce a real measured benefit
+- lower-overhead cache and attention paths
+- still benchmarked through the same harness contract, so the numbers stay comparable to the lower-level chapters
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `kv_cache_naive` | `1772.850 ms` | `40.022 ms` | `44.30x` | dramatically better KV-cache path inside the same PyTorch-facing workflow |
+| `autograd_standard` | `1.644 ms` | `0.204 ms` | `8.04x` | compiled/optimized autograd path |
+| `precisionfp8_te` | `2.800 ms` | `0.542 ms` | `5.17x` | Transformer Engine FP8 path |
+
+This chapter is one of the easiest places to fool yourself with framework overhead. That is why the benchmark contract and side-by-side baseline/optimized structure matter here more than almost anywhere else.
+
+## Profiler Evidence
+Use deep-dive runs when you want to see whether the gain came from framework overhead reduction, memory behavior, or the lower-precision path itself:
+
+```bash
+python -m cli.aisp bench run --targets ch13:kv_cache_naive --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch13:autograd_standard --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch13:precisionfp8_te --profile deep_dive --single-gpu
+```
+
+Those targets cover three different PyTorch optimization stories:
+- `kv_cache_naive`: cache-path and memory behavior
+- `autograd_standard`: framework/compile overhead
+- `precisionfp8_te`: lower-precision execution with real library support
+
+## Repro Commands
+```bash
+python -m ch13.compare
+python -m cli.aisp bench list-targets --chapter ch13
+python -m cli.aisp bench run --targets ch13 --profile minimal
+python -m cli.aisp bench run --targets ch13:precisionfp8_te --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Profile PyTorch training loops end-to-end, capturing goodput, memory, and kernel traces.
 - Apply `torch.compile`, regional compilation, and custom allocators to reduce overhead.

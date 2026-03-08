@@ -1,94 +1,76 @@
-# KV Cache Optimization Lab
+# Lab - KV Cache Optimization
 
-**Goal**: Reduce KV cache memory footprint using FP8/FP4 quantization for longer context lengths.
+## Summary
+Compares a standard FP16 KV cache path against a compressed KV-cache implementation so longer context lengths fit without treating memory reduction as a free lunch.
 
-## Overview
+## Problem
+KV cache growth is one of the fastest ways to turn a good inference path into an unusable one. This lab exists to measure how much memory the cache optimization actually gives back, and what latency tradeoff you pay to get it.
 
-This lab demonstrates KV cache compression techniques that enable serving longer sequences without running out of GPU memory. Essential for production LLM inference.
+## Baseline Path
+- standard FP16 KV cache
+- simple, high-fidelity, and expensive in HBM
+- useful as the correctness and memory reference
 
-## Key Techniques
+## Optimized Path
+- compressed KV cache with lower memory footprint
+- benchmarked through the same harness path, so the speed/memory tradeoff is explicit
+- designed to answer "does the memory saving justify the latency change?" instead of assuming quantization is always a win
 
-| Technique | Compression | Quality Impact |
-|-----------|-------------|----------------|
-| FP16 baseline | 1× | None |
-| FP8 (E4M3) | 2× | Minimal (<0.1% perplexity) |
-| NVFP4 | 4× | Small (<0.5% perplexity) |
-| Dynamic scaling | - | Preserves accuracy |
+## Measured Delta
+Current validated expectation-backed B200 result from `labs/kv_optimization/expectations_b200.json`:
 
-## Files
+| Target | Baseline | Optimized | Measured delta | Memory change |
+| --- | ---: | ---: | ---: | ---: |
+| `kv_standard` | `3782.365 ms` | `1777.506 ms` | `2.13x` | `49.77%` lower memory |
 
-| File | Description |
-|------|-------------|
-| `__init__.py` | Module exports |
-| `baseline_kv_standard.py` | FP16 KV cache (standard) |
-| `optimized_kv_standard.py` | FP8/FP4 compressed KV cache |
+That run recorded:
+- baseline memory: `32916.315 MB`
+- optimized memory: `16534.378 MB`
 
-## Running
+This lab is useful because it makes the speed/memory tradeoff explicit instead of treating KV compression as a free optimization.
+
+## Profiler Evidence
+The first thing to trust here is the benchmark pair and its recorded memory delta. When you want deeper attribution, run the same target through the harness with profiling enabled:
 
 ```bash
-# Compare memory usage
-python -m cli.aisp bench compare \
-    labs.kv_optimization.baseline_kv_standard \
-    labs.kv_optimization.optimized_kv_standard
-
-# Profile memory
-python labs/kv_optimization/optimized_kv_standard.py
+python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile deep_dive --single-gpu
 ```
 
-## Configuration
-
-```python
-benchmark = OptimizedKVFP8Compressed(
-    batch_size=8,
-    num_layers=32,
-    num_heads=32,
-    head_dim=128,
-    max_seq_length=8192,  # Context length
-    use_fp8=True,         # 2× compression
-    use_fp4=False,        # 4× compression (more aggressive)
-)
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/kv_optimization
+python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile minimal
+python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile deep_dive --single-gpu
 ```
 
-## Memory Savings
+## Learning Goals
+- Measure the latency and memory tradeoff of KV-cache compression instead of optimizing for one metric in isolation.
+- Use the shared harness to keep the baseline and optimized cache paths directly comparable.
+- Validate that memory savings survive the same contract checks as every other repo benchmark.
 
-For a 70B model with 8K context:
+## Directory Layout
+| Path | Description |
+| --- | --- |
+| `baseline_kv_standard.py` | Reference FP16 KV-cache path. |
+| `optimized_kv_standard.py` | Compressed KV-cache path used for the optimized benchmark. |
+| `expectations_{hardware_key}.json` | Stored speedup and memory-savings baselines for the lab. |
 
-| Precision | KV Cache Size | Max Batch |
-|-----------|---------------|-----------|
-| FP16 | 32 GB | 4 |
-| FP8 | 16 GB | 8 |
-| FP4 | 8 GB | 16 |
-
-## Implementation Details
-
-### FP8 Quantization
-```python
-# Per-layer dynamic scaling
-scale = x.abs().max() / 448.0  # E4M3 max value
-x_fp8 = (x / scale).to(torch.float8_e4m3fn)
-
-# Dequantization
-x_restored = x_fp8.to(torch.float16) * scale
+## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
+```bash
+python -m cli.aisp bench list-targets --chapter labs/kv_optimization
+python -m cli.aisp bench run --targets labs/kv_optimization --profile minimal
 ```
+- Targets follow the `labs/kv_optimization:<workload>` naming convention listed by `list-targets`.
+- Use `--target-extra-arg labs/kv_optimization:<workload>="--flag value"` to sweep schedule knobs.
+- Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
+- Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
 
-### Block-wise Scaling
-For better accuracy, use block-wise scaling (128 elements per block):
-```python
-x_blocks = x.view(-1, 128)
-scales = x_blocks.abs().amax(dim=-1, keepdim=True) / 448.0
-x_fp8 = (x_blocks / scales).to(torch.float8_e4m3fn)
-```
+## Validation Checklist
+- `python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile minimal` reports both latency and memory deltas for the pair.
+- The optimized path should reduce memory materially without violating the benchmark contract or correctness checks.
+- `python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile deep_dive --single-gpu` produces profiler artifacts for the same measured path.
 
-## What to Look For
-
-- **Memory reduction**: Compare `torch.cuda.memory_allocated()` before/after
-- **Accuracy**: Monitor perplexity or downstream task metrics
-- **Throughput**: Quantization adds overhead; ensure net speedup
-
-## Related Chapters
-
-- **Ch15**: KV cache management and PagedAttention
-- **Ch19**: NVFP4 and dynamic precision switching
-- **Ch18**: Speculative decoding (benefits from longer context)
-
-
+## Notes
+- This README is now generator-owned; update the source of truth in `core/scripts/refresh_readmes.py`, not the rendered file.
+- The current public numbers come from the stored expectation baseline because there is no newer canonical tier-1 history artifact for this lab yet.

@@ -3,6 +3,49 @@
 ## Summary
 Combines kernel, memory, pipeline, and inference optimizations into holistic case studies: take a baseline pipeline, apply staged improvements, and capture proof-of-benefit artifacts for every major subsystem.
 
+## Problem
+Chapter 20 is where isolated wins have to survive contact with the full stack. The useful question is not "did one optimization help in isolation?" but "what still matters after memory, pipeline, and inference optimizations are stacked together in one end-to-end workload?"
+
+## Baseline Path
+- sequential or minimally optimized end-to-end execution
+- independent subsystems with little cross-stage coordination
+- useful as a proof baseline, but usually leaves bandwidth and overlap on the table
+
+## Optimized Path
+- staged pipeline, memory, and KV-cache optimizations combined into one workload
+- the same harness contract as every other chapter, so the end-to-end gains stay comparable to the lower-level chapters
+- better for answering whether the optimizations compose cleanly instead of fighting each other
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `integrated_kv_cache` | `456.705 ms` | `67.381 ms` | `6.78x` | integrated KV-cache and overlap path |
+| `pipeline_sequential` | `27.927 ms` | `1.683 ms` | `16.60x` | sequential pipeline replaced by coordinated staged execution |
+| `multiple_unoptimized` | `0.616 ms` | `0.234 ms` | `2.63x` | stacked subsystem cleanup versus the intentionally rough composite baseline |
+
+This chapter is the best place to check whether wins compose. A chapter 20 speedup is more meaningful than a microbench speedup when you want to know what survives in a real end-to-end path.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want to see how the end-to-end gain breaks down by subsystem:
+
+```bash
+python -m cli.aisp bench run --targets ch20:integrated_kv_cache --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch20:pipeline_sequential --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch20:multiple_unoptimized --profile deep_dive --single-gpu
+```
+
+That is the right place to answer whether the gain came from overlap, memory movement, or simply removing one obvious bottleneck from the baseline.
+
+## Repro Commands
+```bash
+python -m ch20.compare
+python -m cli.aisp bench list-targets --chapter ch20
+python -m cli.aisp bench run --targets ch20 --profile minimal
+python -m cli.aisp bench run --targets ch20:pipeline_sequential --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Chain memory, pipeline, and KV-cache optimizations together to see cumulative impact.
 - Generate automatic reports that compare baseline vs tuned end-to-end runs.

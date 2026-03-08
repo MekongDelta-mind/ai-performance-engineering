@@ -3,6 +3,52 @@
 ## Summary
 Concentrates on resource balancing: adjust block sizes, registers, and shared memory to keep SMs full while hiding TMEM latency via double buffering, loop unrolling, and async pipelines.
 
+## Problem
+Chapter 8 is where pipeline and occupancy theory has to survive contact with a real kernel. The useful question is not "is occupancy important?" but "which tuning changes actually improve the measured path once register pressure, staging, and pipeline depth all interact?"
+
+## Baseline Path
+- conservative block sizes and staging behavior
+- less overlap between memory movement and compute
+- easier to reason about, but often leaves the SM underfilled or the pipeline underutilized
+
+## Optimized Path
+- occupancy-aware launch and block-shape tuning
+- more aggressive staging or threshold/TMA pipeline behavior where it helps
+- measured through the same harness contract as the rest of the repo, so the gains are not one-off microbench stories
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `threshold` | `3.568 ms` | `0.295 ms` | `12.11x` | better threshold pipeline and staging behavior |
+| `occupancy_tuning` | `0.092 ms` | `0.014 ms` | `6.80x` | launch/block tuning for better resident work |
+| `tcgen05_tiling_vs_cublas` | `0.713 ms` | `0.154 ms` | `4.63x` | better tiling schedule against the baseline path |
+
+This chapter is good for showing that occupancy improvements are usually not isolated wins. They tend to land together with better staging and fewer pipeline stalls.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want to see whether the improvement came from occupancy, staging overlap, or less pipeline idle time:
+
+```bash
+python -m cli.aisp bench run --targets ch08:threshold --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch08:occupancy_tuning --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch08:tcgen05_tiling_vs_cublas --profile deep_dive --single-gpu
+```
+
+Those targets give you three useful slices:
+- `threshold`: threshold/pipeline behavior
+- `occupancy_tuning`: block-shape and resident-work tuning
+- `tcgen05_tiling_vs_cublas`: tiling and tensor-core schedule quality
+
+## Repro Commands
+```bash
+python -m ch08.compare
+python -m cli.aisp bench list-targets --chapter ch08
+python -m cli.aisp bench run --targets ch08 --profile minimal
+python -m cli.aisp bench run --targets ch08:threshold --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Tune occupancy explicitly and observe how register counts limit resident CTAs.
 - Apply double buffering and async staging to overlap DRAM fetch with compute.

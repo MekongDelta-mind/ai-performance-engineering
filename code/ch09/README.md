@@ -3,6 +3,52 @@
 ## Summary
 Explores how to move workloads along the roofline: raise arithmetic intensity with tiling, fuse memory-bound kernels, and deploy CUTLASS/Triton/inline-PTX paths built for Blackwell tensor cores.
 
+## Problem
+Chapter 9 is where roofline reasoning has to cash out in actual kernels. The useful question is not "is this compute-bound or memory-bound?" but "which arithmetic-intensity and fusion changes create a measurable gain once the same harness measures both sides?"
+
+## Baseline Path
+- lower-intensity or less-fused kernels
+- more time spent moving data than doing useful math
+- easier to inspect, but often too far from the hardware roofline
+
+## Optimized Path
+- CUTLASS/Triton/custom-kernel paths with better tiling and reuse
+- fused or higher-intensity schedules that reduce redundant memory work
+- the same benchmark contract as the rest of the repo, so the gains are not script-local illusions
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `cutlass_gemm` | `0.178 ms` | `0.045 ms` | `3.95x` | better GEMM schedule and kernel implementation |
+| `memory_bound` | `3.491 ms` | `0.205 ms` | `17.05x` | less wasted memory movement on a bandwidth-limited workload |
+| `sdpa_attention` | `0.762 ms` | `0.446 ms` | `1.71x` | attention path with improved compute/memory balance |
+
+The right chapter-level read is not that every CUTLASS or Triton change is dramatic. It is that arithmetic-intensity gains and fusion gains show up very differently depending on whether the workload is math-limited or traffic-limited.
+
+## Profiler Evidence
+Use deep-dive runs when you want to see whether the improvement came from better tensor-core utilization, less memory traffic, or simply fewer kernels:
+
+```bash
+python -m cli.aisp bench run --targets ch09:cutlass_gemm --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch09:memory_bound --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch09:sdpa_attention --profile deep_dive --single-gpu
+```
+
+Those three targets give you a balanced view of the chapter:
+- `cutlass_gemm`: math-path scheduling
+- `memory_bound`: bandwidth-path improvement
+- `sdpa_attention`: mixed compute/memory behavior in a more realistic primitive
+
+## Repro Commands
+```bash
+python -m ch09.compare
+python -m cli.aisp bench list-targets --chapter ch09
+python -m cli.aisp bench run --targets ch09 --profile minimal
+python -m cli.aisp bench run --targets ch09:cutlass_gemm --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Separate compute-bound vs memory-bound behaviors and adjust kernels accordingly.
 - Design micro-tiling schedules that balance register pressure with data reuse.

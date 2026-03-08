@@ -3,6 +3,53 @@
 ## Summary
 Demonstrates how to scale training and inference across multiple Blackwell GPUs with NVLink/NVSwitch fabric awareness, NCCL tuning, NVSHMEM collectives, and symmetric memory patterns.
 
+## Problem
+Chapter 4 is where multi-GPU claims have to survive contact with real communication cost. The useful question is not "can this scale?" but "which overlap, fusion, and topology choices actually move the latency or throughput needle under the shared harness?"
+
+## Baseline Path
+- naive or minimally overlapped communication
+- CPU-visible coordination where device-driven orchestration would be cheaper
+- topology-agnostic execution that pays the full cost of bad placement
+
+## Optimized Path
+- explicit overlap between compute and communication
+- fusion and pre-staging to reduce collective overhead
+- topology-aware or NVSHMEM/symmetric-memory variants where the fabric is the bottleneck
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `gradient_fusion` | `3.791 ms` | `0.055 ms` | `68.83x` | fused gradient reduction path |
+| `dataparallel` | `7.601 ms` | `0.968 ms` | `7.86x` | direct GPU execution over DataParallel overhead |
+| `grace_blackwell_locality` | `5.082 ms` | `0.317 ms` | `16.01x` | locality-aware placement |
+| `bandwidth_benchmark_suite` | `4.704 ms` | `2.685 ms` | `1.75x` | cleaner communication path |
+
+The chapter has both huge "remove obvious framework overhead" wins and smaller communication-optimization wins. Those should not be read as one uniform scaling story.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want actual overlap evidence rather than only before/after runtime:
+
+```bash
+python -m cli.aisp bench run --targets ch04:gradient_fusion --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch04:dataparallel --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch04:grace_blackwell_locality --profile deep_dive --single-gpu
+```
+
+The expected profiler story differs by target:
+- `gradient_fusion`: fewer communication phases and less launch fragmentation
+- `dataparallel`: elimination of framework-side fan-out/fan-in overhead
+- `grace_blackwell_locality`: better data placement and lower locality penalties
+
+## Repro Commands
+```bash
+python -m ch04.compare
+python -m cli.aisp bench list-targets --chapter ch04
+python -m cli.aisp bench run --targets ch04 --profile minimal
+python -m cli.aisp bench run --targets ch04:gradient_fusion --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Benchmark data-parallel and tensor-parallel training loops with and without overlap.
 - Quantify NVLink bandwidth and topology effects when mixing local and disaggregated GPUs.

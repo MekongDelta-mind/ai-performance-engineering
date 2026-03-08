@@ -3,6 +3,52 @@
 ## Summary
 Blends router design, disaggregated inference, and profiling discipline so Blackwell clusters can route queries between prefill/decode pools, MoE experts, and pipeline stages without sacrificing utilization.
 
+## Problem
+Chapter 17 is where routing and disaggregation ideas stop being whiteboard architecture and start paying rent. The useful question is not "can we route dynamically?" but "which router, queueing, and handoff changes actually improve TTFT, TPOT, or throughput once the full prefill/decode path is measured?"
+
+## Baseline Path
+- static or minimally adaptive routing
+- conservative prefill/decode handoff with more blocking behavior
+- easy to reason about, but expensive once queue imbalance and KV movement dominate
+
+## Optimized Path
+- topology-aware or telemetry-aware routing decisions
+- disaggregated prefill/decode paths that reduce idle time and handoff overhead
+- measured through the shared harness so routing wins are comparable to kernel and memory wins elsewhere in the repo
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `routing_static` | `5.680 ms` | `0.804 ms` | `7.07x` | smarter routing policy without changing the underlying workload |
+| `moe_router_uniform` | `4.719 ms` | `0.931 ms` | `5.07x` | topology-aware expert routing instead of uniform placement |
+| `prefill_decode_disagg_ttft` | `2678.148 ms` | `938.237 ms` | `2.85x` | disaggregated prefill/decode handoff optimized for TTFT |
+
+This chapter mixes policy wins with orchestration wins. That is useful, but it means you should read each target as a specific system story rather than as one generic routing number.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want evidence for where the gain came from instead of only the final runtime delta:
+
+```bash
+python -m cli.aisp bench run --targets ch17:routing_static --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch17:moe_router_uniform --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch17:prefill_decode_disagg_ttft --profile deep_dive --single-gpu
+```
+
+Those three targets answer different questions:
+- `routing_static`: policy overhead versus routing quality
+- `moe_router_uniform`: topology-aware MoE routing payoff
+- `prefill_decode_disagg_ttft`: queueing and handoff behavior in a split prefill/decode system
+
+## Repro Commands
+```bash
+python -m ch17.compare
+python -m cli.aisp bench list-targets --chapter ch17
+python -m cli.aisp bench run --targets ch17 --profile minimal
+python -m cli.aisp bench run --targets ch17:prefill_decode_disagg_ttft --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Implement dynamic routers that react to TTFT, TPOT, and KV-locality metrics.
 - Profile complete inference stacks (prefill + decode) under realistic synthetic loads.

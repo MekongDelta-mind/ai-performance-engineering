@@ -13,11 +13,24 @@ from core.scripts.refresh_readmes import (
 
 
 PRIORITY_EVIDENCE_DOCS = (
+    "ch07",
+    "ch08",
+    "ch09",
+    "ch04",
     "ch10",
+    "ch11",
+    "ch12",
+    "ch13",
     "ch14",
+    "ch15",
+    "ch16",
+    "ch17",
     "ch18",
+    "ch19",
+    "ch20",
     "labs/block_scaling",
     "labs/flashattention4",
+    "labs/kv_optimization",
     "labs/persistent_decode",
     "labs/real_world_models",
 )
@@ -39,20 +52,26 @@ def test_root_readme_preserves_evidence_first_sections() -> None:
 
 
 def test_ch10_and_priority_labs_render_custom_evidence_sections() -> None:
+    ch04_markdown = _format_markdown(ENTRIES["ch04"])
+    ch07_markdown = _format_markdown(ENTRIES["ch07"])
+    ch08_markdown = _format_markdown(ENTRIES["ch08"])
+    ch09_markdown = _format_markdown(ENTRIES["ch09"])
     ch10_markdown = _format_markdown(ENTRIES["ch10"])
+    ch11_markdown = _format_markdown(ENTRIES["ch11"])
+    ch12_markdown = _format_markdown(ENTRIES["ch12"])
+    ch13_markdown = _format_markdown(ENTRIES["ch13"])
     ch14_markdown = _format_markdown(ENTRIES["ch14"])
+    ch15_markdown = _format_markdown(ENTRIES["ch15"])
+    ch16_markdown = _format_markdown(ENTRIES["ch16"])
+    ch17_markdown = _format_markdown(ENTRIES["ch17"])
     ch18_markdown = _format_markdown(ENTRIES["ch18"])
+    ch19_markdown = _format_markdown(ENTRIES["ch19"])
+    ch20_markdown = _format_markdown(ENTRIES["ch20"])
     block_scaling_markdown = _format_markdown(ENTRIES["labs/block_scaling"])
+    kv_markdown = _format_markdown(ENTRIES["labs/kv_optimization"])
     models_markdown = _format_markdown(ENTRIES["labs/real_world_models"])
 
-    assert "## Problem" in ch10_markdown
-    assert "## Baseline Path" in ch10_markdown
-    assert "## Optimized Path" in ch10_markdown
-    assert "## Measured Delta" in ch10_markdown
-    assert "## Repro Commands" in ch10_markdown
-    assert ch10_markdown.index("## Problem") < ch10_markdown.index("## Learning Goals")
-
-    for markdown in (ch14_markdown, ch18_markdown):
+    for markdown in (ch04_markdown, ch07_markdown, ch08_markdown, ch09_markdown, ch10_markdown, ch11_markdown, ch12_markdown, ch13_markdown, ch14_markdown, ch15_markdown, ch16_markdown, ch17_markdown, ch18_markdown, ch19_markdown, ch20_markdown):
         assert "## Problem" in markdown
         assert "## Baseline Path" in markdown
         assert "## Optimized Path" in markdown
@@ -64,6 +83,14 @@ def test_ch10_and_priority_labs_render_custom_evidence_sections() -> None:
     assert "## Running the Lab" in block_scaling_markdown
     assert "## Recommended Knobs" in block_scaling_markdown
     assert "## Harness vs Microbenchmark" in block_scaling_markdown
+
+    assert "## Problem" in kv_markdown
+    assert "## Baseline Path" in kv_markdown
+    assert "## Optimized Path" in kv_markdown
+    assert "## Measured Delta" in kv_markdown
+    assert "## Profiler Evidence" in kv_markdown
+    assert "## Repro Commands" in kv_markdown
+    assert kv_markdown.index("## Problem") < kv_markdown.index("## Learning Goals")
 
     assert "## Problem" in models_markdown
     assert "## Profiler Evidence" in models_markdown

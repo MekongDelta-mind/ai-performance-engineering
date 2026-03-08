@@ -181,3 +181,17 @@ def test_compare_suite_summaries_detects_speedup_regression_and_new_targets(tmp_
         row["target"] == "labs/flashattention4:flashattention4_alibi" and row["reason"] == "speedup"
         for row in comparison["improvements"]
     )
+
+
+def test_tier1_doc_mentions_current_targets_and_artifacts() -> None:
+    suite = load_tier1_suite()
+    doc_path = Path("docs/tier1_benchmark_suite.md")
+    text = doc_path.read_text(encoding="utf-8")
+
+    assert "## Current Tier-1 Targets" in text
+    assert "## Artifact Contract" in text
+    assert "`artifacts/history/tier1/index.json`" in text
+    assert "`artifacts/history/tier1/<run_id>/summary.json`" in text
+
+    for target in suite.targets:
+        assert f"`{target.target}`" in text

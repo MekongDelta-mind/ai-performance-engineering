@@ -3,6 +3,52 @@
 ## Summary
 Focuses on real-world inference services: paged attention, Flash SDP, FP8 serving, telemetry hooks, schedulers, and Blackwell-friendly load-test harnesses.
 
+## Problem
+Chapter 16 is where "serving optimization" stops being a collection of tricks and becomes a latency budget. The chapter is most useful when it proves which serving-path changes actually improve steady-state latency, scheduling efficiency, or memory behavior under the shared harness.
+
+## Baseline Path
+- straightforward serving loops with conservative attention and scheduling choices
+- little or no graph capture, cache-aware staging, or backend specialization
+- easier to debug, but usually too expensive for production latency targets
+
+## Optimized Path
+- Flash SDP, block-sparse attention, and scheduler-aware execution where they help
+- selective graph/compilation techniques for steady-state serving paths
+- the same benchmark harness contract as the rest of the repo, so the gains are comparable and reproducible
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `flash_sdp` | `0.322 ms` | `0.198 ms` | `1.63x` | Flash SDP path |
+| `flashinfer_block_sparse` | `0.941 ms` | `0.239 ms` | `3.94x` | block-sparse attention path |
+| `runtime_scheduler` | `112.762 ms` | `63.425 ms` | `1.78x` | scheduler/runtime coordination |
+
+The good chapter-level read is "which serving-path changes help enough to matter?" rather than trying to average these into one generic serving number.
+
+## Profiler Evidence
+Use deep-dive runs when you want Nsight-backed evidence for backend selection and scheduling behavior:
+
+```bash
+python -m cli.aisp bench run --targets ch16:flash_sdp --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch16:flashinfer_block_sparse --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch16:runtime_scheduler --profile deep_dive --single-gpu
+```
+
+Those targets answer different questions:
+- `flash_sdp`: better attention backend choice
+- `flashinfer_block_sparse`: structured sparsity payoff
+- `runtime_scheduler`: queueing and scheduling overhead reduction
+
+## Repro Commands
+```bash
+python -m ch16.compare
+python -m cli.aisp bench list-targets --chapter ch16
+python -m cli.aisp bench run --targets ch16 --profile minimal
+python -m cli.aisp bench run --targets ch16:flash_sdp --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Profile large decoder workloads to spot hotspots before deploying models.
 - Adopt paged attention, Flash SDP, and piecewise compilation to hit latency targets.

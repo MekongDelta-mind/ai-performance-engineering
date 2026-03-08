@@ -26,6 +26,8 @@ That command now writes a stable history package under `artifacts/history/tier1/
 - `trend_snapshot.json`: run-history summary for dashboards and release notes
 - `artifacts/history/tier1/index.json`: suite history index
 
+See [`docs/tier1_benchmark_suite.md`](/home/cfregly/ai-performance-engineering/code/docs/tier1_benchmark_suite.md) for the current target list, artifact contract, and interpretation guidance.
+
 ## Current Representative Deltas
 These are measured results from current validated benchmark artifacts in `artifacts/runs/`, not aspirational target numbers.
 

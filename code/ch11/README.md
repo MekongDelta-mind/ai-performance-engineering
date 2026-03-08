@@ -3,6 +3,52 @@
 ## Summary
 Explains how to overlap compute, memory, and communication on Blackwell using CUDA streams, ordered sequences, Hyper-Q, warp-specialized pipelines, and adaptive scheduling.
 
+## Problem
+Chapter 11 is where concurrency ideas have to prove they are reducing real idle time instead of just making traces look busier. The useful question is not "can we add streams?" but "which ordering and overlap changes actually improve the measured workload?"
+
+## Baseline Path
+- more serialized stream usage
+- conservative ordering that protects correctness but leaves overlap untapped
+- simpler to debug, but often too launch- and idle-heavy
+
+## Optimized Path
+- stream overlap where work is truly independent
+- stream-ordered cache and KV update paths that preserve correctness without full serialization
+- warp-specialized multistream execution where the hardware can support it
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `streams` | `15.035 ms` | `8.073 ms` | `1.86x` | basic overlap instead of more serialized launches |
+| `stream_ordered_kv_cache` | `3.153 ms` | `2.103 ms` | `1.50x` | ordered KV updates with less idle time |
+| `warp_specialization_multistream` | `17.530 ms` | `10.500 ms` | `1.67x` | multistream warp specialization path |
+
+These are not "big baseline mistake" wins. They are the more realistic kind of concurrency gains where overlap helps, but only when the work graph actually allows it.
+
+## Profiler Evidence
+Use deep-dive runs when you want to confirm that the gain is real overlap rather than timing noise:
+
+```bash
+python -m cli.aisp bench run --targets ch11:streams --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch11:stream_ordered_kv_cache --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch11:warp_specialization_multistream --profile deep_dive --single-gpu
+```
+
+The Nsight story should differ by workload:
+- `streams`: less idle between independent launches
+- `stream_ordered_kv_cache`: correctness-preserving ordering without full-device serialization
+- `warp_specialization_multistream`: more useful overlap across specialized work partitions
+
+## Repro Commands
+```bash
+python -m ch11.compare
+python -m cli.aisp bench list-targets --chapter ch11
+python -m cli.aisp bench run --targets ch11 --profile minimal
+python -m cli.aisp bench run --targets ch11:streams --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Use multiple CUDA streams to overlap independent kernels without starving priority work.
 - Control ordering constraints for KV-cache updates and stream-ordered memory pools.

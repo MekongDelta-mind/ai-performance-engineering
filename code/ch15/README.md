@@ -3,6 +3,50 @@
 ## Summary
 Addresses large-scale inference concerns: disaggregated compute/storage, KV-cache pooling over NVLink, continuous batching, and mixture-of-experts serving patterns.
 
+## Problem
+Chapter 15 is where inference-system ideas have to justify themselves with end-to-end measurements. The useful question is not "can we disaggregate or batch this?" but "which orchestration changes actually reduce latency or increase throughput once KV movement and scheduling overhead are included?"
+
+## Baseline Path
+- monolithic or minimally coordinated inference execution
+- straightforward KV management and queue draining
+- easy to reason about, but expensive once prefill/decode and cache movement start to dominate
+
+## Optimized Path
+- disaggregated prefill/decode and batched scheduling where they help
+- NVLink-pooled KV-cache strategies and topology-aware routing
+- still measured through the shared benchmark harness, so the chapter is a performance case study instead of a pile of demos
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `continuous_batching` | `52.955 ms` | `12.719 ms` | `4.16x` | queueing and batching strategy |
+| `kv_cache_nvlink_pool` | `1047.860 ms` | `171.477 ms` | `6.11x` | pooled KV-cache path |
+| `guided_decoding` | `12.702 ms` | `2.131 ms` | `5.96x` | guided decode path |
+| `speculative_decoding` | `103.323 ms` | `26.761 ms` | `3.86x` | speculative decode orchestration |
+
+The chapter mixes system-level wins from queueing/orchestration with fabric/cache-path wins. Those are both valuable, but they are not the same optimization story.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want to attribute the gains to scheduling, cache movement, or decode behavior instead of only quoting the runtime delta:
+
+```bash
+python -m cli.aisp bench run --targets ch15:continuous_batching --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch15:kv_cache_nvlink_pool --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch15:speculative_decoding --profile deep_dive --single-gpu
+```
+
+Those runs are the right place to check whether the win came from less queue idle time, less cache movement, or fewer wasted decode steps.
+
+## Repro Commands
+```bash
+python -m ch15.compare
+python -m cli.aisp bench list-targets --chapter ch15
+python -m cli.aisp bench run --targets ch15 --profile minimal
+python -m cli.aisp bench run --targets ch15:kv_cache_nvlink_pool --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Benchmark monolithic vs disaggregated inference paths and quantify fabric costs.
 - Design KV-cache managers that gracefully span local and remote HBM pools.

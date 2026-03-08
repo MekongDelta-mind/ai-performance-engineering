@@ -530,7 +530,9 @@ ENTRIES["README.md"] = Entry(
                 - `regression_summary.md`: human-readable before/after summary against the previous tier-1 run
                 - `regression_summary.json`: machine-readable regressions and improvements
                 - `trend_snapshot.json`: run-history summary for dashboards and release notes
-                - `artifacts/history/tier1/index.json`: suite history index"""
+                - `artifacts/history/tier1/index.json`: suite history index
+
+                See [`docs/tier1_benchmark_suite.md`](/home/cfregly/ai-performance-engineering/code/docs/tier1_benchmark_suite.md) for the current target list, artifact contract, and interpretation guidance."""
             ),
         ),
         MarkdownSection(
@@ -720,6 +722,79 @@ ENTRIES["ch04"] = chapter_entry(
         """\
         Demonstrates how to scale training and inference across multiple Blackwell GPUs with NVLink/NVSwitch fabric awareness, NCCL tuning, NVSHMEM collectives, and symmetric memory patterns."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 4 is where multi-GPU claims have to survive contact with real communication cost. The useful question is not "can this scale?" but "which overlap, fusion, and topology choices actually move the latency or throughput needle under the shared harness?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - naive or minimally overlapped communication
+                - CPU-visible coordination where device-driven orchestration would be cheaper
+                - topology-agnostic execution that pays the full cost of bad placement"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - explicit overlap between compute and communication
+                - fusion and pre-staging to reduce collective overhead
+                - topology-aware or NVSHMEM/symmetric-memory variants where the fabric is the bottleneck"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `gradient_fusion` | `3.791 ms` | `0.055 ms` | `68.83x` | fused gradient reduction path |
+                | `dataparallel` | `7.601 ms` | `0.968 ms` | `7.86x` | direct GPU execution over DataParallel overhead |
+                | `grace_blackwell_locality` | `5.082 ms` | `0.317 ms` | `16.01x` | locality-aware placement |
+                | `bandwidth_benchmark_suite` | `4.704 ms` | `2.685 ms` | `1.75x` | cleaner communication path |
+
+                The chapter has both huge "remove obvious framework overhead" wins and smaller communication-optimization wins. Those should not be read as one uniform scaling story."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want actual overlap evidence rather than only before/after runtime:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch04:gradient_fusion --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch04:dataparallel --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch04:grace_blackwell_locality --profile deep_dive --single-gpu
+                ```
+
+                The expected profiler story differs by target:
+                - `gradient_fusion`: fewer communication phases and less launch fragmentation
+                - `dataparallel`: elimination of framework-side fan-out/fan-in overhead
+                - `grace_blackwell_locality`: better data placement and lower locality penalties"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch04.compare
+                python -m cli.aisp bench list-targets --chapter ch04
+                python -m cli.aisp bench run --targets ch04 --profile minimal
+                python -m cli.aisp bench run --targets ch04:gradient_fusion --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Benchmark data-parallel and tensor-parallel training loops with and without overlap.",
         "Quantify NVLink bandwidth and topology effects when mixing local and disaggregated GPUs.",
@@ -823,6 +898,78 @@ ENTRIES["ch07"] = chapter_entry(
         """\
         Teaches how memory layout drives performance: coalesced copies, tiled matmuls, async prefetch, TMA transfers, and shared-memory staging for lookup-heavy workloads."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 7 is where memory layout turns from a CUDA lecture into a measurable cost model. The useful question is not "is coalescing good?" but "which access-pattern changes actually move the runtime enough to justify changing the kernel or data layout?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - scalar or poorly staged memory movement
+                - little reuse of shared memory or async transfer mechanisms
+                - straightforward for correctness, but wasteful once bandwidth dominates"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - coalesced/vectorized copy paths
+                - shared-memory tiling and TMA-backed staging where it helps
+                - measured through the shared harness so the memory-layout wins are directly comparable to other chapter benchmarks"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `tma_copy` | `2.968 ms` | `0.051 ms` | `58.19x` | TMA-assisted copy path instead of a simpler transfer baseline |
+                | `lookup` | `0.397 ms` | `0.009 ms` | `45.41x` | locality-aware lookup path |
+                | `matmul` | `1.165 ms` | `0.367 ms` | `3.18x` | shared-memory tiled matmul instead of the naive layout |
+
+                This chapter has some intentionally dramatic wins because memory access mistakes are expensive. The point is not that every copy kernel will improve by `58x`, but that access-pattern fixes can dominate the result when the baseline is bandwidth-bound."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want to see whether the win came from less memory traffic, better staging, or fewer expensive accesses:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch07:tma_copy --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch07:lookup --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch07:matmul --profile deep_dive --single-gpu
+                ```
+
+                These targets answer different chapter-level questions:
+                - `tma_copy`: explicit transfer-path improvement
+                - `lookup`: cache/locality sensitivity
+                - `matmul`: memory-layout and tile-reuse payoff"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch07.compare
+                python -m cli.aisp bench list-targets --chapter ch07
+                python -m cli.aisp bench run --targets ch07 --profile minimal
+                python -m cli.aisp bench run --targets ch07:tma_copy --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Measure the gap between scalar, coalesced, and vectorized memory moves.",
         "Use shared-memory tiling, TMA, and async copy to keep tensor cores saturated.",
@@ -856,6 +1003,78 @@ ENTRIES["ch08"] = chapter_entry(
         """\
         Concentrates on resource balancing: adjust block sizes, registers, and shared memory to keep SMs full while hiding TMEM latency via double buffering, loop unrolling, and async pipelines."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 8 is where pipeline and occupancy theory has to survive contact with a real kernel. The useful question is not "is occupancy important?" but "which tuning changes actually improve the measured path once register pressure, staging, and pipeline depth all interact?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - conservative block sizes and staging behavior
+                - less overlap between memory movement and compute
+                - easier to reason about, but often leaves the SM underfilled or the pipeline underutilized"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - occupancy-aware launch and block-shape tuning
+                - more aggressive staging or threshold/TMA pipeline behavior where it helps
+                - measured through the same harness contract as the rest of the repo, so the gains are not one-off microbench stories"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `threshold` | `3.568 ms` | `0.295 ms` | `12.11x` | better threshold pipeline and staging behavior |
+                | `occupancy_tuning` | `0.092 ms` | `0.014 ms` | `6.80x` | launch/block tuning for better resident work |
+                | `tcgen05_tiling_vs_cublas` | `0.713 ms` | `0.154 ms` | `4.63x` | better tiling schedule against the baseline path |
+
+                This chapter is good for showing that occupancy improvements are usually not isolated wins. They tend to land together with better staging and fewer pipeline stalls."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want to see whether the improvement came from occupancy, staging overlap, or less pipeline idle time:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch08:threshold --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch08:occupancy_tuning --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch08:tcgen05_tiling_vs_cublas --profile deep_dive --single-gpu
+                ```
+
+                Those targets give you three useful slices:
+                - `threshold`: threshold/pipeline behavior
+                - `occupancy_tuning`: block-shape and resident-work tuning
+                - `tcgen05_tiling_vs_cublas`: tiling and tensor-core schedule quality"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch08.compare
+                python -m cli.aisp bench list-targets --chapter ch08
+                python -m cli.aisp bench run --targets ch08 --profile minimal
+                python -m cli.aisp bench run --targets ch08:threshold --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Tune occupancy explicitly and observe how register counts limit resident CTAs.",
         "Apply double buffering and async staging to overlap DRAM fetch with compute.",
@@ -889,6 +1108,78 @@ ENTRIES["ch09"] = chapter_entry(
         """\
         Explores how to move workloads along the roofline: raise arithmetic intensity with tiling, fuse memory-bound kernels, and deploy CUTLASS/Triton/inline-PTX paths built for Blackwell tensor cores."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 9 is where roofline reasoning has to cash out in actual kernels. The useful question is not "is this compute-bound or memory-bound?" but "which arithmetic-intensity and fusion changes create a measurable gain once the same harness measures both sides?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - lower-intensity or less-fused kernels
+                - more time spent moving data than doing useful math
+                - easier to inspect, but often too far from the hardware roofline"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - CUTLASS/Triton/custom-kernel paths with better tiling and reuse
+                - fused or higher-intensity schedules that reduce redundant memory work
+                - the same benchmark contract as the rest of the repo, so the gains are not script-local illusions"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `cutlass_gemm` | `0.178 ms` | `0.045 ms` | `3.95x` | better GEMM schedule and kernel implementation |
+                | `memory_bound` | `3.491 ms` | `0.205 ms` | `17.05x` | less wasted memory movement on a bandwidth-limited workload |
+                | `sdpa_attention` | `0.762 ms` | `0.446 ms` | `1.71x` | attention path with improved compute/memory balance |
+
+                The right chapter-level read is not that every CUTLASS or Triton change is dramatic. It is that arithmetic-intensity gains and fusion gains show up very differently depending on whether the workload is math-limited or traffic-limited."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want to see whether the improvement came from better tensor-core utilization, less memory traffic, or simply fewer kernels:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch09:cutlass_gemm --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch09:memory_bound --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch09:sdpa_attention --profile deep_dive --single-gpu
+                ```
+
+                Those three targets give you a balanced view of the chapter:
+                - `cutlass_gemm`: math-path scheduling
+                - `memory_bound`: bandwidth-path improvement
+                - `sdpa_attention`: mixed compute/memory behavior in a more realistic primitive"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch09.compare
+                python -m cli.aisp bench list-targets --chapter ch09
+                python -m cli.aisp bench run --targets ch09 --profile minimal
+                python -m cli.aisp bench run --targets ch09:cutlass_gemm --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Separate compute-bound vs memory-bound behaviors and adjust kernels accordingly.",
         "Design micro-tiling schedules that balance register pressure with data reuse.",
@@ -1025,6 +1316,78 @@ ENTRIES["ch11"] = chapter_entry(
         """\
         Explains how to overlap compute, memory, and communication on Blackwell using CUDA streams, ordered sequences, Hyper-Q, warp-specialized pipelines, and adaptive scheduling."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 11 is where concurrency ideas have to prove they are reducing real idle time instead of just making traces look busier. The useful question is not "can we add streams?" but "which ordering and overlap changes actually improve the measured workload?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - more serialized stream usage
+                - conservative ordering that protects correctness but leaves overlap untapped
+                - simpler to debug, but often too launch- and idle-heavy"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - stream overlap where work is truly independent
+                - stream-ordered cache and KV update paths that preserve correctness without full serialization
+                - warp-specialized multistream execution where the hardware can support it"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `streams` | `15.035 ms` | `8.073 ms` | `1.86x` | basic overlap instead of more serialized launches |
+                | `stream_ordered_kv_cache` | `3.153 ms` | `2.103 ms` | `1.50x` | ordered KV updates with less idle time |
+                | `warp_specialization_multistream` | `17.530 ms` | `10.500 ms` | `1.67x` | multistream warp specialization path |
+
+                These are not "big baseline mistake" wins. They are the more realistic kind of concurrency gains where overlap helps, but only when the work graph actually allows it."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want to confirm that the gain is real overlap rather than timing noise:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch11:streams --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch11:stream_ordered_kv_cache --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch11:warp_specialization_multistream --profile deep_dive --single-gpu
+                ```
+
+                The Nsight story should differ by workload:
+                - `streams`: less idle between independent launches
+                - `stream_ordered_kv_cache`: correctness-preserving ordering without full-device serialization
+                - `warp_specialization_multistream`: more useful overlap across specialized work partitions"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch11.compare
+                python -m cli.aisp bench list-targets --chapter ch11
+                python -m cli.aisp bench run --targets ch11 --profile minimal
+                python -m cli.aisp bench run --targets ch11:streams --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Use multiple CUDA streams to overlap independent kernels without starving priority work.",
         "Control ordering constraints for KV-cache updates and stream-ordered memory pools.",
@@ -1057,6 +1420,78 @@ ENTRIES["ch12"] = chapter_entry(
         """\
         Covers modern CUDA Graph capabilities-conditional capture, graph memory tuning, dynamic parallelism, and work queues-to keep irregular workloads performant without per-launch overhead."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 12 is where launch overhead and dynamic work management have to justify themselves with measured wins. The useful question is not "can we capture a graph?" but "which graph or dynamic-work techniques actually reduce the real runtime once correctness and workload shape stay fixed?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager launches and more CPU-visible scheduling work
+                - less reuse of graph capture or GPU-resident work management
+                - easy to inspect, but often too expensive for irregular steady-state workloads"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - CUDA Graph replay where the steady-state workload is stable enough
+                - fused or GPU-resident queueing/dispatch where it actually removes launch overhead
+                - measured through the shared harness instead of hand-timed one-off scripts"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `cuda_graphs` | `529.532 ms` | `125.874 ms` | `4.21x` | graph replay instead of repeated eager launch overhead |
+                | `kernel_fusion` | `1.776 ms` | `0.654 ms` | `2.72x` | fewer launches through fused graph-friendly execution |
+                | `work_queue` | `2.100 ms` | `0.442 ms` | `4.75x` | GPU-resident work queue path |
+
+                This chapter is useful because it separates "graphs help" from "graphs help on a workload that is actually stable enough to benefit." The work-queue target also keeps the chapter from being only about graph replay."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want hard evidence for launch reduction and work scheduling changes:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch12:cuda_graphs --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch12:kernel_fusion --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch12:work_queue --profile deep_dive --single-gpu
+                ```
+
+                Those targets answer slightly different questions:
+                - `cuda_graphs`: replay payoff
+                - `kernel_fusion`: launch-count reduction
+                - `work_queue`: GPU-side dynamic dispatch effectiveness"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch12.compare
+                python -m cli.aisp bench list-targets --chapter ch12
+                python -m cli.aisp bench run --targets ch12 --profile minimal
+                python -m cli.aisp bench run --targets ch12:cuda_graphs --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Capture steady-state workloads into CUDA Graphs and study the delta vs eager launches.",
         "Use conditional nodes and graph memory pools for adaptive pipelines.",
@@ -1090,6 +1525,78 @@ ENTRIES["ch13"] = chapter_entry(
         """\
         Focuses on PyTorch-centric optimizations: compiled autograd, memory profiling, FSDP/context/expert parallelism, and FP8/quantization workflows backed by the same harness infrastructure."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 13 is where high-level PyTorch optimizations have to prove they are doing more than rearranging framework overhead. The useful question is not "can PyTorch do this optimization?" but "which profiling, compilation, precision, and memory changes actually improve the workload under the shared harness?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager or less-optimized PyTorch execution
+                - higher-overhead cache, precision, and dataloader paths
+                - easier to debug, but often too expensive once memory and framework overhead dominate"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - compiled, quantized, or allocator-aware PyTorch paths where they produce a real measured benefit
+                - lower-overhead cache and attention paths
+                - still benchmarked through the same harness contract, so the numbers stay comparable to the lower-level chapters"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `kv_cache_naive` | `1772.850 ms` | `40.022 ms` | `44.30x` | dramatically better KV-cache path inside the same PyTorch-facing workflow |
+                | `autograd_standard` | `1.644 ms` | `0.204 ms` | `8.04x` | compiled/optimized autograd path |
+                | `precisionfp8_te` | `2.800 ms` | `0.542 ms` | `5.17x` | Transformer Engine FP8 path |
+
+                This chapter is one of the easiest places to fool yourself with framework overhead. That is why the benchmark contract and side-by-side baseline/optimized structure matter here more than almost anywhere else."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want to see whether the gain came from framework overhead reduction, memory behavior, or the lower-precision path itself:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch13:kv_cache_naive --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch13:autograd_standard --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch13:precisionfp8_te --profile deep_dive --single-gpu
+                ```
+
+                Those targets cover three different PyTorch optimization stories:
+                - `kv_cache_naive`: cache-path and memory behavior
+                - `autograd_standard`: framework/compile overhead
+                - `precisionfp8_te`: lower-precision execution with real library support"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch13.compare
+                python -m cli.aisp bench list-targets --chapter ch13
+                python -m cli.aisp bench run --targets ch13 --profile minimal
+                python -m cli.aisp bench run --targets ch13:precisionfp8_te --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Profile PyTorch training loops end-to-end, capturing goodput, memory, and kernel traces.",
         "Apply `torch.compile`, regional compilation, and custom allocators to reduce overhead.",
@@ -1229,6 +1736,76 @@ ENTRIES["ch15"] = chapter_entry(
         """\
         Addresses large-scale inference concerns: disaggregated compute/storage, KV-cache pooling over NVLink, continuous batching, and mixture-of-experts serving patterns."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 15 is where inference-system ideas have to justify themselves with end-to-end measurements. The useful question is not "can we disaggregate or batch this?" but "which orchestration changes actually reduce latency or increase throughput once KV movement and scheduling overhead are included?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - monolithic or minimally coordinated inference execution
+                - straightforward KV management and queue draining
+                - easy to reason about, but expensive once prefill/decode and cache movement start to dominate"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - disaggregated prefill/decode and batched scheduling where they help
+                - NVLink-pooled KV-cache strategies and topology-aware routing
+                - still measured through the shared benchmark harness, so the chapter is a performance case study instead of a pile of demos"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `continuous_batching` | `52.955 ms` | `12.719 ms` | `4.16x` | queueing and batching strategy |
+                | `kv_cache_nvlink_pool` | `1047.860 ms` | `171.477 ms` | `6.11x` | pooled KV-cache path |
+                | `guided_decoding` | `12.702 ms` | `2.131 ms` | `5.96x` | guided decode path |
+                | `speculative_decoding` | `103.323 ms` | `26.761 ms` | `3.86x` | speculative decode orchestration |
+
+                The chapter mixes system-level wins from queueing/orchestration with fabric/cache-path wins. Those are both valuable, but they are not the same optimization story."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want to attribute the gains to scheduling, cache movement, or decode behavior instead of only quoting the runtime delta:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch15:continuous_batching --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch15:kv_cache_nvlink_pool --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch15:speculative_decoding --profile deep_dive --single-gpu
+                ```
+
+                Those runs are the right place to check whether the win came from less queue idle time, less cache movement, or fewer wasted decode steps."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch15.compare
+                python -m cli.aisp bench list-targets --chapter ch15
+                python -m cli.aisp bench run --targets ch15 --profile minimal
+                python -m cli.aisp bench run --targets ch15:kv_cache_nvlink_pool --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Benchmark monolithic vs disaggregated inference paths and quantify fabric costs.",
         "Design KV-cache managers that gracefully span local and remote HBM pools.",
@@ -1265,6 +1842,78 @@ ENTRIES["ch16"] = chapter_entry(
         """\
         Focuses on real-world inference services: paged attention, Flash SDP, FP8 serving, telemetry hooks, schedulers, and Blackwell-friendly load-test harnesses."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 16 is where "serving optimization" stops being a collection of tricks and becomes a latency budget. The chapter is most useful when it proves which serving-path changes actually improve steady-state latency, scheduling efficiency, or memory behavior under the shared harness."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - straightforward serving loops with conservative attention and scheduling choices
+                - little or no graph capture, cache-aware staging, or backend specialization
+                - easier to debug, but usually too expensive for production latency targets"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - Flash SDP, block-sparse attention, and scheduler-aware execution where they help
+                - selective graph/compilation techniques for steady-state serving paths
+                - the same benchmark harness contract as the rest of the repo, so the gains are comparable and reproducible"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `flash_sdp` | `0.322 ms` | `0.198 ms` | `1.63x` | Flash SDP path |
+                | `flashinfer_block_sparse` | `0.941 ms` | `0.239 ms` | `3.94x` | block-sparse attention path |
+                | `runtime_scheduler` | `112.762 ms` | `63.425 ms` | `1.78x` | scheduler/runtime coordination |
+
+                The good chapter-level read is "which serving-path changes help enough to matter?" rather than trying to average these into one generic serving number."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want Nsight-backed evidence for backend selection and scheduling behavior:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch16:flash_sdp --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch16:flashinfer_block_sparse --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch16:runtime_scheduler --profile deep_dive --single-gpu
+                ```
+
+                Those targets answer different questions:
+                - `flash_sdp`: better attention backend choice
+                - `flashinfer_block_sparse`: structured sparsity payoff
+                - `runtime_scheduler`: queueing and scheduling overhead reduction"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch16.compare
+                python -m cli.aisp bench list-targets --chapter ch16
+                python -m cli.aisp bench run --targets ch16 --profile minimal
+                python -m cli.aisp bench run --targets ch16:flash_sdp --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Profile large decoder workloads to spot hotspots before deploying models.",
         "Adopt paged attention, Flash SDP, and piecewise compilation to hit latency targets.",
@@ -1291,6 +1940,100 @@ ENTRIES["ch16"] = chapter_entry(
     ],
 )
 
+ENTRIES["labs/kv_optimization"] = lab_entry(
+    slug="labs/kv_optimization",
+    title="Lab - KV Cache Optimization",
+    summary=dedent(
+        """\
+        Compares a standard FP16 KV cache path against a compressed KV-cache implementation so longer context lengths fit without treating memory reduction as a free lunch."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                KV cache growth is one of the fastest ways to turn a good inference path into an unusable one. This lab exists to measure how much memory the cache optimization actually gives back, and what latency tradeoff you pay to get it."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - standard FP16 KV cache
+                - simple, high-fidelity, and expensive in HBM
+                - useful as the correctness and memory reference"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - compressed KV cache with lower memory footprint
+                - benchmarked through the same harness path, so the speed/memory tradeoff is explicit
+                - designed to answer "does the memory saving justify the latency change?" instead of assuming quantization is always a win"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Current validated expectation-backed B200 result from `labs/kv_optimization/expectations_b200.json`:
+
+                | Target | Baseline | Optimized | Measured delta | Memory change |
+                | --- | ---: | ---: | ---: | ---: |
+                | `kv_standard` | `3782.365 ms` | `1777.506 ms` | `2.13x` | `49.77%` lower memory |
+
+                That run recorded:
+                - baseline memory: `32916.315 MB`
+                - optimized memory: `16534.378 MB`
+
+                This lab is useful because it makes the speed/memory tradeoff explicit instead of treating KV compression as a free optimization."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                The first thing to trust here is the benchmark pair and its recorded memory delta. When you want deeper attribution, run the same target through the harness with profiling enabled:
+
+                ```bash
+                python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/kv_optimization
+                python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile minimal
+                python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Measure the latency and memory tradeoff of KV-cache compression instead of optimizing for one metric in isolation.",
+        "Use the shared harness to keep the baseline and optimized cache paths directly comparable.",
+        "Validate that memory savings survive the same contract checks as every other repo benchmark.",
+    ],
+    contents=[
+        ("`baseline_kv_standard.py`", "Reference FP16 KV-cache path."),
+        ("`optimized_kv_standard.py`", "Compressed KV-cache path used for the optimized benchmark."),
+        ("`expectations_{hardware_key}.json`", "Stored speedup and memory-savings baselines for the lab."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile minimal` reports both latency and memory deltas for the pair.",
+        "The optimized path should reduce memory materially without violating the benchmark contract or correctness checks.",
+        "`python -m cli.aisp bench run --targets labs/kv_optimization:kv_standard --profile deep_dive --single-gpu` produces profiler artifacts for the same measured path.",
+    ],
+    notes=[
+        "This README is now generator-owned; update the source of truth in `core/scripts/refresh_readmes.py`, not the rendered file.",
+        "The current public numbers come from the stored expectation baseline because there is no newer canonical tier-1 history artifact for this lab yet.",
+    ],
+)
+
 ENTRIES["ch17"] = chapter_entry(
     slug="ch17",
     title="Chapter 17 - Dynamic Routing & Hybrid Serving",
@@ -1298,6 +2041,78 @@ ENTRIES["ch17"] = chapter_entry(
         """\
         Blends router design, disaggregated inference, and profiling discipline so Blackwell clusters can route queries between prefill/decode pools, MoE experts, and pipeline stages without sacrificing utilization."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 17 is where routing and disaggregation ideas stop being whiteboard architecture and start paying rent. The useful question is not "can we route dynamically?" but "which router, queueing, and handoff changes actually improve TTFT, TPOT, or throughput once the full prefill/decode path is measured?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - static or minimally adaptive routing
+                - conservative prefill/decode handoff with more blocking behavior
+                - easy to reason about, but expensive once queue imbalance and KV movement dominate"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - topology-aware or telemetry-aware routing decisions
+                - disaggregated prefill/decode paths that reduce idle time and handoff overhead
+                - measured through the shared harness so routing wins are comparable to kernel and memory wins elsewhere in the repo"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `routing_static` | `5.680 ms` | `0.804 ms` | `7.07x` | smarter routing policy without changing the underlying workload |
+                | `moe_router_uniform` | `4.719 ms` | `0.931 ms` | `5.07x` | topology-aware expert routing instead of uniform placement |
+                | `prefill_decode_disagg_ttft` | `2678.148 ms` | `938.237 ms` | `2.85x` | disaggregated prefill/decode handoff optimized for TTFT |
+
+                This chapter mixes policy wins with orchestration wins. That is useful, but it means you should read each target as a specific system story rather than as one generic routing number."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want evidence for where the gain came from instead of only the final runtime delta:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch17:routing_static --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch17:moe_router_uniform --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch17:prefill_decode_disagg_ttft --profile deep_dive --single-gpu
+                ```
+
+                Those three targets answer different questions:
+                - `routing_static`: policy overhead versus routing quality
+                - `moe_router_uniform`: topology-aware MoE routing payoff
+                - `prefill_decode_disagg_ttft`: queueing and handoff behavior in a split prefill/decode system"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch17.compare
+                python -m cli.aisp bench list-targets --chapter ch17
+                python -m cli.aisp bench run --targets ch17 --profile minimal
+                python -m cli.aisp bench run --targets ch17:prefill_decode_disagg_ttft --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Implement dynamic routers that react to TTFT, TPOT, and KV-locality metrics.",
         "Profile complete inference stacks (prefill + decode) under realistic synthetic loads.",
@@ -1434,6 +2249,75 @@ ENTRIES["ch19"] = chapter_entry(
         """\
         Explores NVFP4/FP8 workflows, KV-cache quantization, memory double buffering, and adaptive allocators so low-precision experiments remain numerically safe while squeezing every byte of HBM."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 19 is where low-precision and memory-system ideas have to prove they are more than paper wins. The useful question is not "can we quantize or double-buffer this?" but "which precision and memory changes improve the real workload enough to justify the added complexity?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - higher-cost cache, precision, and memory-management paths
+                - simpler allocator and buffering behavior
+                - cleaner as a reference, but often too expensive in memory traffic or precision budget"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - quantized caches, lower-precision training/inference paths, and explicit buffering improvements
+                - adaptive allocator or overlap logic where memory behavior is the actual bottleneck
+                - benchmarked through the same harness contract so the speedup claims remain comparable and verified"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `dynamic_quantized_cache` | `4.048 ms` | `1.859 ms` | `2.18x` | quantized cache path instead of the higher-cost baseline |
+                | `memory_double_buffering` | `5.536 ms` | `2.809 ms` | `1.97x` | double-buffered memory path |
+                | `mxfp8_moe` | `16.037 ms` | `2.080 ms` | `7.71x` | lower-precision MoE path with materially better execution behavior |
+
+                This chapter is where "low precision" should be read as a systems decision, not just a dtype choice. Some wins come from lower math cost, others from lower memory traffic or better overlap."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want to inspect whether the gain came from compute reduction, memory reduction, or allocator/buffering behavior:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch19:dynamic_quantized_cache --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch19:memory_double_buffering --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch19:mxfp8_moe --profile deep_dive --single-gpu
+                ```
+
+                Those targets make good chapter probes because they cover cache behavior, memory overlap, and lower-precision MoE execution without collapsing everything into one synthetic headline."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch19.compare
+                python -m cli.aisp bench list-targets --chapter ch19
+                python -m cli.aisp bench run --targets ch19 --profile minimal
+                python -m cli.aisp bench run --targets ch19:mxfp8_moe --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Benchmark FP4/FP6/FP8 training loops with calibration and validation hooks.",
         "Overlap KV-cache prefetch with compute while respecting precision constraints.",
@@ -1466,6 +2350,75 @@ ENTRIES["ch20"] = chapter_entry(
         """\
         Combines kernel, memory, pipeline, and inference optimizations into holistic case studies: take a baseline pipeline, apply staged improvements, and capture proof-of-benefit artifacts for every major subsystem."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Chapter 20 is where isolated wins have to survive contact with the full stack. The useful question is not "did one optimization help in isolation?" but "what still matters after memory, pipeline, and inference optimizations are stacked together in one end-to-end workload?" """
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - sequential or minimally optimized end-to-end execution
+                - independent subsystems with little cross-stage coordination
+                - useful as a proof baseline, but usually leaves bandwidth and overlap on the table"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - staged pipeline, memory, and KV-cache optimizations combined into one workload
+                - the same harness contract as every other chapter, so the end-to-end gains stay comparable to the lower-level chapters
+                - better for answering whether the optimizations compose cleanly instead of fighting each other"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `integrated_kv_cache` | `456.705 ms` | `67.381 ms` | `6.78x` | integrated KV-cache and overlap path |
+                | `pipeline_sequential` | `27.927 ms` | `1.683 ms` | `16.60x` | sequential pipeline replaced by coordinated staged execution |
+                | `multiple_unoptimized` | `0.616 ms` | `0.234 ms` | `2.63x` | stacked subsystem cleanup versus the intentionally rough composite baseline |
+
+                This chapter is the best place to check whether wins compose. A chapter 20 speedup is more meaningful than a microbench speedup when you want to know what survives in a real end-to-end path."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive harness runs when you want to see how the end-to-end gain breaks down by subsystem:
+
+                ```bash
+                python -m cli.aisp bench run --targets ch20:integrated_kv_cache --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch20:pipeline_sequential --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets ch20:multiple_unoptimized --profile deep_dive --single-gpu
+                ```
+
+                That is the right place to answer whether the gain came from overlap, memory movement, or simply removing one obvious bottleneck from the baseline."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m ch20.compare
+                python -m cli.aisp bench list-targets --chapter ch20
+                python -m cli.aisp bench run --targets ch20 --profile minimal
+                python -m cli.aisp bench run --targets ch20:pipeline_sequential --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Chain memory, pipeline, and KV-cache optimizations together to see cumulative impact.",
         "Generate automatic reports that compare baseline vs tuned end-to-end runs.",

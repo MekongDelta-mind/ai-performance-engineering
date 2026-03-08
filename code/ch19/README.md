@@ -3,6 +3,49 @@
 ## Summary
 Explores NVFP4/FP8 workflows, KV-cache quantization, memory double buffering, and adaptive allocators so low-precision experiments remain numerically safe while squeezing every byte of HBM.
 
+## Problem
+Chapter 19 is where low-precision and memory-system ideas have to prove they are more than paper wins. The useful question is not "can we quantize or double-buffer this?" but "which precision and memory changes improve the real workload enough to justify the added complexity?"
+
+## Baseline Path
+- higher-cost cache, precision, and memory-management paths
+- simpler allocator and buffering behavior
+- cleaner as a reference, but often too expensive in memory traffic or precision budget
+
+## Optimized Path
+- quantized caches, lower-precision training/inference paths, and explicit buffering improvements
+- adaptive allocator or overlap logic where memory behavior is the actual bottleneck
+- benchmarked through the same harness contract so the speedup claims remain comparable and verified
+
+## Measured Delta
+Representative validated results from `artifacts/runs/20260303_163946__bench__profile_minimal_targets_20/`:
+
+| Target | Baseline | Optimized | Measured delta | What changed |
+| --- | ---: | ---: | ---: | --- |
+| `dynamic_quantized_cache` | `4.048 ms` | `1.859 ms` | `2.18x` | quantized cache path instead of the higher-cost baseline |
+| `memory_double_buffering` | `5.536 ms` | `2.809 ms` | `1.97x` | double-buffered memory path |
+| `mxfp8_moe` | `16.037 ms` | `2.080 ms` | `7.71x` | lower-precision MoE path with materially better execution behavior |
+
+This chapter is where "low precision" should be read as a systems decision, not just a dtype choice. Some wins come from lower math cost, others from lower memory traffic or better overlap.
+
+## Profiler Evidence
+Use deep-dive harness runs when you want to inspect whether the gain came from compute reduction, memory reduction, or allocator/buffering behavior:
+
+```bash
+python -m cli.aisp bench run --targets ch19:dynamic_quantized_cache --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch19:memory_double_buffering --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets ch19:mxfp8_moe --profile deep_dive --single-gpu
+```
+
+Those targets make good chapter probes because they cover cache behavior, memory overlap, and lower-precision MoE execution without collapsing everything into one synthetic headline.
+
+## Repro Commands
+```bash
+python -m ch19.compare
+python -m cli.aisp bench list-targets --chapter ch19
+python -m cli.aisp bench run --targets ch19 --profile minimal
+python -m cli.aisp bench run --targets ch19:mxfp8_moe --profile deep_dive --single-gpu
+```
+
 ## Learning Goals
 - Benchmark FP4/FP6/FP8 training loops with calibration and validation hooks.
 - Overlap KV-cache prefetch with compute while respecting precision constraints.

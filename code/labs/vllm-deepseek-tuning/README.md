@@ -1,165 +1,60 @@
-# vLLM DeepSeek Tuning Harness (GB300 blog-aligned, production-ready)
+# Lab - vLLM DeepSeek Tuning Harness
 
-This lab reproduces and extends the benchmark structure from:
-https://blog.vllm.ai/2026/02/13/gb300-deepseek.html
+## Summary
+A matrix-driven tuning harness for DeepSeek + vLLM scenarios: scenario sweeps, plots, reports, and startup-failure capture. It is a comparison matrix, not a single honest baseline/optimized benchmark pair yet.
 
-Location:
-`/Users/admin/dev/ai-perf/ai-performance-engineering/code/labs/vllm-deepseek-tuning`
+## Problem
+Large serving-stack comparisons rarely reduce to one "optimized" switch. TP/EP choices, MTP on/off, model family, and concurrency sweeps all matter, so this lab keeps the experiment matrix explicit instead of pretending there is one universal optimized path.
 
-## Goals
+## What This Lab Is
+- a matrix harness around `vllm serve` + `vllm bench serve`
+- scenario/config/report tooling
+- useful for comparative serving experiments and artifact generation
 
-- Reproduce blog-style scenarios on available GPUs.
-- Keep experiment shapes consistent (ISL/OSL/concurrency sweeps).
-- Produce auditable artifacts (raw logs + JSON + plots + markdown report).
-- Make reruns easy and deterministic.
+It is not currently a clean benchmark-pair lab because the important comparisons are multiple named variants, not one generic baseline/optimized route.
 
-## What is implemented
+## Current Artifact State
+The checked-in artifact set under `results/` is currently startup-failure/report oriented, not a canonical baseline/optimized pair history. That is still valuable, but it should be described honestly.
 
-- Scenarios:
-  - `prefill_only` (ISL=2k, OSL=1)
-  - `mixed_short_64` (ISL=2k, OSL=64)
-  - `mixed_short_128` (ISL=2k, OSL=128)
-  - `mixed_moderate_1k` (ISL=2k, OSL=1000)
-- Run variants:
-  - DeepSeek-V3.2 NVFP4: TP2 / TP4
-  - DeepSeek-R1 NVFP4: TP2 / EP2
-  - DeepSeek-R1 TP2 + MTP(1)
-- Outputs:
-  - raw benchmark logs (`results/*.raw.txt`)
-  - structured run records (`results/*.json`)
-  - comparison plots (`plots/*.png`)
-  - report pack (`reports/summary.csv`, `reports/report.md`)
+If we want benchmark-pair docs here later, we should first produce canonical successful runs for one or two concrete comparisons instead of extrapolating from the matrix harness.
 
-## Project layout
+## What Proper Benchmark Pairs Would Look Like
+If we productize this into benchmark targets, the clean shape is to create explicit comparison pairs such as:
 
-- `configs/benchmark_matrix.yaml` — experiment matrix + paths + profile settings
-- `configs/smoke_tiny.yaml` — tiny open-model config for end-to-end harness sanity checks
-- `scripts/run_matrix.py` — serve/bench orchestration
-- `scripts/plot_results.py` — chart generation
-- `scripts/report_results.py` — summary CSV + blog-style markdown report
-- `scripts/vllm_docker.sh` — Docker-backed `vllm` command wrapper (keeps host torch untouched)
-- `scripts/teardown.sh` — stop serving + optional artifact purge
-- `Makefile` — standard entrypoints
+- `baseline_vllm_deepseek_tp2.py` vs `optimized_vllm_deepseek_ep2.py`
+- `baseline_vllm_deepseek_mtp0.py` vs `optimized_vllm_deepseek_mtp1.py`
 
-## Prerequisites
+Each pair would need fixed prompts, fixed ISL/OSL/concurrency, stable serve lifecycle handling, and a clear validation/report artifact contract. That is better than inventing one generic `optimized_vllm_deepseek.py` wrapper that hides what actually changed.
 
-- Python 3.10+
-- `vllm` CLI available on PATH (or use Docker `vllm/vllm-openai:cu130-nightly` via `--vllm-cmd`)
-- CUDA/NVIDIA runtime healthy on benchmark node
-- Model + tokenizer checkpoints available locally
+## Learning Goals
+- Keep DeepSeek + vLLM comparison work reproducible and auditable.
+- Separate matrix-harness experimentation from benchmark-pair performance claims.
+- Provide a cleaner path to future canonical vLLM serving benchmark pairs.
 
-Recommended to mirror blog as closely as possible:
-- vLLM v0.14.1
-- CUDA 13.0
+## Directory Layout
+| Path | Description |
+| --- | --- |
+| `configs/benchmark_matrix.yaml`, `configs/smoke_tiny.yaml` | Scenario matrices and smoke-test configs. |
+| `scripts/run_matrix.py`, `scripts/plot_results.py`, `scripts/report_results.py` | Serve/bench orchestration plus plotting/report generation. |
+| `results/`, `plots/`, `reports/` | Structured outputs from the matrix harness. |
+| `Makefile`, `scripts/vllm_docker.sh`, `scripts/teardown.sh` | Operational entrypoints for running and cleaning up the matrix. |
 
-## Configure paths first
-
-Edit `configs/benchmark_matrix.yaml`:
-
-- `paths.tokenizer` must be a valid local path (or HF tokenizer ID) on the GPU node
-- confirm model IDs are pullable (or replace with local paths)
-- adjust `results_dir` only if you want artifacts elsewhere
-- set `global.vllm_cmd` only if you need a non-default vLLM command
-
-Default `results_dir` is `../results` (which lands in the lab's `results/` directory) and is resolved relative to the config file.
-You can override without editing config:
-
+## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-python3 scripts/run_matrix.py \
-  --config configs/benchmark_matrix.yaml \
-  --tokenizer /path/to/DeepSeek-V3.2 \
-  --results-dir /tmp/vllm-deepseek-results \
-  --base-url http://127.0.0.1:8000 \
-  --vllm-cmd "vllm"
-```
-
-If host `vllm` is incompatible with host `torch`, use Docker without changing `torch`:
-
-```bash
-python3 scripts/run_matrix.py \
-  --config configs/benchmark_matrix.yaml \
-  --vllm-cmd ./scripts/vllm_docker.sh
-```
-
-Parallel behavior is auto-adaptive by default:
-- `--parallel-policy auto` (default): downshifts TP/DP to fit detected local GPUs.
-- In `auto`, startup CUDA OOM triggers one retry with conservative fallback args (`--cpu-offload-gb`, reduced `--max-model-len`, lower GPU memory utilization).
-- `--parallel-policy strict`: keeps configured TP/DP and skips infeasible runs.
-
-Failure behavior is configurable:
-- `--fail-fast oom` (default): stop the matrix on first unrecoverable CUDA OOM startup failure.
-- `--fail-fast startup`: stop on first startup failure of any kind.
-- `--fail-fast any`: equivalent to startup.
-- `--fail-fast none`: continue through all runs and collect all failures.
-
-## Runbook
-
-From this lab directory:
-
-```bash
-cd /Users/admin/dev/ai-perf/ai-performance-engineering/code/labs/vllm-deepseek-tuning
-```
-
-### 1) Smoke test
-
-```bash
+cd labs/vllm-deepseek-tuning
 make smoke
-```
-
-### 1b) End-to-end infra sanity (tiny open model)
-
-```bash
-make smoke-tiny      # host vllm
-make smoke-docker    # dockerized vllm (recommended when host vllm is mismatched)
-```
-
-### 2) Full benchmark matrix
-
-```bash
 make full
-```
-
-### 3) Generate plots + reports
-
-```bash
 make artifacts
 ```
+- This lab is Makefile/script driven today, not harness-target driven.
+- Use Docker-backed `vllm` when host `torch` and host `vllm` are mismatched.
 
-### 4) Teardown
+## Validation Checklist
+- `make smoke` should prove the orchestration path is alive before a full matrix run.
+- `make full` should emit raw logs plus structured `results/*.json` records.
+- `make artifacts` should regenerate plots and markdown/csv reports from collected results.
+- If this lab is promoted into benchmark-pair targets later, create explicit named comparison pairs instead of a fake one-size-fits-all optimized wrapper.
 
-```bash
-make teardown               # stops vllm serve
-make purge                  # stops + removes results/plots/reports
-```
-
-## Report quality (blog-aligned + improved)
-
-`reports/report.md` includes:
-
-- V3.2 TP2 vs TP4 comparison
-- R1 TP2 vs EP2 comparison
-- MTP on/off comparison
-- R1 vs V3.2 prefill ratio
-- per-run per-scenario bests
-
-This goes beyond raw output by computing concise deltas and direct conclusions.
-
-## Notes on interpretation
-
-- Absolute throughput is hardware-dependent.
-- Relative comparisons (TP/EP/MTP deltas, model-vs-model ratios) are the most transferable.
-- Failed run records are preserved for auditability but excluded from best-of metrics.
-- The default blog matrix has TP/DP world sizes of 2-4.
-- With `--parallel-policy auto`, single-GPU nodes run adapted TP1/DP1 variants automatically.
-- With `--parallel-policy strict`, infeasible TP/DP runs are preflight-skipped.
-- Some DeepSeek NVFP4 checkpoints may still exceed single-GPU memory capacity even after fallback retry; these are captured as startup-failure artifacts.
-- Startup-failure artifacts include `startup_error_kind`, parsed `oom_diagnostics`, and a `gpu_snapshot` for debugging.
-
-## Design choices
-
-- Scenario shape fixed to match the blog patterns.
-- Concurrency profiles:
-  - `smoke`: fast validation
-  - `full`: broad sweep
-- Every run writes both raw and parsed artifacts.
-- Teardown script provides deterministic cleanup.
+## Notes
+- This README stays intentionally honest: useful matrix harness, not yet a canonical baseline/optimized benchmark lab.

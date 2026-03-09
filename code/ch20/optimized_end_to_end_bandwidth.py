@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from ch20.inductor_guard import (
+from core.optimization.inductor_guard import (
     disable_inductor_cudagraph_features,
     restore_inductor_cudagraph_features,
     InductorCudagraphState,

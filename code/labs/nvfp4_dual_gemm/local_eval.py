@@ -8,6 +8,20 @@ Semantics intentionally mirror the official benchmark flow:
 
 from __future__ import annotations
 
+if __name__ == "__main__" and (__package__ is None or __package__ == ""):
+    import os
+    import sys
+
+    os.execv(
+        sys.executable,
+        [
+            sys.executable,
+            "-m",
+            "labs.nvfp4_dual_gemm.local_eval",
+            *sys.argv[1:],
+        ],
+    )
+
 import argparse
 import json
 import math

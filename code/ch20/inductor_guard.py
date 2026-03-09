@@ -1,4 +1,4 @@
-"""Backward-compatible shim for the shared Inductor cudagraph helpers."""
+"""Chapter-local re-export of the shared Inductor cudagraph helpers."""
 
 from __future__ import annotations
 

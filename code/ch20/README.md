@@ -55,7 +55,7 @@ python -m cli.aisp bench run --targets ch20:pipeline_sequential --profile deep_d
 ## Directory Layout
 | Path | Description |
 | --- | --- |
-| `baseline_multiple_unoptimized.py`, `optimized_multiple_unoptimized.py`, `ai_kernel_generator.py`, `inductor_guard.py` | Composite workloads that stack several bottlenecks plus helpers for generating candidate kernels safely. |
+| `baseline_multiple_unoptimized.py`, `optimized_multiple_unoptimized.py`, `ai_kernel_generator.py`, `core/optimization/inductor_guard.py` | Composite workloads that stack several bottlenecks plus the shared Inductor cudagraph guard used by the compiled end-to-end paths. |
 | `baseline_pipeline_sequential.py`, `optimized_pipeline_sequential.py`, `baseline_end_to_end_bandwidth.py`, `optimized_end_to_end_bandwidth.py` | Pipeline and bandwidth case studies showing how optimizations interact across stages. |
 | `baseline_integrated_kv_cache.py`, `optimized_integrated_kv_cache.py` | Integrated KV-cache demos that merge allocator, overlap, and NVLink pooling tricks. |
 | `baseline_memory_standard.py`, `optimized_memory_standard.py` | Memory-focused harness verifying allocator changes at system level. |
@@ -79,5 +79,5 @@ python -m cli.aisp bench run --targets ch20 --profile minimal
 - `python -m ch20.optimized_pipeline_sequential --trace` shows smooth NVTX ranges covering the entire pipeline, demonstrating overlap success.
 
 ## Notes
-- `inductor_guard.py` provides convenience toggles for gating experimental kernels behind feature flags.
+- `core/optimization/inductor_guard.py` is the canonical helper for gating Inductor cudagraph features in the compiled chapter 20 paths.
 - `ai_kernel_generator.py` logs generated code to `artifacts/` for reproducibility; capture the log with your proof-of-benefit bundle.

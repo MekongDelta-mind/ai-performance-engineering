@@ -19,6 +19,7 @@ from ch20.optimized_autotuning import OptimizedAutotuningBenchmark
 from ch20.optimized_end_to_end_bandwidth import OptimizedEndToEndBandwidthBenchmark
 from ch20.optimized_moe import OptimizedMoeBenchmark
 from ch20.optimized_multiple_unoptimized import OptimizedAllTechniquesBenchmark
+from tests.integration._strict_gpu_env import skip_if_strict_benchmark_env_invalid
 
 pytestmark.append(
     pytest.mark.skipif(
@@ -116,6 +117,7 @@ def triton_cfg_guard():
 @pytest.mark.parametrize("enable_cudagraph_features", [True, False])
 def test_ch20_compiled_benchmarks_run_with_subprocess(triton_cfg_guard, benchmark_cls, enable_cudagraph_features):
     """Ensure subprocess execution succeeds regardless of cudagraph defaults."""
+    skip_if_strict_benchmark_env_invalid()
     triton_cfg, original_values = triton_cfg_guard
     for attr in original_values:
         setattr(triton_cfg, attr, enable_cudagraph_features)

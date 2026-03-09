@@ -3,6 +3,44 @@
 ## Summary
 Replays the entire performance-engineering arc as scenarios: from system prep to streaming inference, plus the original cluster GEMM CUDA kernels wired into the harness.
 
+## Problem
+This lab is where the repo stops being a pile of isolated kernels and starts behaving like a system story. The important question is whether the end-to-end scenario kernels still show the same directional wins once you put them back into a larger flow.
+
+## Baseline Path
+- scenario kernels without Blackwell-specific cluster tuning
+- useful for a stable reference, but not a good steady-state throughput path
+- keeps the extension and harness wiring honest
+
+## Optimized Path
+- optimized cluster GEMM variants
+- tcgen05 route where available
+- same harness contract and validation as the rest of the repo
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `cluster_gemm` | `29.213 ms` | `4.583 ms` | `6.37x` |
+| `cluster_gemm_tcgen05` | `0.240 ms` | `0.230 ms` | `1.04x` |
+
+The useful split here is that `cluster_gemm` demonstrates the big end-to-end kernel win, while `cluster_gemm_tcgen05` is the fine-grained tcgen05 follow-up where the remaining headroom is much smaller.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/fullstack_cluster:cluster_gemm --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/fullstack_cluster:cluster_gemm_tcgen05 --profile deep_dive --single-gpu
+```
+
+The tcgen05 path is worth profiling separately. Its win is much smaller than the coarse cluster GEMM delta, so Nsight evidence matters more than headline speedup alone.
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/fullstack_cluster
+python -m cli.aisp bench run --targets labs/fullstack_cluster:cluster_gemm --profile minimal
+python labs/fullstack_cluster/run_lab_fullstack_cluster.py --size 2048
+```
+
 ## Learning Goals
 - Run scenario benchmarks that stitch together chapters into end-to-end workflows.
 - Inspect cluster GEMM kernels (baseline and DSMEM/TMA optimized) via the CUDA extension.

@@ -1,36 +1,66 @@
-# Lab - KV-Cache Compression (FP8 → NVFP4)
+# Lab - KV Cache Compression
 
 ## Summary
-Benchmarks a KV-cache heavy attention block using Transformer Engine 2.10 (CUDA 13) recipes: MXFP8 block scaling as the baseline and an NVFP4 path that calibrates in FP8 before switching to FP4 tensor cores on Blackwell.
+Tests whether compressing the KV cache is worth it for this workload, instead of assuming lower memory footprint automatically means better serving latency.
+
+## Problem
+KV-cache compression is attractive because the memory story is obvious, but the latency story often is not. This lab exists to keep those two questions separate.
+
+## Baseline Path
+- uncompressed KV cache path
+- simple latency/memory reference
+- no compression overhead in the hot path
+
+## Optimized Path
+- compressed KV cache representation
+- same benchmark harness and validation contract
+- tests whether the memory tradeoff is actually latency-positive here
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `kv_cache` | `6066.040 ms` | `5897.083 ms` | `1.03x` |
+
+The important takeaway is restraint: the compressed path helps, but only slightly on this workload. This is exactly the kind of lab where a clean benchmark pair prevents an overclaim.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile deep_dive --single-gpu
+```
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/kv_cache_compression
+python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile minimal
+```
 
 ## Learning Goals
-- Compare MXFP8 vs NVFP4 block scaling for KV-cache heavy attention.
-- Verify FP4 tensor-core speedups while maintaining accuracy through FP8 calibration.
-- Capture reproducible metrics via the benchmark harness.
+- Measure the latency cost/benefit of KV-cache compression under the harness contract.
+- Keep memory-saving and latency-saving claims distinct.
+- Make it easy to inspect whether compression overhead dominates the win.
 
 ## Directory Layout
 | Path | Description |
 | --- | --- |
-| `baseline_kv_cache.py` | MXFP8 baseline benchmark. |
-| `optimized_kv_cache_nvfp4.py` | NVFP4 path with FP8 calibration (fails fast if unavailable). |
-| `kv_cache_common.py` | Shared shapes/utilities for both paths. |
-| `tma_prefetch_extension.py`, `tma_prefetch_ext.cu` | TMA async prefetch demo for KV cache tiles. |
-| `expectations_b200.json`, `__init__.py` | Regression thresholds and harness target exports. |
+| `baseline_kv_cache.py`, `optimized_kv_cache_nvfp4.py` | Baseline and compressed KV-cache benchmark pair. |
+| `kv_cache_common.py` | Shared workload setup. |
+| `tma_prefetch_extension.py`, `tma_prefetch_ext.cu` | Extension code supporting the optimized path. |
 
 ## Running the Benchmarks
-Use the benchmark harness to pick targets explicitly.
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
 python -m cli.aisp bench list-targets --chapter labs/kv_cache_compression
-python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile minimal
-python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache_nvfp4 --profile minimal
+python -m cli.aisp bench run --targets labs/kv_cache_compression --profile minimal
 ```
-- Pass `--target-extra-arg labs/kv_cache_compression:kv_cache_nvfp4="--flag value"` to sweep shapes or calibration options.
+- Targets follow the `labs/kv_cache_compression:<workload>` naming convention listed by `list-targets`.
+- Use `--target-extra-arg labs/kv_cache_compression:<workload>="--flag value"` to sweep schedule knobs.
+- Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
+- Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
 
 ## Validation Checklist
-- Baseline MXFP8 target runs without requiring FP4 support.
-- NVFP4 target fails fast if FP4 kernels are unavailable on the current hardware/driver.
-- Harness artifacts align with `expectations_b200.json`; mismatches flag regression risk.
+- `python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile minimal` should keep the compressed path verification-clean and modestly ahead on this hardware.
 
 ## Notes
-- FP4 path requires Blackwell-class NVFP4 support; tensor dimensions stay multiples of 16 for FP4/FP8 GEMM kernels.
-- Everything is self-contained in `labs/kv_cache_compression/`—no cross-chapter imports.
+- This is a good lab for demonstrating that some memory optimizations are valuable mostly for capacity, not for giant latency wins.

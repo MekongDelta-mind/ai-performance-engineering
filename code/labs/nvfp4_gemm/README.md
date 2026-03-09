@@ -1,73 +1,66 @@
-# Lab NVFP4 GEMM (Leaderboard 597)
+# Lab - NVFP4 GEMM
 
-This lab is the dedicated workspace for tuning the NVFP4 GEMM challenge (`leaderboard 597`) on B200.
-It contains both:
-- CUDA-binary A/B benchmarking flow (`baseline_nvfp4_gemm.cu` vs `optimized_nvfp4_gemm.cu`)
-- Submission-style flow aligned with the GPUMODE reference task (`task.py`, `reference_submission.py`, `optimized_submission.py`)
+## Summary
+Benchmarks an NVFP4 GEMM kernel path against the higher-precision reference so you can measure what the precision/schedule tradeoff is actually buying.
 
-## Leaderboard + Reference
+## Problem
+Low-precision GEMM work can devolve into kernel folklore quickly. This lab keeps the question narrow: what does the NVFP4 path actually save on this shape family, and does it stay verification-clean?
 
-- Leaderboard rankings: <https://www.gpumode.com/leaderboard/597?tab=rankings>
-- Reference implementation tab: <https://www.gpumode.com/leaderboard/598?tab=reference>
+## Baseline Path
+- higher-precision or less-specialized GEMM reference
+- correctness anchor for the low-precision path
+- useful for measuring the real cost/benefit of NVFP4
 
-## Files
+## Optimized Path
+- NVFP4 GEMM kernel path
+- same benchmark contract, lower-precision execution
+- tuned to answer whether the precision/schedule tradeoff is worth it here
 
-- `baseline_nvfp4_gemm.cu`: Baseline CUDA implementation.
-- `optimized_nvfp4_gemm.cu`: Optimized CUDA implementation (currently includes shape-specific kernel dispatch).
-- `baseline_nvfp4_gemm.py` / `optimized_nvfp4_gemm.py`: Harness wrappers for `bench` targets.
-- `local_eval.py`: Interleaved A/B rerank driver for CUDA-binary path (with verify and clock-lock options).
-- `task.py`, `utils.py`, `reference_submission.py`: Reference task contract + reference implementation mirror.
-- `optimized_submission.py`: Current submission candidate.
-- `local_eval_submission.py`: Leaderboard-style submission evaluator (geomean score in seconds/us).
-- `local_eval_official597.py`: Official-semantics evaluator matching `eval_better_bench.py` leaderboard behavior.
-- `sweep_case0_official.py`: Case0-only structural sweep runner on top of `local_eval_official597.py`.
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
 
-## Quick Start
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `nvfp4_gemm` | `0.0189 ms` | `0.0128 ms` | `1.47x` |
 
-Build and run interleaved A/B rerank locally:
+That is a healthy microbenchmark win, but still the kind of result that must stay verification-gated. This lab is here to make that discipline visible.
 
+## Profiler Evidence
 ```bash
-python labs/nvfp4_gemm/local_eval.py --pairs 8 --verify --json-out /tmp/nvfp4_gemm_ab.json
+python -m cli.aisp bench run --targets labs/nvfp4_gemm:nvfp4_gemm --profile deep_dive --single-gpu
 ```
 
-Run leaderboard-style submission eval:
-
-```bash
-python labs/nvfp4_gemm/local_eval_submission.py \
-  --submission-file labs/nvfp4_gemm/optimized_submission.py \
-  --verify --repeats 12 --inputs-per-repeat 50
-```
-
-Run official-semantics submission eval (recommended for tuning):
-
-```bash
-python labs/nvfp4_gemm/local_eval_official597.py \
-  --submission-file labs/nvfp4_gemm/optimized_submission.py \
-  --json-out /tmp/nvfp4_official597.json
-```
-
-Run a case0-only official-semantics sweep for case0 structural variants:
-
-```bash
-python labs/nvfp4_gemm/sweep_case0_official.py \
-  --submission-file labs/nvfp4_gemm/optimized_submission.py \
-  --variants v4_default,v4_n64_s1,v4_n64_split2,v4_n128_s1,v4_m64_n128_split2_s8,v4_m64_n128_split1_s8,v4_m64_n64_split2_s8,v4_m64_n64_split1_s8,v4_m64_n128_bk512_s3,v3b
-```
-
-Run via benchmark harness target discovery:
-
+## Repro Commands
 ```bash
 python -m cli.aisp bench list-targets --chapter labs/nvfp4_gemm
-python -m cli.aisp bench run --targets labs/nvfp4_gemm:optimized_nvfp4_gemm --profile minimal
+python -m cli.aisp bench run --targets labs/nvfp4_gemm:nvfp4_gemm --profile minimal
 ```
 
-## Notes
+## Learning Goals
+- Measure the NVFP4 GEMM path under a strict verification contract.
+- Keep low-precision wins attributable to a real benchmark pair instead of a submission-only script.
+- Expose when the path regresses verification or only wins on one measurement surface.
 
-- This lab is separate from `ch09` so challenge-specific tuning and artifacts stay isolated.
-- The CUDA binaries emit `TIME_MS:` as geomean over challenge shapes; `local_eval.py` uses that value for A/B summaries.
-- `local_eval_submission.py` tracks against `TOP_SCORE_SECONDS_597 = 9.981888843481874e-06` (queried from GPUMODE API on February 28, 2026).
-- `optimized_submission.py` supports `AISP_NVFP4_CASE0_VARIANT` for case0 routing:
-  `v4_default`, `v4_n64_s1`, `v4_n64_split2`, `v4_n128_s1`,
-  `v4_m64_n128_split2_s8`, `v4_m64_n128_split1_s8`, `v4_m64_n64_split2_s8`,
-  `v4_m64_n64_split1_s8`, `v4_m64_n128_bk512_s3`, `v3b`.
-- Current default is `AISP_NVFP4_CASE0_VARIANT=v3b` for correctness stability in long official-semantics loops.
+## Directory Layout
+| Path | Description |
+| --- | --- |
+| `baseline_nvfp4_gemm.py`, `optimized_nvfp4_gemm.py` | Harness entrypoints for the reference and NVFP4 paths. |
+| `baseline_submission.py`, `optimized_submission.py`, `local_eval_*.py` | Submission/evaluation helpers for the kernel lane. |
+| `expectations_{hardware_key}.json` | Regression thresholds for the lab. |
+
+## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
+```bash
+python -m cli.aisp bench list-targets --chapter labs/nvfp4_gemm
+python -m cli.aisp bench run --targets labs/nvfp4_gemm --profile minimal
+```
+- Targets follow the `labs/nvfp4_gemm:<workload>` naming convention listed by `list-targets`.
+- Use `--target-extra-arg labs/nvfp4_gemm:<workload>="--flag value"` to sweep schedule knobs.
+- Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
+- Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
+
+## Validation Checklist
+- `python -m cli.aisp bench run --targets labs/nvfp4_gemm:nvfp4_gemm --profile minimal` should keep the optimized path faster and verification-clean on current hardware.
+
+## Notes
+- The repo's NVFP4 labs are intentionally verification-heavy; a faster incorrect low-precision path is not an acceptable outcome.

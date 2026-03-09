@@ -1,36 +1,66 @@
 # Lab - FlashAttention Gluon
 
 ## Summary
-Contrasts a naive unfused attention (matmul + softmax + matmul) with a fused, warp-specialized FlashAttention kernel. The optimized path prefers a Gluon/Triton kernel; if Gluon is unavailable, it falls back to the flash-attn fused kernel (warp-specialized on Blackwell).
+Benchmarks a FlashAttention-style optimized path against a simpler attention reference so the local Gluon-flavored integration stays measured and honest.
+
+## Problem
+Attention-stack integrations can look "fast" because the benchmark is fuzzy. This lab keeps the pair narrow so you can see whether the Gluon-oriented optimized path really buys anything on this stack.
+
+## Baseline Path
+- simple attention reference path
+- correctness anchor for the optimized implementation
+- no fused fast-path assumptions
+
+## Optimized Path
+- FlashAttention-style optimized path
+- same workload and harness contract
+- focused on local integration cost/benefit, not a synthetic peak score
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `flashattention_gluon` | `0.205 ms` | `0.154 ms` | `1.33x` |
+
+This is a modest but real backend/path win. The useful part is that the result stays measured and reproducible instead of being hidden in a broader model benchmark.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/flashattention_gluon:flashattention_gluon --profile deep_dive --single-gpu
+```
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/flashattention_gluon
+python -m cli.aisp bench run --targets labs/flashattention_gluon:flashattention_gluon --profile minimal
+```
 
 ## Learning Goals
-- Quantify the benefit of fused FlashAttention vs unfused math softmax.
-- Observe warp specialization, TMA loads, and softmax tiling in NVTX traces.
-- Verify Gluon-first, flash-attn fallback provider selection on Blackwell hardware.
-- Capture harness artifacts to track regressions across providers.
+- Keep the local FlashAttention/Gluon integration benchmarked as a clean pair.
+- Measure backend-path value without mixing in unrelated model-level effects.
+- Use a small, stable attention benchmark as an integration health signal.
 
 ## Directory Layout
 | Path | Description |
 | --- | --- |
-| `baseline_flashattention_gluon.py` | Unfused attention with math softmax path. |
-| `optimized_flashattention_gluon.py` | Fused Gluon/flash-attn kernel with warp specialization and provider fallback. |
-| `flashattention_gluon_common.py`, `__init__.py` | Shared helpers and harness target exports. |
+| `baseline_flashattention_gluon.py`, `optimized_flashattention_gluon.py` | Baseline and optimized harness entrypoints. |
+| `flashattention_gluon_common.py` | Shared workload setup and helper code. |
+| `expectations_{hardware_key}.json` | Regression thresholds for the lab. |
 
 ## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
 ```bash
-cd ai-performance-engineering
 python -m cli.aisp bench list-targets --chapter labs/flashattention_gluon
-python -m cli.aisp bench run --targets labs/flashattention_gluon:baseline_flashattention_gluon --profile minimal
-python -m cli.aisp bench run --targets labs/flashattention_gluon:optimized_flashattention_gluon --profile minimal
+python -m cli.aisp bench run --targets labs/flashattention_gluon --profile minimal
 ```
-- Set `--profile none` for fast correctness checks or keep `--profile minimal` for Nsight-ready traces.
+- Targets follow the `labs/flashattention_gluon:<workload>` naming convention listed by `list-targets`.
+- Use `--target-extra-arg labs/flashattention_gluon:<workload>="--flag value"` to sweep schedule knobs.
+- Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
+- Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
 
 ## Validation Checklist
-- NVTX ranges appear as `flashattention_baseline_unfused` vs `flashattention_optimized_<provider>`.
-- Provider metric reports `gluon` when available, otherwise `flash-attn`; runs do not fail when Gluon is missing.
-- Optimized path shows fewer kernels and higher throughput than the baseline in harness output.
-- Expectations stay green on Blackwell; update thresholds if new hardware changes performance envelopes.
+- `python -m cli.aisp bench run --targets labs/flashattention_gluon:flashattention_gluon --profile minimal` should keep the optimized path ahead on validated hardware.
 
 ## Notes
-- Requires CUDA-capable GPU plus Gluon or flash-attn (installed via `setup.sh` when possible).
-- Use the checklist when porting a naive FlashAttention to a warp-specialized, TMA-driven kernel on Blackwell: explicit block/swizzle layouts, softmax subtiles, ordered M-barriers, tensor memory placement, TMA bulk loads, and masking folded into softmax partitions.
+- Treat this as an integration-health benchmark more than as a giant architectural headline win.

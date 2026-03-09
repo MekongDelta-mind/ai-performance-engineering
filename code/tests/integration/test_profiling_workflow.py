@@ -25,6 +25,7 @@ from core.profiling.profiling_runner import (
     run_ncu_profiling,
     run_nsys_profiling,
 )
+from tests.integration._strict_gpu_env import skip_if_strict_benchmark_env_invalid
 
 
 def _load_temp_benchmark_module(tmp_path: Path) -> ModuleType:
@@ -71,6 +72,7 @@ def _load_temp_benchmark_module(tmp_path: Path) -> ModuleType:
 
 def test_nsys_profiling_workflow(tmp_path: Path) -> None:
     assert torch.cuda.is_available(), "CUDA required - NVIDIA GPU and tools must be available"
+    skip_if_strict_benchmark_env_invalid()
     assert check_nsys_available(), "nsys must be available for profiling workflow tests"
 
     benchmark_module = _load_temp_benchmark_module(tmp_path)
@@ -106,6 +108,7 @@ def test_nsys_profiling_workflow(tmp_path: Path) -> None:
 
 def test_ncu_profiling_workflow(tmp_path: Path) -> None:
     assert torch.cuda.is_available(), "CUDA required - NVIDIA GPU and tools must be available"
+    skip_if_strict_benchmark_env_invalid()
     assert check_ncu_available(), "ncu must be available for profiling workflow tests"
 
     benchmark_module = _load_temp_benchmark_module(tmp_path)
@@ -145,6 +148,7 @@ def test_ncu_profiling_workflow(tmp_path: Path) -> None:
 
 def test_side_by_side_report_generation(tmp_path: Path) -> None:
     assert torch.cuda.is_available(), "CUDA required - NVIDIA GPU and tools must be available"
+    skip_if_strict_benchmark_env_invalid()
     assert check_nsys_available(), "nsys must be available for profiling workflow tests"
     assert check_ncu_available(), "ncu must be available for profiling workflow tests"
 

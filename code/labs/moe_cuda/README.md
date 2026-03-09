@@ -3,6 +3,47 @@
 ## Summary
 Implements mixture-of-experts decode helpers directly in CUDA: decode kernels, KV-transfer graphs, router policies, and validation math so you can iterate on Blackwell-friendly pipelines.
 
+## Problem
+MoE serving paths usually fail for one of four reasons: decode kernels are too launch-heavy, KV movement is too slow, backend selection is naïve, or routers do too much scalar work. This lab keeps those costs separated so you can see which one actually improved.
+
+## Baseline Path
+- eager CUDA helpers for decode, routing, and KV transfer
+- good correctness references
+- too much overhead in the hot path for steady-state serving
+
+## Optimized Path
+- staged decode kernels
+- graph-assisted KV transfer
+- backend and router kernels tuned for Blackwell-friendly execution
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `decode_attention` | `0.259 ms` | `0.207 ms` | `1.25x` |
+| `kv_transfer` | `1.224 ms` | `0.315 ms` | `3.88x` |
+| `moe_backend_selection` | `1.747 ms` | `0.308 ms` | `5.67x` |
+| `router` | `67.265 ms` | `8.674 ms` | `7.75x` |
+
+That spread is the point of the lab. Not every MoE subsystem gets the same win, and the router/backend work is where the biggest local payoff is showing up.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/moe_cuda:decode_attention --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/moe_cuda:kv_transfer_graphs --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/moe_cuda:router_vectorized --profile deep_dive --single-gpu
+```
+
+Those three targets cover the highest-value slices: decode kernel efficiency, KV movement/orchestration, and router kernel behavior.
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/moe_cuda
+python -m cli.aisp bench run --targets labs/moe_cuda --profile minimal
+python -m cli.aisp bench verify -t labs/moe_cuda:decode_attention
+```
+
 ## Learning Goals
 - Benchmark decode kernels that stage tokens through shared memory and cp.async pipelines.
 - Optimize KV-transfer strategies (manual, CUDA Graphs) across NVLink fabrics.

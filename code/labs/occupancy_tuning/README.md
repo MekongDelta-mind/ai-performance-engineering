@@ -3,6 +3,45 @@
 ## Summary
 Sweeps Triton matmul schedules for ProtonNet-style workloads on Blackwell, comparing the baseline schedule against optimized block/warp dimensions and reporting how each choice affects occupancy and FLOP/s.
 
+## Problem
+Occupancy work is easy to oversell. This lab exists to measure schedule choices directly and show whether better resident work actually lands a throughput win on the same matmul workload.
+
+## Baseline Path
+- one baseline Triton schedule
+- stable correctness and a clean occupancy reference
+- not tuned for this GPU/shape family
+
+## Optimized Path
+- curated block/warp schedule variants
+- measured through the same harness contract
+- designed to answer "which schedule is actually best here?" instead of assuming bigger blocks win
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `proton_matmul` baseline | `0.251 ms` | `0.196 ms` (`bm64_bn64_bk32_nw2`) | `1.28x` |
+| `proton_matmul` baseline | `0.251 ms` | `0.197 ms` (`bm64_bn256_bk32`) | `1.28x` |
+| `proton_matmul` baseline | `0.251 ms` | `0.206 ms` (`bm128_bn256_bk64`) | `1.22x` |
+
+The lab is valuable because it keeps the schedule sweep honest. The win is real, but it is a schedule-selection win, not magic.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/occupancy_tuning:proton_matmul --profile deep_dive --single-gpu
+python labs/occupancy_tuning/sweep_schedules.py --output artifacts/occupancy_tuning.csv
+```
+
+Use the deep-dive harness run for Nsight evidence and the sweep script when you want to explore candidate schedules before promoting one into the benchmark pair.
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/occupancy_tuning
+python -m cli.aisp bench run --targets labs/occupancy_tuning:proton_matmul --profile minimal
+python labs/occupancy_tuning/sweep_schedules.py --output artifacts/occupancy_tuning.csv
+```
+
 ## Learning Goals
 - Measure how Triton block sizes map to achieved occupancy on SM100/121.
 - Autogenerate schedule sweeps and record best-performing parameter sets.

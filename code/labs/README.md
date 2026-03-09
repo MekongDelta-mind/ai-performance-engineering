@@ -1,14 +1,58 @@
 # Labs
 
-Labs are end-to-end optimization stories that combine multiple chapter techniques (kernel + runtime + system) into realistic workflows. Each lab directory is self-contained and typically includes `baseline_*.py` / `optimized_*.py` benchmark pairs plus a `README.md` with prerequisites and run commands.
+## Summary
+Labs are where the repo stops being chapter-by-chapter pedagogy and starts telling complete optimization stories.
+Some labs are strict baseline/optimized benchmark pairs. Others are playbooks or matrix harnesses that need a different, more honest doc shape.
 
-## Lab Index (Best-Effort Chapter Mapping)
+## How To Read This Directory
+There are two useful lab classes in this repo:
+
+- **Benchmark-pair labs**: these expose harness targets, keep correctness gates, and are the right place to make performance claims.
+- **Playbook / matrix labs**: these package workflows, scenario drills, or large tuning matrices. They are still valuable, but they should not pretend to be a single baseline/optimized benchmark when they are not.
+
+## What Counts As A Good Lab Here
+A strong public lab should make three things obvious:
+
+- what the baseline path is
+- what changed in the optimized or alternative path
+- what measured artifact proves the claim
+
+If a lab cannot answer those questions yet, the doc should say so directly instead of faking a benchmark pair.
+
+## Learning Goals
+- Help readers find the right lab quickly.
+- Separate benchmark-pair labs from playbook/matrix labs honestly.
+- Point contributors toward the repo's expected lab quality bar.
+
+## Directory Layout
+| Path | Description |
+| --- | --- |
+| `labs/block_scaling`, `labs/blackwell_matmul`, `labs/flashattention4`, `labs/persistent_decode` | Benchmark-pair labs with strong kernel/perf narratives and artifact-backed measured deltas. |
+| `labs/decode_optimization`, `labs/kv_optimization`, `labs/moe_cuda`, `labs/moe_optimization_journey` | Serving-path and MoE labs where the benchmark pair is part of a broader optimization story. |
+| `labs/nanochat_fullstack`, `labs/python_concurrency`, `labs/vllm-deepseek-tuning` | Larger workflow-oriented labs that need a richer doc model than a simple pair benchmark. |
+| `labs/nvfp4_*` | Low-precision kernel labs where verification discipline matters as much as the timing win. |
+
+## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
+```bash
+python -m cli.aisp bench list-targets --chapter labs/block_scaling
+python -m cli.aisp bench list-targets --chapter labs/decode_optimization
+python -m cli.aisp bench list-targets --chapter labs/moe_cuda
+```
+- Use `list-targets` first; the benchmark-pair labs expose clean harness targets, while the playbook/matrix labs often have their own scripts or Makefiles.
+- If a lab does not have a clean baseline/optimized target yet, do not invent one in documentation.
+
+## Validation Checklist
+- Benchmark-facing labs should expose reproducible harness targets or clearly document why they are still workflow/matrix labs.
+- Public lab READMEs should prefer measured artifact-backed claims over generic feature descriptions.
+
+## Lab Index
 
 | Lab | Summary | Suggested Chapters |
 | --- | --- | --- |
 | `labs/nvfp4_gemv/` | GPUMODE `nvfp4_gemv` challenge workspace | ch06, ch10 |
 | `labs/nvfp4_gemm/` | GPUMODE `nvfp4_gemm` challenge workspace | ch06, ch09, ch10 |
-| `labs/async_input_pipeline/` | Async CPU→GPU input overlap | ch02, ch05, ch11 |
+| `labs/async_input_pipeline/` | Async CPU->GPU input overlap | ch02, ch05, ch11 |
 | `labs/block_scaling/` | Blackwell hardware-supported block scaling with direct CUTLASS vs PyTorch microbenchmarks | ch06, ch09 |
 | `labs/blackwell_matmul/` | Matmul suite focused on Blackwell | ch06, ch09, ch10 |
 | `labs/cudnn_sdpa_bench/` | cuDNN SDPA benchmarking | ch10, ch18 |
@@ -26,7 +70,7 @@ Labs are end-to-end optimization stories that combine multiple chapter technique
 | `labs/moe_cuda/` | CUDA MoE decode toolkit | ch06, ch10, ch15 |
 | `labs/moe_optimization_journey/` | MoE optimization narrative | ch15, ch19 |
 | `labs/moe_parallelism/` | MoE parallelism planning | ch04, ch15 |
-| `labs/nanochat_fullstack/` | End-to-end inference stack (nanochat) | ch16 |
+| `labs/nanochat_fullstack/` | End-to-end inference stack (NanoChat) | ch16 |
 | `labs/occupancy_tuning/` | Triton occupancy/schedule sweeps | ch08, ch14 |
 | `labs/persistent_decode/` | Persistent decode + TMA prefill | ch10, ch11 |
 | `labs/python_concurrency/` | Python concurrency control-plane playbook (`asyncio`, retries, idempotency, hybrid pipelines) | ch03, ch11, ch16 |
@@ -36,6 +80,5 @@ Labs are end-to-end optimization stories that combine multiple chapter technique
 | `labs/train_distributed/` | Distributed training workflows | ch03, ch04 |
 | `labs/uma_memory/` | UMA / unified memory diagnostics | ch02, ch07 |
 
-Notes:
-- “Suggested Chapters” is a best-effort map; when a lab has an explicit mapping, it is documented in that lab’s `README.md`.
-- `labs/common/` contains shared helpers and is not a standalone lab target.
+## Notes
+- Labs now intentionally support both benchmark-pair docs and honest workflow/component docs. The distinction is part of the quality bar, not an exception to it.

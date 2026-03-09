@@ -1,8 +1,8 @@
-"""optimized_multiple_unoptimized_all_techniques.py - Alias to the combined techniques benchmark.
+"""optimized_multiple_unoptimized_all_techniques.py - Optimized combined techniques entrypoint.
 
-This file keeps the "all techniques" variant discoverable as an optimized_* suffix
-for `baseline_multiple_unoptimized.py`. The canonical implementation lives in
-`optimized_multiple_unoptimized.py`.
+This keeps the all-techniques workload discoverable as an `optimized_*` pair
+for `baseline_multiple_unoptimized.py` while sharing the canonical benchmark
+implementation from `optimized_multiple_unoptimized.py`.
 """
 
 from __future__ import annotations

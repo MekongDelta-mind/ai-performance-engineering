@@ -1,4 +1,4 @@
-"""multiple_all_techniques.py - Alias to the combined techniques benchmark."""
+"""multiple_all_techniques.py - Combined techniques benchmark entrypoint."""
 
 from __future__ import annotations
 
@@ -7,12 +7,8 @@ try:
 except ImportError:
     pass
 
-from ch20.optimized_multiple_unoptimized import OptimizedAllTechniquesBenchmark as _OptimizedAllTechniquesBenchmark
+from ch20.optimized_multiple_unoptimized import OptimizedAllTechniquesBenchmark
 from core.harness.benchmark_harness import BaseBenchmark
-
-
-class OptimizedAllTechniquesBenchmark(_OptimizedAllTechniquesBenchmark):
-    """Thin alias kept for backwards compatibility with integration tests."""
 
 
 def get_benchmark() -> BaseBenchmark:

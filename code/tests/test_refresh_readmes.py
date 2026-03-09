@@ -34,11 +34,49 @@ PRIORITY_EVIDENCE_DOCS = (
     "ch19",
     "ch20",
     "labs/block_scaling",
+    "labs/blackwell_matmul",
+    "labs/async_input_pipeline",
+    "labs/custom_vs_cublas",
+    "labs/cudnn_sdpa_bench",
+    "labs/decode_optimization",
+    "labs/flexattention",
+    "labs/flashinfer_attention",
+    "labs/flashattention_gluon",
+    "labs/fullstack_cluster",
     "labs/flashattention4",
+    "labs/kv_cache_compression",
     "labs/kv_optimization",
+    "labs/moe_cuda",
+    "labs/moe_optimization_journey",
+    "labs/nanochat_fullstack",
+    "labs/nvfp4_dual_gemm",
+    "labs/nvfp4_gemm",
+    "labs/nvfp4_gemv",
+    "labs/nvfp4_group_gemm",
+    "labs/occupancy_tuning",
     "labs/persistent_decode",
     "labs/real_world_models",
+    "labs/speculative_decode",
+    "labs/train_distributed",
+    "labs/trtllm_phi_3_5_moe",
 )
+
+GENERATED_SPECIAL_DOCS = (
+    "labs/README.md",
+    "labs/nanochat_fullstack/rustbpe",
+    "labs/python_concurrency",
+    "labs/vllm-deepseek-tuning",
+)
+
+
+def _assert_evidence_sections(markdown: str) -> None:
+    assert "## Problem" in markdown
+    assert "## Baseline Path" in markdown
+    assert "## Optimized Path" in markdown
+    assert "## Measured Delta" in markdown
+    assert "## Profiler Evidence" in markdown
+    assert "## Repro Commands" in markdown
+    assert markdown.index("## Problem") < markdown.index("## Learning Goals")
 
 
 def _output_path(slug: str) -> Path:
@@ -77,9 +115,30 @@ def test_ch10_and_priority_labs_render_custom_evidence_sections() -> None:
     ch18_markdown = _format_markdown(ENTRIES["ch18"])
     ch19_markdown = _format_markdown(ENTRIES["ch19"])
     ch20_markdown = _format_markdown(ENTRIES["ch20"])
+    blackwell_matmul_markdown = _format_markdown(ENTRIES["labs/blackwell_matmul"])
+    async_input_pipeline_markdown = _format_markdown(ENTRIES["labs/async_input_pipeline"])
     block_scaling_markdown = _format_markdown(ENTRIES["labs/block_scaling"])
+    custom_vs_cublas_markdown = _format_markdown(ENTRIES["labs/custom_vs_cublas"])
+    cudnn_sdpa_markdown = _format_markdown(ENTRIES["labs/cudnn_sdpa_bench"])
+    decode_optimization_markdown = _format_markdown(ENTRIES["labs/decode_optimization"])
+    flexattention_markdown = _format_markdown(ENTRIES["labs/flexattention"])
+    flashinfer_attention_markdown = _format_markdown(ENTRIES["labs/flashinfer_attention"])
+    flashattention_gluon_markdown = _format_markdown(ENTRIES["labs/flashattention_gluon"])
+    fullstack_cluster_markdown = _format_markdown(ENTRIES["labs/fullstack_cluster"])
+    kv_cache_compression_markdown = _format_markdown(ENTRIES["labs/kv_cache_compression"])
     kv_markdown = _format_markdown(ENTRIES["labs/kv_optimization"])
+    moe_cuda_markdown = _format_markdown(ENTRIES["labs/moe_cuda"])
+    moe_journey_markdown = _format_markdown(ENTRIES["labs/moe_optimization_journey"])
+    nanochat_fullstack_markdown = _format_markdown(ENTRIES["labs/nanochat_fullstack"])
+    nvfp4_dual_gemm_markdown = _format_markdown(ENTRIES["labs/nvfp4_dual_gemm"])
+    nvfp4_gemm_markdown = _format_markdown(ENTRIES["labs/nvfp4_gemm"])
+    nvfp4_gemv_markdown = _format_markdown(ENTRIES["labs/nvfp4_gemv"])
+    nvfp4_group_gemm_markdown = _format_markdown(ENTRIES["labs/nvfp4_group_gemm"])
+    occupancy_tuning_markdown = _format_markdown(ENTRIES["labs/occupancy_tuning"])
     models_markdown = _format_markdown(ENTRIES["labs/real_world_models"])
+    speculative_decode_markdown = _format_markdown(ENTRIES["labs/speculative_decode"])
+    train_distributed_markdown = _format_markdown(ENTRIES["labs/train_distributed"])
+    trtllm_phi_markdown = _format_markdown(ENTRIES["labs/trtllm_phi_3_5_moe"])
 
     for markdown in (
         ch01_markdown,
@@ -103,38 +162,71 @@ def test_ch10_and_priority_labs_render_custom_evidence_sections() -> None:
         ch19_markdown,
         ch20_markdown,
     ):
-        assert "## Problem" in markdown
-        assert "## Baseline Path" in markdown
-        assert "## Optimized Path" in markdown
-        assert "## Measured Delta" in markdown
-        assert "## Profiler Evidence" in markdown
-        assert "## Repro Commands" in markdown
-        assert markdown.index("## Problem") < markdown.index("## Learning Goals")
+        _assert_evidence_sections(markdown)
 
     assert "## Running the Lab" in block_scaling_markdown
     assert "## Recommended Knobs" in block_scaling_markdown
     assert "## Harness vs Microbenchmark" in block_scaling_markdown
 
-    assert "## Problem" in kv_markdown
-    assert "## Baseline Path" in kv_markdown
-    assert "## Optimized Path" in kv_markdown
-    assert "## Measured Delta" in kv_markdown
-    assert "## Profiler Evidence" in kv_markdown
-    assert "## Repro Commands" in kv_markdown
-    assert kv_markdown.index("## Problem") < kv_markdown.index("## Learning Goals")
-
-    assert "## Problem" in models_markdown
-    assert "## Profiler Evidence" in models_markdown
-    assert "## Repro Commands" in models_markdown
+    for markdown in (
+        async_input_pipeline_markdown,
+        blackwell_matmul_markdown,
+        custom_vs_cublas_markdown,
+        flexattention_markdown,
+        flashinfer_attention_markdown,
+        flashattention_gluon_markdown,
+        fullstack_cluster_markdown,
+        kv_cache_compression_markdown,
+        kv_markdown,
+        cudnn_sdpa_markdown,
+        decode_optimization_markdown,
+        moe_cuda_markdown,
+        moe_journey_markdown,
+        nanochat_fullstack_markdown,
+        nvfp4_dual_gemm_markdown,
+        nvfp4_gemm_markdown,
+        nvfp4_gemv_markdown,
+        nvfp4_group_gemm_markdown,
+        occupancy_tuning_markdown,
+        models_markdown,
+        speculative_decode_markdown,
+        train_distributed_markdown,
+        trtllm_phi_markdown,
+    ):
+        _assert_evidence_sections(markdown)
 
 
 def test_priority_readmes_match_generated_content() -> None:
-    slugs = ("README.md",) + PRIORITY_EVIDENCE_DOCS
+    slugs = ("README.md",) + PRIORITY_EVIDENCE_DOCS + GENERATED_SPECIAL_DOCS
 
     for slug in slugs:
         expected = _format_markdown(ENTRIES[slug]).rstrip() + "\n"
         actual = _output_path(slug).read_text(encoding="utf-8")
         assert actual == expected, f"{slug} is out of sync with core/scripts/refresh_readmes.py"
+
+
+def test_playbook_and_matrix_lab_docs_render_honest_nonpair_sections() -> None:
+    labs_index_markdown = _format_markdown(ENTRIES["labs/README.md"])
+    rustbpe_markdown = _format_markdown(ENTRIES["labs/nanochat_fullstack/rustbpe"])
+    python_concurrency_markdown = _format_markdown(ENTRIES["labs/python_concurrency"])
+    vllm_tuning_markdown = _format_markdown(ENTRIES["labs/vllm-deepseek-tuning"])
+
+    assert "## Lab Index" in labs_index_markdown
+    assert "Benchmark-pair labs" in labs_index_markdown
+    assert "honest workflow/component docs" in labs_index_markdown
+
+    assert "## What This Component Is" in rustbpe_markdown
+    assert "## Why This Is Not A Benchmark Pair" in rustbpe_markdown
+    assert "## How It Fits Into NanoChat" in rustbpe_markdown
+    assert "Edition 2024 support" in rustbpe_markdown
+
+    assert "## What This Lab Is" in python_concurrency_markdown
+    assert "## What A Proper Benchmark Pair Would Look Like" in python_concurrency_markdown
+    assert "script-first, not harness-first" in python_concurrency_markdown
+
+    assert "## Current Artifact State" in vllm_tuning_markdown
+    assert "## What Proper Benchmark Pairs Would Look Like" in vllm_tuning_markdown
+    assert "not currently a clean benchmark-pair lab" in vllm_tuning_markdown
 
 
 def test_current_representative_deltas_prefer_tier1_history_when_available(tmp_path: Path) -> None:

@@ -3,6 +3,46 @@
 ## Summary
 Collects distributed-training recipes for Blackwell clusters: DDP, FSDP, ZeRO-1/2/3, symmetric memory, and flash-attention-aware all-reduce handling, all runnable through the harness.
 
+## Problem
+Distributed training has too many "optimized" labels that mean different things. This lab is here to keep DDP compression, pipeline schedules, and symmetric-memory training as separate benchmarked choices so you can see what actually helps on the current stack.
+
+## Baseline Path
+- conservative DDP, pipeline, and symmetric-memory paths
+- useful for correctness and topology sanity
+- enough communication overhead to make overlap/compression visible
+
+## Optimized Path
+- overlap-aware pipeline schedules
+- compression-aware DDP variants
+- symmetric-memory and sharding strategies run through the same harness
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `ddp_compression` | `1135.768 ms` | `408.656 ms` (`powersgd`) | `2.78x` |
+| `pipeline_1f1b` | `159.060 ms` | `105.125 ms` | `1.51x` |
+| `pipeline_dualpipe` | `154.106 ms` | `105.111 ms` | `1.47x` |
+| `symmem_training` | `177.269 ms` | `167.167 ms` | `1.06x` |
+
+The useful point is that the lab shows more than one kind of "distributed optimization." Compression and pipeline scheduling move the needle more than the current symmetric-memory path on this local setup.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/train_distributed:ddp_compression --profile deep_dive --single-gpu
+python -m cli.aisp bench run --targets labs/train_distributed:pipeline_1f1b --profile deep_dive --single-gpu
+```
+
+For the multi-GPU variants, keep using `torchrun` through the lab utilities. The single-GPU harness targets are the evidence-first entrypoint, not a replacement for real cluster validation.
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/train_distributed
+python -m cli.aisp bench run --targets labs/train_distributed:ddp_compression --profile minimal
+python -m cli.aisp bench run --targets labs/train_distributed:pipeline_1f1b --profile minimal
+```
+
 ## Learning Goals
 - Benchmark standard DDP vs optimized overlap-aware variants.
 - Exercise FSDP and ZeRO strategies with shared helper utilities.

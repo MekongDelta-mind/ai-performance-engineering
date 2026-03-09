@@ -1,67 +1,68 @@
-# Async Input Pipeline Lab
+# Lab - Async Input Pipeline
 
-**Goal**: Optimize CPU→GPU data transfer to eliminate input bottlenecks during training.
+## Summary
+Compares a blocking input path to an overlapped asynchronous staging path so you can see whether host/device feeding is the bottleneck on this workload.
 
-## Overview
+## Problem
+Host-side staging can make a GPU workload look slower even when the kernel is fine. This lab keeps the input path measurable instead of letting pipeline overhead hide inside model-level numbers.
 
-This lab demonstrates how to overlap data loading with GPU computation using PyTorch's DataLoader optimizations and CUDA streams.
+## Baseline Path
+- synchronous input preparation and transfer
+- simple end-to-end reference
+- intentionally leaves overlap on the table
 
-## Key Techniques
+## Optimized Path
+- asynchronous input staging
+- overlaps host/device preparation with compute
+- same benchmark contract, but less visible pipeline stall
 
-| Technique | Description | Speedup |
-|-----------|-------------|---------|
-| `pin_memory=True` | Use pinned (page-locked) host memory | 1.5-2× |
-| `non_blocking=True` | Async H2D transfers | 1.2-1.5× |
-| `num_workers > 0` | Parallel data loading | 2-4× |
-| `prefetch_factor` | Pre-load batches in background | 1.1-1.3× |
-| Copy stream | Dedicated stream for H2D overlap | 1.2× |
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
 
-## Files
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `async_input_pipeline` | `135.105 ms` | `88.690 ms` | `1.52x` |
 
-| File | Description |
-|------|-------------|
-| `core/common/async_input_pipeline.py` | Shared helpers: `PipelineConfig`, DataLoader builder, benchmark base |
-| `baseline_async_input_pipeline.py` | No overlap: synchronous loading |
-| `optimized_async_input_pipeline.py` | Full overlap: pinned memory + async + workers |
+Earlier exploratory runs showed larger numbers, but the strict rerun is the one worth publishing. This lab is about making overlap measurable under the harness contract, not about keeping the biggest scalar.
 
-## Running
-
+## Profiler Evidence
 ```bash
-# Compare baseline vs optimized
-python -m cli.aisp bench compare \
-    labs.async_input_pipeline.baseline_async_input_pipeline \
-    labs.async_input_pipeline.optimized_async_input_pipeline
-
-# Profile with nsys
-nsys profile -o async_pipeline python labs/async_input_pipeline/optimized_async_input_pipeline.py
+python -m cli.aisp bench run --targets labs/async_input_pipeline:async_input_pipeline --profile deep_dive --single-gpu
 ```
 
-## Configuration
+Nsight is useful here because the overlap story should show up directly in the timeline: less host-visible stall, not just a smaller latency number.
 
-```python
-from core.common.async_input_pipeline import PipelineConfig
-
-cfg = PipelineConfig(
-    batch_size=16,
-    feature_shape=(3, 64, 64),
-    dataset_size=64,
-    num_workers=4,           # Parallel loading processes
-    prefetch_factor=2,       # Batches to prefetch per worker
-    pin_memory=True,         # Page-locked memory for fast H2D
-    non_blocking=True,       # Async transfers
-    use_copy_stream=True,    # Dedicated H2D stream
-)
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/async_input_pipeline
+python -m cli.aisp bench run --targets labs/async_input_pipeline:async_input_pipeline --profile minimal
 ```
 
-## What to Look For
+## Learning Goals
+- Make input staging cost visible under the same harness contract as the rest of the repo.
+- Show when async overlap matters and when it does not.
+- Keep host-side data movement from masquerading as a kernel optimization problem.
 
-In **nsys** profiles:
-- Look for H2D transfers overlapping with kernel execution
-- Check for gaps between compute kernels (indicates data starvation)
-- Compare "CUDA API" row between baseline and optimized
+## Directory Layout
+| Path | Description |
+| --- | --- |
+| `baseline_async_input_pipeline.py`, `optimized_async_input_pipeline.py` | Benchmark pair for blocking vs asynchronous staging. |
+| `expectations_{hardware_key}.json` | Regression thresholds for the async pipeline pair. |
 
-## Related Chapters
+## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
+```bash
+python -m cli.aisp bench list-targets --chapter labs/async_input_pipeline
+python -m cli.aisp bench run --targets labs/async_input_pipeline --profile minimal
+```
+- Targets follow the `labs/async_input_pipeline:<workload>` naming convention listed by `list-targets`.
+- Use `--target-extra-arg labs/async_input_pipeline:<workload>="--flag value"` to sweep schedule knobs.
+- Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
+- Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
 
-- **Ch2**: Memory hierarchy and transfer types
-- **Ch5**: Storage I/O and DataLoader tuning
-- **Ch11**: CUDA streams and async execution
+## Validation Checklist
+- `python -m cli.aisp bench run --targets labs/async_input_pipeline:async_input_pipeline --profile minimal` should show lower end-to-end latency for the overlapped path on this host.
+- Deep-dive runs should show the optimized path reducing host-visible stall rather than changing the math workload.
+
+## Notes
+- This is an end-to-end pipeline lab, so the value is in the timeline and total latency, not just kernel-local timing.

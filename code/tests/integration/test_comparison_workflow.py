@@ -17,6 +17,7 @@ from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, Benc
 from core.utils.chapter_compare_template import discover_benchmarks, load_benchmark
 from core.discovery import discover_all_chapters
 from core.benchmark.comparison import compare_results, ComparisonResult
+from tests.integration._strict_gpu_env import skip_if_strict_benchmark_env_invalid
 
 
 # Skip tests if CUDA is not available
@@ -168,6 +169,7 @@ class TestComparisonWorkflowIntegration:
         chapters = discover_all_chapters(repo_root)
         if not chapters:
             pytest.skip("No chapters found")
+        skip_if_strict_benchmark_env_invalid()
 
         config = BenchmarkConfig(
             iterations=5,

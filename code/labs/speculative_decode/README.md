@@ -1,100 +1,71 @@
-# Speculative Decoding Lab
+# Lab - Speculative Decoding
 
-**Goal**: Accelerate autoregressive generation by drafting multiple tokens in parallel.
+## Summary
+Accelerates autoregressive generation by letting a smaller draft model propose multiple tokens that the larger target model verifies in parallel.
 
-## Overview
+## Problem
+Speculative decoding only pays off when the draft model is accurate enough that verification overhead is amortized. This lab keeps that tradeoff explicit instead of treating speculation as a guaranteed win.
 
-Speculative decoding uses a small "draft" model to propose multiple tokens, which are then verified in parallel by the large "target" model. When acceptance rates are high, this provides significant speedups.
+## Baseline Path
+- target-only greedy decode
+- simple reference for latency and correctness
+- no draft-model parallelism
 
-## Key Concepts
+## Optimized Path
+- small draft model proposes multiple tokens per round
+- target model verifies the draft batch in parallel
+- rejection/correction logic preserves exactness of the target path
 
-| Concept | Description |
-|---------|-------------|
-| Draft model | Small, fast model (e.g., 1B params) |
-| Target model | Large, accurate model (e.g., 70B params) |
-| Draft length | Tokens proposed per round (typically 4-8) |
-| Acceptance rate | % of draft tokens accepted |
-| Speedup | Proportional to `acceptance_rate × draft_length` |
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
 
-## Theoretical Speedup
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `speculative_decode` | `105.903 ms` | `34.399 ms` | `3.08x` |
 
-```
-Speedup ≈ 1 / (1 - acceptance_rate + acceptance_rate/draft_length)
-```
+That result is why the lab matters: speculation is only interesting when the acceptance rate is high enough to beat the verification cost, and this benchmark pair makes that visible on a deterministic toy-model setup.
 
-| Acceptance Rate | Draft Length | Speedup |
-|-----------------|--------------|---------|
-| 70% | 4 | 2.1× |
-| 80% | 4 | 2.5× |
-| 70% | 8 | 2.5× |
-| 80% | 8 | 3.3× |
-
-## Files
-
-Implemented:
-- `baseline_speculative_decode.py`: target-only greedy decode
-- `optimized_speculative_decode.py`: draft proposals + batched target verification
-- `speculative_decode_common.py`: toy model + workload helpers
-
-## Algorithm
-
-```python
-def speculative_decode(draft_model, target_model, prompt, max_tokens):
-    tokens = prompt
-    while len(tokens) < max_tokens:
-        # 1. Draft: generate k tokens with small model
-        draft_tokens = draft_model.generate(tokens, k=4)
-        
-        # 2. Verify: score all drafts in parallel with target model
-        target_logits = target_model(tokens + draft_tokens)
-        
-        # 3. Accept/reject using rejection sampling
-        accepted = 0
-        for i, (draft_tok, target_logit) in enumerate(zip(draft_tokens, target_logits)):
-            p_target = softmax(target_logit)[draft_tok]
-            p_draft = draft_probs[i][draft_tok]
-            
-            if random() < min(1, p_target / p_draft):
-                accepted += 1
-            else:
-                # Sample correction token from adjusted distribution
-                tokens.append(sample_correction(target_logit, draft_probs[i]))
-                break
-        
-        tokens.extend(draft_tokens[:accepted])
-    
-    return tokens
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/speculative_decode:speculative_decode --profile deep_dive --single-gpu
 ```
 
-## Notes on Model Choice
+The profiler view is useful here because it shows whether the runtime really shifted work into fewer target-model verification steps instead of just moving cost around.
 
-This lab uses a simple token-local `TokenMLP` to keep the benchmark deterministic
-and focused on speculative decoding mechanics. The draft model is constructed by
-slicing the target weights; scaling the target's tail hidden dimensions makes
-the draft approximation accurate (high acceptance rate) without requiring any
-training work during `setup()`.
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/speculative_decode
+python -m cli.aisp bench run --targets labs/speculative_decode:speculative_decode --profile minimal
+```
 
-## When to Use
+## Learning Goals
+- Measure how draft length and acceptance rate combine into real speedup on a deterministic workload.
+- Keep the draft/target comparison exact enough that verification still means something.
+- Demonstrate when speculative decoding is helpful and when it is not.
 
-✅ **Good for**:
-- Similar draft/target model families (high acceptance)
-- Long generation tasks (amortizes overhead)
-- Batch size = 1 (memory-bound scenarios)
+## Directory Layout
+| Path | Description |
+| --- | --- |
+| `baseline_speculative_decode.py` | Target-only greedy decode baseline. |
+| `optimized_speculative_decode.py` | Draft proposals plus batched target verification. |
+| `speculative_decode_common.py` | Toy-model helpers and workload setup used by both paths. |
+| `expectations_{hardware_key}.json` | Regression thresholds for the benchmark pair. |
 
-❌ **Not ideal for**:
-- Very different model architectures
-- Short outputs (< 50 tokens)
-- Large batch sizes (already compute-bound)
+## Running the Benchmarks
+Use the benchmark harness for quick comparisons or drive the Typer CLI when you need repeatable artifact capture.
+```bash
+python -m cli.aisp bench list-targets --chapter labs/speculative_decode
+python -m cli.aisp bench run --targets labs/speculative_decode --profile minimal
+```
+- Targets follow the `labs/speculative_decode:<workload>` naming convention listed by `list-targets`.
+- Use `--target-extra-arg labs/speculative_decode:<workload>="--flag value"` to sweep schedule knobs.
+- Benchmark validity profile defaults to strict. Virtualization is warning-only; use `--validity-profile portable` for broader compatibility on hardware-limited environments.
+- Portable runs do not write expectation files unless `--allow-portable-expectations-update` is also provided.
 
-## Related Chapters
+## Validation Checklist
+- `python -m cli.aisp bench run --targets labs/speculative_decode:speculative_decode --profile minimal` should show lower end-to-end decode latency for the optimized path.
+- The optimized path should remain verification-clean against the target-only reference path.
 
-- **Ch18**: Speculative decoding deep dive
-- **Ch18**: FlashMLA and advanced decode optimizations
-- **Ch15**: MoE inference (can use speculative decoding)
-
-## References
-
-- [Fast Inference from Transformers via Speculative Decoding](https://arxiv.org/abs/2211.17192) (Leviathan et al., 2022)
-- [SpecInfer: Accelerating LLM Serving](https://arxiv.org/abs/2305.09781) (Miao et al., 2023)
-
-
+## Notes
+- The lab uses a token-local `TokenMLP` so the benchmark stays deterministic and focused on speculative-decoding mechanics instead of model-download/setup noise.
+- This is a good lab for studying acceptance-rate sensitivity before trying the same idea in a full serving stack.

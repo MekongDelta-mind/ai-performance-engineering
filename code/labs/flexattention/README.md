@@ -3,6 +3,43 @@
 ## Summary
 Mirrors the FlexAttention CuTe DSL walkthrough: run eager vs compiled FlexAttention, compare to the CuTe path, and experiment with block masks, score modifiers, and Triton-style compilation.
 
+## Problem
+FlexAttention and FlashAttention-style paths are easy to describe and harder to verify. This lab is here to answer whether the compiled sparse/masked path in this repo actually beats the eager baseline on the same score modifiers and masks.
+
+## Baseline Path
+- eager FlexAttention path
+- straightforward correctness reference
+- higher Python and kernel-launch overhead
+
+## Optimized Path
+- compiled FlexAttention path
+- same masks and score modifiers
+- tuned for fused execution and fewer launches
+
+## Measured Delta
+Representative strict result from `artifacts/runs/20260302_full_strict_all_singlegpu/`:
+
+| Target | Baseline | Optimized | Measured delta |
+| --- | ---: | ---: | ---: |
+| `flex_attention` | `9.052 ms` | `0.320 ms` | `28.25x` |
+
+That is exactly why this lab is useful: it keeps the mask/score-mod path visible while still showing a very large compile/fusion win on the local stack.
+
+## Profiler Evidence
+```bash
+python -m cli.aisp bench run --targets labs/flexattention:flex_attention --profile deep_dive --single-gpu
+python -m cli.aisp tools flex-attention-cute -- --batch 2 --seq-len 1024
+```
+
+The harness run gives you the artifacted baseline/optimized pair. The CuTe tool is the useful fallback when you want to compare semantics on systems without working FlexAttention bindings.
+
+## Repro Commands
+```bash
+python -m cli.aisp bench list-targets --chapter labs/flexattention
+python -m cli.aisp bench run --targets labs/flexattention:flex_attention --profile minimal
+BLOCK_SIZE=64 DOC_SPAN=128 python -m cli.aisp bench run --targets labs/flexattention:flex_attention --profile minimal
+```
+
 ## Learning Goals
 - Benchmark FlexAttention eager mode against compiled variants using identical masks/score mods.
 - Validate CuTe-based FlashAttention fallbacks for platforms where FlexAttention is not available.

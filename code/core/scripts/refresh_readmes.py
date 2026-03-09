@@ -645,6 +645,108 @@ ENTRIES["README.md"] = Entry(
     ],
 )
 
+ENTRIES["labs/README.md"] = Entry(
+    title="Labs",
+    summary=dedent(
+        """\
+        Labs are where the repo stops being chapter-by-chapter pedagogy and starts telling complete optimization stories.
+        Some labs are strict baseline/optimized benchmark pairs. Others are playbooks or matrix harnesses that need a different, more honest doc shape."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "How To Read This Directory",
+            dedent(
+                """\
+                There are two useful lab classes in this repo:
+
+                - **Benchmark-pair labs**: these expose harness targets, keep correctness gates, and are the right place to make performance claims.
+                - **Playbook / matrix labs**: these package workflows, scenario drills, or large tuning matrices. They are still valuable, but they should not pretend to be a single baseline/optimized benchmark when they are not."""
+            ),
+        ),
+        MarkdownSection(
+            "What Counts As A Good Lab Here",
+            dedent(
+                """\
+                A strong public lab should make three things obvious:
+
+                - what the baseline path is
+                - what changed in the optimized or alternative path
+                - what measured artifact proves the claim
+
+                If a lab cannot answer those questions yet, the doc should say so directly instead of faking a benchmark pair."""
+            ),
+        ),
+    ],
+    goals=[
+        "Help readers find the right lab quickly.",
+        "Separate benchmark-pair labs from playbook/matrix labs honestly.",
+        "Point contributors toward the repo's expected lab quality bar.",
+    ],
+    contents=[
+        ("`labs/block_scaling`, `labs/blackwell_matmul`, `labs/flashattention4`, `labs/persistent_decode`", "Benchmark-pair labs with strong kernel/perf narratives and artifact-backed measured deltas."),
+        ("`labs/decode_optimization`, `labs/kv_optimization`, `labs/moe_cuda`, `labs/moe_optimization_journey`", "Serving-path and MoE labs where the benchmark pair is part of a broader optimization story."),
+        ("`labs/nanochat_fullstack`, `labs/python_concurrency`, `labs/vllm-deepseek-tuning`", "Larger workflow-oriented labs that need a richer doc model than a simple pair benchmark."),
+        ("`labs/nvfp4_*`", "Low-precision kernel labs where verification discipline matters as much as the timing win."),
+    ],
+    run=RunSection(
+        commands=[
+            "python -m cli.aisp bench list-targets --chapter labs/block_scaling",
+            "python -m cli.aisp bench list-targets --chapter labs/decode_optimization",
+            "python -m cli.aisp bench list-targets --chapter labs/moe_cuda",
+        ],
+        notes=[
+            "Use `list-targets` first; the benchmark-pair labs expose clean harness targets, while the playbook/matrix labs often have their own scripts or Makefiles.",
+            "If a lab does not have a clean baseline/optimized target yet, do not invent one in documentation.",
+        ],
+    ),
+    validation=[
+        "Benchmark-facing labs should expose reproducible harness targets or clearly document why they are still workflow/matrix labs.",
+        "Public lab READMEs should prefer measured artifact-backed claims over generic feature descriptions.",
+    ],
+    extra_sections=[
+        dedent(
+            """\
+            ## Lab Index
+
+            | Lab | Summary | Suggested Chapters |
+            | --- | --- | --- |
+            | `labs/nvfp4_gemv/` | GPUMODE `nvfp4_gemv` challenge workspace | ch06, ch10 |
+            | `labs/nvfp4_gemm/` | GPUMODE `nvfp4_gemm` challenge workspace | ch06, ch09, ch10 |
+            | `labs/async_input_pipeline/` | Async CPU->GPU input overlap | ch02, ch05, ch11 |
+            | `labs/block_scaling/` | Blackwell hardware-supported block scaling with direct CUTLASS vs PyTorch microbenchmarks | ch06, ch09 |
+            | `labs/blackwell_matmul/` | Matmul suite focused on Blackwell | ch06, ch09, ch10 |
+            | `labs/cudnn_sdpa_bench/` | cuDNN SDPA benchmarking | ch10, ch18 |
+            | `labs/custom_vs_cublas/` | Custom kernel vs cuBLAS parity | ch06, ch09 |
+            | `labs/cutlass_profiler_kernel_selector/` | CUTLASS profiler-based kernel selection | ch06, ch09 |
+            | `labs/decode_optimization/` | Decoder hot-path optimization | ch18, ch19 |
+            | `labs/dynamic_router/` | Dynamic prefill/decode routing | ch17, ch19 |
+            | `labs/flashattention4/` | FlashAttention-4 pipeline co-design | ch10, ch18 |
+            | `labs/flashattention_gluon/` | FlashAttention experimentation | ch18 |
+            | `labs/flashinfer_attention/` | FlashInfer block-sparse attention lab | ch16 |
+            | `labs/flexattention/` | FlexAttention harness and sweeps | ch18 |
+            | `labs/fullstack_cluster/` | Full-stack cluster + DSMEM workflows | ch10 |
+            | `labs/kv_cache_compression/` | KV-cache compression/quantization | ch18, ch19 |
+            | `labs/kv_optimization/` | KV-cache performance optimization | ch15, ch18, ch19 |
+            | `labs/moe_cuda/` | CUDA MoE decode toolkit | ch06, ch10, ch15 |
+            | `labs/moe_optimization_journey/` | MoE optimization narrative | ch15, ch19 |
+            | `labs/moe_parallelism/` | MoE parallelism planning | ch04, ch15 |
+            | `labs/nanochat_fullstack/` | End-to-end inference stack (NanoChat) | ch16 |
+            | `labs/occupancy_tuning/` | Triton occupancy/schedule sweeps | ch08, ch14 |
+            | `labs/persistent_decode/` | Persistent decode + TMA prefill | ch10, ch11 |
+            | `labs/python_concurrency/` | Python concurrency control-plane playbook (`asyncio`, retries, idempotency, hybrid pipelines) | ch03, ch11, ch16 |
+            | `labs/real_world_models/` | Real-world model optimization playbook | ch20 |
+            | `labs/speculative_decode/` | Speculative decoding | ch15, ch18 |
+            | `labs/trtllm_phi_3_5_moe/` | TensorRT-LLM Phi-3.5-MoE comparison | ch16, ch18 |
+            | `labs/train_distributed/` | Distributed training workflows | ch03, ch04 |
+            | `labs/uma_memory/` | UMA / unified memory diagnostics | ch02, ch07 |
+            """
+        ),
+    ],
+    notes=[
+        "Labs now intentionally support both benchmark-pair docs and honest workflow/component docs. The distinction is part of the quality bar, not an exception to it.",
+    ],
+)
+
 ENTRIES["ch01"] = chapter_entry(
     slug="ch01",
     title="Chapter 1 - Performance Fundamentals",
@@ -2806,7 +2908,7 @@ ENTRIES["ch20"] = chapter_entry(
         "Validate improvements with workload-specific acceptance tests.",
     ],
     contents=[
-        ("`baseline_multiple_unoptimized.py`, `optimized_multiple_unoptimized.py`, `ai_kernel_generator.py`, `inductor_guard.py`", "Composite workloads that stack several bottlenecks plus helpers for generating candidate kernels safely."),
+        ("`baseline_multiple_unoptimized.py`, `optimized_multiple_unoptimized.py`, `ai_kernel_generator.py`, `core/optimization/inductor_guard.py`", "Composite workloads that stack several bottlenecks plus the shared Inductor cudagraph guard used by the compiled end-to-end paths."),
         ("`baseline_pipeline_sequential.py`, `optimized_pipeline_sequential.py`, `baseline_end_to_end_bandwidth.py`, `optimized_end_to_end_bandwidth.py`", "Pipeline and bandwidth case studies showing how optimizations interact across stages."),
         ("`baseline_integrated_kv_cache.py`, `optimized_integrated_kv_cache.py`", "Integrated KV-cache demos that merge allocator, overlap, and NVLink pooling tricks."),
         ("`baseline_memory_standard.py`, `optimized_memory_standard.py`", "Memory-focused harness verifying allocator changes at system level."),
@@ -2819,7 +2921,7 @@ ENTRIES["ch20"] = chapter_entry(
         "`python -m ch20.optimized_pipeline_sequential --trace` shows smooth NVTX ranges covering the entire pipeline, demonstrating overlap success.",
     ],
     notes=[
-        "`inductor_guard.py` provides convenience toggles for gating experimental kernels behind feature flags.",
+        "`core/optimization/inductor_guard.py` is the canonical helper for gating Inductor cudagraph features in the compiled chapter 20 paths.",
         "`ai_kernel_generator.py` logs generated code to `artifacts/` for reproducibility; capture the log with your proof-of-benefit bundle.",
     ],
 )
@@ -2831,6 +2933,74 @@ ENTRIES["labs/blackwell_matmul"] = lab_entry(
         """\
         Ports the four-part Blackwell matmul deep dive into the harness: start with a naive CUDA kernel, then layer pipeline loads, real TMA, and cluster DSMEM broadcasts until you surpass the baseline roofline."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                This lab exists to answer a very specific Blackwell question: which part of the matmul stack is actually buying the win on this machine? Pipeline staging, TMA, and cluster/DSMEM support do not always move together, so the lab keeps them as separate benchmark targets instead of hiding everything behind one "optimized" label."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - naive CUDA matmul kernel
+                - no TMA or DSMEM cluster help
+                - useful roofline reference, but not a realistic Blackwell schedule"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - pipelined staging path
+                - TMA-enabled path for lower copy/staging overhead
+                - cluster/DSMEM variants when the hardware and shape make them worthwhile"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated results from `artifacts/runs/20260301_1032__bench__profile_none_targets_labs26_recheck/`:
+
+                | Target | Baseline | Optimized | Measured delta | What changed |
+                | --- | ---: | ---: | ---: | --- |
+                | `blackwell_matmul_pipeline` | `29.254 ms` | `5.045 ms` | `5.80x` | pipeline staging only |
+                | `blackwell_matmul_tma` | `29.303 ms` | `4.373 ms` | `6.70x` | TMA staging path |
+                | `blackwell_matmul_cluster` | `29.259 ms` | `16.307 ms` | `1.79x` | cluster/DSMEM path |
+
+                The useful reading is that the current local winner is the TMA path, not the cluster path. The cluster target is still valuable because it keeps the DSMEM route benchmarked and verified, but this repo does not pretend it is the latency leader on every shape."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use deep-dive runs when you want Nsight evidence for each schedule family:
+
+                ```bash
+                python -m cli.aisp bench run --targets labs/blackwell_matmul:blackwell_matmul_pipeline --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/blackwell_matmul:blackwell_matmul_tma --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/blackwell_matmul:blackwell_matmul_cluster --profile deep_dive --single-gpu
+                ```
+
+                Keep the targets separate when you analyze them. The point of this lab is to attribute the gain to the schedule family, not to blur TMA and cluster behavior together."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/blackwell_matmul
+                python -m cli.aisp bench run --targets labs/blackwell_matmul:blackwell_matmul_tma --profile minimal
+                python labs/blackwell_matmul/run_blackwell_matmul.py --variant tma --size 4096
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Reproduce the reference matmul trajectory (baseline -> pipelined -> TMA -> cluster).",
         "Compare PyTorch harness timings against the CUDA extensions while reusing the same shapes.",
@@ -2902,6 +3072,69 @@ ENTRIES["labs/cudnn_sdpa_bench"] = lab_entry(
         """\
         Microbenchmarks cuDNN fused scaled-dot-product attention against Flash and math backends with explicit CLI backend selection."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Attention backend choices are often treated as an implementation detail. This lab exists to keep that choice explicit and benchmarked so you can tell whether cuDNN, Flash, or the math path is actually the right answer for this exact shape family."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - attention path with conservative backend selection
+                - stable reference for correctness and shape coverage
+                - useful when fused paths are unavailable or unstable"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - fused SDPA backend path
+                - same shapes and validation contract
+                - tuned to answer "does backend choice alone move the result?" rather than mixing in unrelated changes"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `flash_sdp` | `0.345 ms` | `0.282 ms` | `1.22x` |
+
+                This is not a giant benchmark pair, and that is useful. The lab exists to show a real backend-selection delta without pretending it is a bigger architectural win than it is."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/cudnn_sdpa_bench:flash_sdp --profile deep_dive --single-gpu --target-extra-arg labs/cudnn_sdpa_bench:flash_sdp="--backend cudnn"
+                python -m cli.aisp bench run --targets labs/cudnn_sdpa_bench:flash_sdp --profile deep_dive --single-gpu --target-extra-arg labs/cudnn_sdpa_bench:flash_sdp="--backend flash"
+                ```
+
+                Keep the backend fixed per run when you profile. The point is to attribute the gain to backend behavior, not to mixed runtime heuristics."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/cudnn_sdpa_bench
+                python -m cli.aisp bench run --targets labs/cudnn_sdpa_bench:flash_sdp --profile minimal
+                python -m cli.aisp bench run --targets labs/cudnn_sdpa_bench:flash_sdp --profile minimal --target-extra-arg labs/cudnn_sdpa_bench:flash_sdp="--backend cudnn"
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Compare cuDNN fused SDPA to Flash and math backends on identical shapes.",
         "Capture Nsight traces per backend to inspect kernel fusion and launch counts.",
@@ -2952,6 +3185,109 @@ ENTRIES["labs/dynamic_router"] = lab_entry(
         "`driver.py` accepts knobs such as `--prefill-gpus`, `--decode-gpus`, and `--migration-budget` to stress different regimes.",
         "vLLM integration now takes flags (`--model`, `--prefill-gpus`, `--decode-gpus`, etc.) plus locally available tokenizer/model weights.",
         "Router scoring incorporates pinned-host KV slab availability and NUMA-locality bias; feed it real topology via `topology_probe.py` or NVML when available.",
+    ],
+)
+
+ENTRIES["labs/decode_optimization"] = lab_entry(
+    slug="labs/decode_optimization",
+    title="Lab - Decode Optimization",
+    summary=dedent(
+        """\
+        Decode-focused microbenchmarks that isolate serving-side wins such as pinned memory, streams, compile/graphs, FP8/FP4, warp specialization, and HuggingFace cache policy changes without dragging full attention stacks into every comparison."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Decode paths die by a thousand cuts: host staging, stream orchestration, cache policy, compile overhead, and kernel schedule all matter. This lab keeps those costs as separate targets so you can see what actually moves TTFT, TPOT, and total decode latency."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager decode on pageable inputs and conservative cache policy
+                - straightforward correctness reference
+                - enough host and launch overhead to make serving optimizations visible"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - pinned inputs and dual-stream decode variants
+                - `torch.compile` and CUDA Graph decode paths
+                - FP8/FP4 and warp-specialized kernels where the hardware supports them
+                - static-cache HuggingFace loop for the cache-policy pair"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `decode` | `9.845 ms` | `2.441 ms` (`ultimate`) | `4.03x` |
+                | `decode_hf_cache` | `288.157 ms` | `39.843 ms` | `7.23x` |
+                | `decode_streams` | `27.391 ms` | `23.753 ms` | `1.15x` |
+                | `decode_warp_specialized` | `38.386 ms` | `14.963 ms` | `2.57x` |
+                | `decode_double_buffer_tma` | `0.173 ms` | `0.081 ms` | `2.14x` |
+
+                This is the useful shape of the lab: some decode optimizations are huge, some are modest, and the lab keeps them separated instead of averaging them into a fake single story."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/decode_optimization:decode --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/decode_optimization:decode_hf_cache --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/decode_optimization:decode_warp_specialized --profile deep_dive --single-gpu
+                ```
+
+                Those three targets cover the most useful slices: general decode orchestration, real decoder-loop cache policy, and the fused Triton kernel path."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/decode_optimization
+                python -m cli.aisp bench run --targets labs/decode_optimization --profile none
+                python -m cli.aisp demos labs-decode-multigpu --nproc-per-node 4 -- --iters 4 --warmup 1
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Contrast eager vs pinned/streamed vs compiled/graph decode paths on the same workload.",
+        "Measure FP8/FP4 tensor-core benefits relative to FP16/BF16 baselines.",
+        "Validate Triton warp-specialized decode kernels against Python math and harness expectations.",
+        "Observe NVLink-C2C behavior by scaling the decode loop across available GPUs.",
+    ],
+    contents=[
+        ("`baseline_decode.py`, `optimized_decode_pinned.py`, `optimized_decode_streams.py`, `optimized_decode_compile.py`, `optimized_decode_graph.py`, `optimized_decode_graph_full.py`, `optimized_decode_ultimate.py`", "Serving-path decode variants that isolate host, stream, compile, and graph effects."),
+        ("`baseline_decode_hf_cache.py`, `optimized_decode_hf_cache.py`", "Real HuggingFace decoder-loop comparison: dynamic cache + per-step EOS sync vs static cache + compiled decode + batched EOS polling."),
+        ("`baseline_decode_fp8.py`, `optimized_decode_fp8.py`, `baseline_decode_fp4.py`, `optimized_decode_fp4.py`", "Prefill-focused low-precision decode comparisons on hardware that supports them."),
+        ("`baseline_decode_warp_specialized.py`, `optimized_decode_warp_specialized.py`, `triton_fused_decode.py`", "Warp-specialized Triton decode path plus its eager correctness reference."),
+        ("`baseline_decode_double_buffer_tma.py`, `optimized_decode_double_buffer_tma.py`, `decode_common.py`, `decode_multigpu_demo.py`", "CUDA double-buffer/TMA path, shared helpers, and the multi-GPU NVLink-C2C demo."),
+    ],
+    validation=[
+        "Baseline vs pinned/streams shows improved TTFT and TPOT with lower host wait time.",
+        "Compile/graph variants emit fewer kernels and higher tokens/sec than the baseline in harness output.",
+        "FP8/FP4 runs use a prefill-focused workload (`decode_tokens=0`) to surface tensor-core benefits; outputs remain within tolerance.",
+        "Warp-specialized Triton kernel is validated against a workload-matched eager baseline; the expectation file stays green.",
+        "The multi-GPU demo exercises NVLink-C2C without graph-capture failures when launched via `torchrun`.",
+    ],
+    notes=[
+        "All targets emit TTFT, TPOT mean, decode time, total time, and tokens/sec in `custom_metrics` for easy diffing.",
+        "FP4 requires NVFP4-capable Blackwell hardware; unsupported platforms fail fast.",
+        "The HF cache pair reproduces the main idea from Chaim Rand's token-generation optimization write-up while keeping the harness contract intact.",
     ],
 )
 
@@ -3344,6 +3680,1316 @@ ENTRIES["labs/flashattention4"] = lab_entry(
     ],
 )
 
+ENTRIES["labs/flashinfer_attention"] = lab_entry(
+    slug="labs/flashinfer_attention",
+    title="Lab - FlashInfer Block-Sparse Attention",
+    summary=dedent(
+        """\
+        Runs a block-sparse attention kernel with FlashInfer and compares it to dense SDP plus an equivalent sparsity mask on an LLM-scale head configuration, including the output projection."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Block-sparse attention is only interesting if the sparse kernel plus projection work actually beats the dense masked path. This lab keeps the output projection in both paths so the comparison stays honest."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - dense SDP plus sparsity mask
+                - same output projection as the optimized path
+                - useful correctness and cost-model reference"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - FlashInfer block-sparse attention
+                - same head geometry and output projection
+                - tuned to measure sparsity benefits at realistic hidden sizes"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `flashinfer_attention` | `1.043 ms` | `0.320 ms` | `3.26x` |
+
+                This is a good example of a sparse-kernel lab that still keeps the surrounding work visible instead of benchmarking an unrealistically stripped-down kernel in isolation."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/flashinfer_attention:flashinfer_attention --profile deep_dive --single-gpu
+                ```
+
+                Use the deep-dive run when you want Nsight evidence for both the sparse attention kernel and the output projection path."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/flashinfer_attention
+                python -m cli.aisp bench run --targets labs/flashinfer_attention:flashinfer_attention --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Measure block-sparse attention speedups at high sparsity ratios.",
+        "Validate FlashInfer kernels on realistic head dimensions.",
+        "Profile attention plus output projection as a unit of work.",
+    ],
+    contents=[
+        ("`baseline_flashinfer_attention.py`", "Dense SDP + mask baseline with output projection."),
+        ("`optimized_flashinfer_attention.py`", "FlashInfer block-sparse attention with output projection."),
+        ("`expectations_{hardware_key}.json`", "Expectation files that keep the benchmark pair regression-checked on supported hardware."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/flashinfer_attention:flashinfer_attention --profile minimal` captures the dense-vs-sparse delta on the same head geometry.",
+        "The optimized path should verify against the dense masked reference before timing is reported.",
+    ],
+    notes=[
+        "The default head configuration targets a GPT-OSS-20B-style hidden size (`2880`) with `head_dim=64` (`45` heads).",
+        "Increase `seq_len` if you want larger sparse regions to dominate the timing.",
+        "Requires FlashInfer (`pip install flashinfer-python==0.6.3`).",
+    ],
+)
+
+ENTRIES["labs/async_input_pipeline"] = lab_entry(
+    slug="labs/async_input_pipeline",
+    title="Lab - Async Input Pipeline",
+    summary=dedent(
+        """\
+        Compares a blocking input path to an overlapped asynchronous staging path so you can see whether host/device feeding is the bottleneck on this workload."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Host-side staging can make a GPU workload look slower even when the kernel is fine. This lab keeps the input path measurable instead of letting pipeline overhead hide inside model-level numbers."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - synchronous input preparation and transfer
+                - simple end-to-end reference
+                - intentionally leaves overlap on the table"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - asynchronous input staging
+                - overlaps host/device preparation with compute
+                - same benchmark contract, but less visible pipeline stall"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `async_input_pipeline` | `135.105 ms` | `88.690 ms` | `1.52x` |
+
+                Earlier exploratory runs showed larger numbers, but the strict rerun is the one worth publishing. This lab is about making overlap measurable under the harness contract, not about keeping the biggest scalar."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/async_input_pipeline:async_input_pipeline --profile deep_dive --single-gpu
+                ```
+
+                Nsight is useful here because the overlap story should show up directly in the timeline: less host-visible stall, not just a smaller latency number."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/async_input_pipeline
+                python -m cli.aisp bench run --targets labs/async_input_pipeline:async_input_pipeline --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Make input staging cost visible under the same harness contract as the rest of the repo.",
+        "Show when async overlap matters and when it does not.",
+        "Keep host-side data movement from masquerading as a kernel optimization problem.",
+    ],
+    contents=[
+        ("`baseline_async_input_pipeline.py`, `optimized_async_input_pipeline.py`", "Benchmark pair for blocking vs asynchronous staging."),
+        ("`expectations_{hardware_key}.json`", "Regression thresholds for the async pipeline pair."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/async_input_pipeline:async_input_pipeline --profile minimal` should show lower end-to-end latency for the overlapped path on this host.",
+        "Deep-dive runs should show the optimized path reducing host-visible stall rather than changing the math workload.",
+    ],
+    notes=[
+        "This is an end-to-end pipeline lab, so the value is in the timeline and total latency, not just kernel-local timing.",
+    ],
+)
+
+ENTRIES["labs/custom_vs_cublas"] = lab_entry(
+    slug="labs/custom_vs_cublas",
+    title="Lab - Custom Kernel vs cuBLAS",
+    summary=dedent(
+        """\
+        Pits a hand-tuned TCGEN05/CUTLASS-style matmul path against the library baseline so you can see when a custom schedule is actually worth the maintenance cost."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Custom matmul kernels are easy to oversell. This lab keeps the question narrow: for this shape family, does the custom path really beat the cuBLAS-style baseline enough to justify itself?"""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - library/reference matmul path
+                - stable correctness anchor
+                - useful for checking whether the custom kernel is actually better than "just use cuBLAS" """
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - custom TCGEN05-oriented matmul implementation
+                - same math, but explicit schedule/layout control
+                - designed to answer whether a bespoke kernel wins on this shape family"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `tcgen05_matmul` | `4.027 ms` | `1.740 ms` | `2.31x` |
+
+                That is a meaningful win, not just benchmark noise. The lab matters because it turns "custom vs vendor library" into a measured tradeoff rather than ideology."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/custom_vs_cublas:tcgen05_matmul --profile deep_dive --single-gpu
+                ```
+
+                Use the deep-dive profile when you want to attribute the win to tile/schedule choices instead of relying on a single latency number."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/custom_vs_cublas
+                python -m cli.aisp bench run --targets labs/custom_vs_cublas:tcgen05_matmul --profile minimal
+                python labs/custom_vs_cublas/autotune.py --help
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Benchmark a bespoke Blackwell-oriented matmul path against the library baseline.",
+        "Keep kernel-selection and autotuning artifacts close to the benchmark pair.",
+        "Make it obvious when a custom path is real value instead of benchmark folklore.",
+    ],
+    contents=[
+        ("`baseline_tcgen05_matmul.py`, `optimized_tcgen05_matmul.py`", "Baseline/optimized benchmark pair for the TCGEN05 matmul lab."),
+        ("`autotune.py`, `cutlass_gemm/`, `experimental/`", "Tuning helpers and implementation artifacts for the custom kernel path."),
+        ("`expectations_{hardware_key}.json`", "Regression thresholds for the benchmark pair."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/custom_vs_cublas:tcgen05_matmul --profile minimal` should keep the custom path ahead of the baseline on validated hardware.",
+        "The optimized path must stay verification-clean; a faster wrong kernel does not count.",
+    ],
+    notes=[
+        'This lab is one of the clearest places to show the repo\'s bias toward measured custom-kernel value instead of hand-wavy "handwritten kernels are faster" claims.',
+    ],
+)
+
+ENTRIES["labs/flashattention_gluon"] = lab_entry(
+    slug="labs/flashattention_gluon",
+    title="Lab - FlashAttention Gluon",
+    summary=dedent(
+        """\
+        Benchmarks a FlashAttention-style optimized path against a simpler attention reference so the local Gluon-flavored integration stays measured and honest."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Attention-stack integrations can look "fast" because the benchmark is fuzzy. This lab keeps the pair narrow so you can see whether the Gluon-oriented optimized path really buys anything on this stack."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - simple attention reference path
+                - correctness anchor for the optimized implementation
+                - no fused fast-path assumptions"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - FlashAttention-style optimized path
+                - same workload and harness contract
+                - focused on local integration cost/benefit, not a synthetic peak score"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `flashattention_gluon` | `0.205 ms` | `0.154 ms` | `1.33x` |
+
+                This is a modest but real backend/path win. The useful part is that the result stays measured and reproducible instead of being hidden in a broader model benchmark."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/flashattention_gluon:flashattention_gluon --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/flashattention_gluon
+                python -m cli.aisp bench run --targets labs/flashattention_gluon:flashattention_gluon --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep the local FlashAttention/Gluon integration benchmarked as a clean pair.",
+        "Measure backend-path value without mixing in unrelated model-level effects.",
+        "Use a small, stable attention benchmark as an integration health signal.",
+    ],
+    contents=[
+        ("`baseline_flashattention_gluon.py`, `optimized_flashattention_gluon.py`", "Baseline and optimized harness entrypoints."),
+        ("`flashattention_gluon_common.py`", "Shared workload setup and helper code."),
+        ("`expectations_{hardware_key}.json`", "Regression thresholds for the lab."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/flashattention_gluon:flashattention_gluon --profile minimal` should keep the optimized path ahead on validated hardware.",
+    ],
+    notes=[
+        "Treat this as an integration-health benchmark more than as a giant architectural headline win.",
+    ],
+)
+
+ENTRIES["labs/kv_cache_compression"] = lab_entry(
+    slug="labs/kv_cache_compression",
+    title="Lab - KV Cache Compression",
+    summary=dedent(
+        """\
+        Tests whether compressing the KV cache is worth it for this workload, instead of assuming lower memory footprint automatically means better serving latency."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                KV-cache compression is attractive because the memory story is obvious, but the latency story often is not. This lab exists to keep those two questions separate."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - uncompressed KV cache path
+                - simple latency/memory reference
+                - no compression overhead in the hot path"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - compressed KV cache representation
+                - same benchmark harness and validation contract
+                - tests whether the memory tradeoff is actually latency-positive here"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `kv_cache` | `6066.040 ms` | `5897.083 ms` | `1.03x` |
+
+                The important takeaway is restraint: the compressed path helps, but only slightly on this workload. This is exactly the kind of lab where a clean benchmark pair prevents an overclaim."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/kv_cache_compression
+                python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Measure the latency cost/benefit of KV-cache compression under the harness contract.",
+        "Keep memory-saving and latency-saving claims distinct.",
+        "Make it easy to inspect whether compression overhead dominates the win.",
+    ],
+    contents=[
+        ("`baseline_kv_cache.py`, `optimized_kv_cache_nvfp4.py`", "Baseline and compressed KV-cache benchmark pair."),
+        ("`kv_cache_common.py`", "Shared workload setup."),
+        ("`tma_prefetch_extension.py`, `tma_prefetch_ext.cu`", "Extension code supporting the optimized path."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/kv_cache_compression:kv_cache --profile minimal` should keep the compressed path verification-clean and modestly ahead on this hardware.",
+    ],
+    notes=[
+        "This is a good lab for demonstrating that some memory optimizations are valuable mostly for capacity, not for giant latency wins.",
+    ],
+)
+
+ENTRIES["labs/moe_optimization_journey"] = lab_entry(
+    slug="labs/moe_optimization_journey",
+    title="Lab - MoE Optimization Journey",
+    summary=dedent(
+        """\
+        Packages a staged MoE optimization story from naive execution to quantized/padded fast paths so you can measure which step is actually doing the work."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                MoE optimization is often told as a narrative, not a benchmarked sequence. This lab keeps the sequence explicit so you can see which stage of the journey is providing the real win."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - naive MoE execution path
+                - simple correctness reference
+                - useful for showing how expensive unstructured expert execution can be"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - staged optimized MoE path with batching/layout/scheduling improvements
+                - separate padded/quantized route for a more production-like fast path
+                - designed to attribute wins to concrete optimization steps"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict results from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `moe` | `41.938 ms` | `1.217 ms` | `34.47x` |
+                | `moe_pad_quant` | `4.681 ms` | `1.790 ms` | `2.62x` |
+
+                The spread is useful. The big win is in the core MoE path, while the padded/quantized lane is a smaller, still-real follow-on improvement."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/moe_optimization_journey:moe --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/moe_optimization_journey:moe_pad_quant --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/moe_optimization_journey
+                python -m cli.aisp bench run --targets labs/moe_optimization_journey --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Show a stepwise MoE optimization story with measured deltas instead of vague progression.",
+        "Keep the naive path, batched path, and padded/quantized path benchmarked under one roof.",
+        "Make it obvious which optimization stage is worth carrying forward.",
+    ],
+    contents=[
+        ("`baseline_moe.py`, `baseline_moe_pad_quant.py`", "Naive/reference entrypoints."),
+        ("`level0_naive.py` through `level6_full_stack.py`", "Incremental optimization stages used by the journey."),
+        ("`moe_benchmark.py`", "Shared benchmark harness layer for the staged MoE path."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/moe_optimization_journey --profile minimal` should keep both the core MoE and pad/quant targets green.",
+        "Deep-dive runs should make the kernel/layout win attributable to the staged path rather than only to end-to-end timing.",
+    ],
+    notes=[
+        "This lab is a good example of how the repo should teach optimization: staged, benchmarked, and profiler-backed.",
+    ],
+)
+
+ENTRIES["labs/nanochat_fullstack"] = lab_entry(
+    slug="labs/nanochat_fullstack",
+    title="Lab - NanoChat Fullstack",
+    summary=dedent(
+        """\
+        Wraps the NanoChat full-stack tree with a clean harness benchmark pair so the repo can talk about a real end-to-end inference stack with measured baseline vs optimized deltas, not just kernels."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Full-stack LLM projects are easy to describe in product terms and hard to benchmark cleanly. This lab keeps a narrow baseline/optimized inference pair inside the larger NanoChat tree so the performance story stays measurable."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - slower NanoChat inference path
+                - end-to-end reference inside the same full-stack project
+                - useful for checking whether the optimized path is buying real latency reduction"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - optimized NanoChat inference path
+                - same harness contract and verification expectations
+                - intended to represent the practical serving-side improvements, not just a kernel microbench"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `nanochat_inference` | `122.975 ms` | `67.621 ms` | `1.82x` |
+
+                That is the useful local story: NanoChat is still a full-stack project, but the repo now has a concrete measured inference delta for it instead of leaving the performance claim buried in a much larger README."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/nanochat_fullstack:nanochat_inference --profile deep_dive --single-gpu
+                ```
+
+                Use the deep-dive path when you want Nsight evidence for the inference stack. Keep the `speedrun.sh` story separate from the benchmark pair; they answer different questions."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/nanochat_fullstack
+                python -m cli.aisp bench run --targets labs/nanochat_fullstack:nanochat_inference --profile minimal
+                python -m cli.aisp bench verify -t labs/nanochat_fullstack:nanochat_inference
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep a real full-stack LLM project in the benchmark story, not just microkernels.",
+        "Benchmark NanoChat inference as a clean baseline/optimized pair inside the larger tree.",
+        "Point readers at the broader project context without losing the measured harness story.",
+    ],
+    contents=[
+        ("`baseline_nanochat_inference.py`, `optimized_nanochat_inference.py`", "Harness benchmark pair for NanoChat inference."),
+        ("`benchmark_incremental_optimizations.py`", "Incremental benchmarking helper inside the NanoChat tree."),
+        ("`speedrun.sh`, `run1000.sh`, `README_FAST.md`", "Broader NanoChat quick-start and end-to-end project entrypoints."),
+        ("`nanochat/`, `scripts/`, `tasks/`, `tests/`", "Core NanoChat project tree and operational helpers."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/nanochat_fullstack:nanochat_inference --profile minimal` should keep the optimized path ahead under the harness contract.",
+        "`python -m cli.aisp bench verify -t labs/nanochat_fullstack:nanochat_inference` should stay green before any performance claim is accepted.",
+    ],
+    notes=[
+        "This README focuses on the repo's benchmarked NanoChat story. Use `README_FAST.md` and the project scripts when you want the broader training/serving walkthrough.",
+        "The decode microbenchmarks live separately in `labs/decode_optimization`; this lab is the broader inference-stack companion.",
+    ],
+    extra_sections=[
+        dedent(
+            """\
+            ## Project Context
+            NanoChat is intentionally bigger than a single benchmark pair. The point of this lab entry is to give the repo one clean performance anchor inside that tree, not to replace the broader NanoChat project documentation.
+
+            - Use [README_FAST.md](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/README_FAST.md) for the faster end-to-end project walkthrough.
+            - Use [speedrun.sh](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/speedrun.sh) when you want the broader "train and talk to a small model" experience.
+            - Use [rustbpe/README.md](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/rustbpe/README.md) for the tokenizer-specific component work.
+            """
+        ),
+    ],
+)
+
+ENTRIES["labs/nanochat_fullstack/rustbpe"] = lab_entry(
+    slug="labs/nanochat_fullstack/rustbpe",
+    title="Component - rustbpe",
+    summary=dedent(
+        """\
+        Lightweight Rust tokenizer-training library that complements the broader NanoChat stack. It is a component doc, not a benchmark-pair lab."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Tokenizer training is often either too slow and simple or too feature-heavy and opaque. `rustbpe` exists to keep the implementation lightweight, reasonably fast, and easy to understand."""
+            ),
+        ),
+        MarkdownSection(
+            "What This Component Is",
+            dedent(
+                """\
+                - a Rust library for training a GPT-style tokenizer
+                - part of the broader NanoChat project tree
+                - focused on simple implementation and practical speed, not benchmark-harness integration"""
+            ),
+        ),
+        MarkdownSection(
+            "Why This Is Not A Benchmark Pair",
+            dedent(
+                """\
+                `rustbpe` is a supporting component, not a baseline/optimized benchmark lab. The right contract here is build/test clarity plus how it fits into NanoChat, not a fabricated performance delta section."""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep the tokenizer-training component visible and understandable inside the larger NanoChat tree.",
+        "Document how to build and test the Rust component without pretending it is a harness benchmark.",
+        "Make the component's role in the broader full-stack project easy to find.",
+    ],
+    contents=[
+        ("`Cargo.toml`, `Cargo.lock`", "Rust package metadata and dependency lockfile."),
+        ("`src/lib.rs`", "Tokenizer-training implementation."),
+        ("`../README.md`, `../README_FAST.md`", "Broader NanoChat project docs that explain how this component fits into the full stack."),
+    ],
+    run=RunSection(
+        commands=[
+            "cd labs/nanochat_fullstack/rustbpe",
+            "cargo build --release",
+            "cargo test",
+        ],
+        notes=[
+            "This is a Rust-native component workflow, not a harness-target workflow.",
+            "You need a Rust/Cargo toolchain with Edition 2024 support for these commands to work; older Cargo builds fail while parsing `edition = \"2024\"` in `Cargo.toml`.",
+            "Use the parent NanoChat docs for end-to-end training/inference context.",
+        ],
+    ),
+    run_heading="Building and Testing",
+    run_intro="Use Cargo directly for this component.",
+    validation=[
+        "`cargo build --release` should compile the library cleanly once the host toolchain supports Rust Edition 2024.",
+        "`cargo test` should keep the component healthy as the NanoChat tree evolves after the toolchain precondition is satisfied.",
+    ],
+    extra_sections=[
+        dedent(
+            """\
+            ## How It Fits Into NanoChat
+            `rustbpe` is the tokenizer-training companion inside the broader [labs/nanochat_fullstack/README.md](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/README.md) tree.
+
+            - Use [labs/nanochat_fullstack/README.md](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/README.md) for the measured inference-stack story.
+            - Use [labs/nanochat_fullstack/README_FAST.md](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/README_FAST.md) for the quicker project walkthrough.
+            - Use this component doc when you only need the tokenizer-training piece.
+            """
+        ),
+    ],
+    notes=[
+        "This doc intentionally uses the same generator path as the benchmark-facing labs so the repo stays tidy, even when the component itself is not a benchmark pair.",
+        "On this host, `cargo test` currently fails before compilation because the installed Cargo is too old to parse `edition = \"2024\"`; the doc reflects that requirement explicitly.",
+    ],
+)
+
+ENTRIES["labs/python_concurrency"] = lab_entry(
+    slug="labs/python_concurrency",
+    title="Lab - Python Concurrency Playbook",
+    summary=dedent(
+        """\
+        A control-plane lab for Python concurrency work: bounded queues, retries, cancellation, idempotency, hybrid async/process pipelines, and the operational invariants that keep them correct."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Concurrency bugs usually look like performance bugs until you inspect the invariants. This lab is here to teach the control-plane discipline directly: bounded pressure, explicit failure handling, and deterministic terminal state."""
+            ),
+        ),
+        MarkdownSection(
+            "What This Lab Is",
+            dedent(
+                """\
+                - a scenario and playbook lab
+                - multiple runnable reference scripts
+                - focused on correctness plus measurable throughput/latency behavior
+
+                It is **not** currently a single baseline/optimized benchmark pair, and the README should say that plainly."""
+            ),
+        ),
+        MarkdownSection(
+            "What A Proper Benchmark Pair Would Look Like",
+            dedent(
+                """\
+                If we decide to productize this as a harness target later, the clean shape would be something like:
+
+                - `baseline_sync_pipeline.py`: serial or poorly bounded control path
+                - `optimized_hybrid_pipeline.py`: bounded async + process-pool pipeline
+
+                with a fixed JSON workload, invariant checks (`one terminal status per item`, ordered output, retry accounting), and measured outputs such as throughput plus p95/p99. That would be a new benchmark pair, not just a rename of the current playbook scripts."""
+            ),
+        ),
+    ],
+    goals=[
+        "Teach practical concurrency design under production-style constraints.",
+        "Keep correctness invariants visible instead of treating them as afterthoughts.",
+        "Provide runnable drills for async I/O, CPU work, retries, cancellation, and hybrid pipelines.",
+    ],
+    contents=[
+        ("`all_in_one_pipeline.py`", "Single-file reference for bounded queues, retries, dedupe, timeout handling, and hybrid async/process execution."),
+        ("`taskrun_round1_asyncio.py`, `taskrun_round2_controls.py`, `taskrun_round3_idempotency.py`", "Staged drills that build the playbook incrementally."),
+        ("`hybrid_three_stage_pipeline.py`, `executors_cpu_vs_io.py`, `gil_demo.py`", "Focused experiments for workload classification and executor behavior."),
+        ("`ADVANCED_SCENARIOS.md`, `SCENARIO_QA.md`, `QUICK_REFERENCE_GUIDE.md`", "Interview/playbook-oriented docs that explain the patterns and failure modes."),
+    ],
+    run=RunSection(
+        commands=[
+            "python labs/python_concurrency/all_in_one_pipeline.py --input labs/python_concurrency/sample_all_in_one_items.json --stage-a-workers 3 --stage-b-workers 2 --stage-c-workers 2 --queue-size 4 --rps 12 --fetch-inflight 3 --write-inflight 2 --fetch-timeout-ms 200 --write-timeout-ms 200 --cpu-timeout-ms 1200 --fetch-retries 1 --write-retries 1 --cpu-rounds 8000 --seed 7",
+            "python labs/python_concurrency/taskrun_round1_asyncio.py --help",
+            "python labs/python_concurrency/hybrid_three_stage_pipeline.py --help",
+        ],
+        notes=[
+            "This lab is script-first, not harness-first.",
+            "The right success metric is invariant safety plus bounded latency/throughput behavior, not one synthetic speedup scalar.",
+        ],
+    ),
+    validation=[
+        "Each runnable scenario should preserve one terminal status per input item and deterministic ordered output where promised.",
+        "Retry, cancellation, dedupe, and poison-path behavior should be visible in counters and summaries, not hidden.",
+        "If this lab is later promoted into benchmark targets, add new explicit baseline/optimized files instead of retrofitting the current playbook scripts.",
+    ],
+    notes=[
+        "This is a control-plane lab, so the current documentation shape is intentionally different from the benchmark-pair labs.",
+    ],
+)
+
+ENTRIES["labs/nvfp4_dual_gemm"] = lab_entry(
+    slug="labs/nvfp4_dual_gemm",
+    title="Lab - NVFP4 Dual GEMM",
+    summary=dedent(
+        """\
+        Challenge workspace for the GPUMODE NVFP4 dual-GEMM problem. It mixes baseline/optimized wrappers, official-parity local evaluation, and promotion-report AB checks."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Challenge workspaces are easy to turn into folklore. This lab is useful only if the local evaluator, the current promoted route, and the leaderboard target stay visible at the same time."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - official/reference and baseline submission path
+                - correctness and challenge-semantics anchor
+                - much slower than the tuned route on current local measurements"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - current promoted candidate route in `optimized_submission.py`
+                - validated primarily through official-parity local eval plus strict A/B promotion reports
+                - challenge workspace semantics first, generic harness story second"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Current local state is best understood through two measurements:
+
+                | Measurement surface | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | Fresh official-parity local eval (`2026-03-09`, `warmup=2`, `repeats=8`, `inputs_per_repeat=20`) | `190.124 us` (`baseline_submission.py`) | pending fresh rerun | pending |
+                | Strict promotion A/B from `promotion_report_strict_ab.json` | `20.950 us` (prior promoted route) | `20.937 us` (`optimized_submission.py`) | `~1.00x` |
+
+                The honest takeaway is that this workspace is still a challenge-tuning loop, not a fully canonical benchmark pair. The current optimized route is close to the prior promoted route on strict A/B, and the README should say that instead of pretending every run is a giant win."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                Use the official-parity evaluator first, then the stored promotion reports:
+
+                ```bash
+                python -m labs.nvfp4_dual_gemm.local_eval --submission-file labs/nvfp4_dual_gemm/optimized_submission.py --reference-file labs/nvfp4_dual_gemm/reference_submission.py --warmup 2 --repeats 8 --inputs-per-repeat 20 --lock-gpu-clocks --sm-clock-mhz 1500 --json
+                python -m json.tool labs/nvfp4_dual_gemm/promotion_report_strict_ab.json
+                ```
+
+                The promotion report is the artifact to trust when the per-run leaderboard numbers are too noisy to promote on their own."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m labs.nvfp4_dual_gemm.local_eval --submission-file labs/nvfp4_dual_gemm/baseline_submission.py --reference-file labs/nvfp4_dual_gemm/reference_submission.py --warmup 2 --repeats 8 --inputs-per-repeat 20 --lock-gpu-clocks --sm-clock-mhz 1500 --json
+                python -m labs.nvfp4_dual_gemm.local_eval --submission-file labs/nvfp4_dual_gemm/optimized_submission.py --reference-file labs/nvfp4_dual_gemm/reference_submission.py --warmup 2 --repeats 8 --inputs-per-repeat 20 --lock-gpu-clocks --sm-clock-mhz 1500 --json
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep the dual-GEMM challenge workspace measurable under official-parity local semantics.",
+        'Separate "current promoted candidate" evidence from generic baseline/optimized storytelling.',
+        "Make the promotion-report A/B flow visible in the public docs.",
+    ],
+    contents=[
+        ("`reference_submission.py`, `baseline_submission.py`, `optimized_submission.py`", "Reference, baseline, and promoted candidate submission files."),
+        ("`baseline_nvfp4_dual_gemm.py`, `optimized_nvfp4_dual_gemm.py`", "Wrapper files for the benchmark-facing side of the workspace."),
+        ("`local_eval.py`, `official_semantics_eval.py`, `promotion_report_strict_ab.json`", "Official-parity evaluator plus stored A/B promotion evidence."),
+        ("`route_sweep_verify_green.json`, `grid_sweep_verify_green.json`, `top_submission_local_screen.json`", "Supporting tuning artifacts from the challenge loop."),
+    ],
+    run=RunSection(
+        commands=[
+            "python -m labs.nvfp4_dual_gemm.local_eval --submission-file labs/nvfp4_dual_gemm/baseline_submission.py --reference-file labs/nvfp4_dual_gemm/reference_submission.py --warmup 2 --repeats 8 --inputs-per-repeat 20 --lock-gpu-clocks --sm-clock-mhz 1500 --json",
+            "python -m labs.nvfp4_dual_gemm.local_eval --submission-file labs/nvfp4_dual_gemm/optimized_submission.py --reference-file labs/nvfp4_dual_gemm/reference_submission.py --warmup 2 --repeats 8 --inputs-per-repeat 20 --lock-gpu-clocks --sm-clock-mhz 1500 --json",
+        ],
+        notes=[
+            "Use module invocation; direct script invocation is now re-exec'd to the same module entrypoint for compatibility.",
+            "Treat `promotion_report_strict_ab.json` as the promotion gate when candidate deltas are small.",
+        ],
+    ),
+    validation=[
+        "Local evaluator runs should stay verification-clean against the reference implementation.",
+        "Promotion decisions should still be based on repeated A/B evidence, not on a single low score.",
+    ],
+    notes=[
+        "This is a challenge workspace first. It is benchmark-adjacent, but it is not yet a canonical harness-history lab in the same way as `labs/nvfp4_gemm` or `labs/nvfp4_group_gemm`.",
+    ],
+)
+
+ENTRIES["labs/nvfp4_gemm"] = lab_entry(
+    slug="labs/nvfp4_gemm",
+    title="Lab - NVFP4 GEMM",
+    summary=dedent(
+        """\
+        Benchmarks an NVFP4 GEMM kernel path against the higher-precision reference so you can measure what the precision/schedule tradeoff is actually buying."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Low-precision GEMM work can devolve into kernel folklore quickly. This lab keeps the question narrow: what does the NVFP4 path actually save on this shape family, and does it stay verification-clean?"""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - higher-precision or less-specialized GEMM reference
+                - correctness anchor for the low-precision path
+                - useful for measuring the real cost/benefit of NVFP4"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - NVFP4 GEMM kernel path
+                - same benchmark contract, lower-precision execution
+                - tuned to answer whether the precision/schedule tradeoff is worth it here"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `nvfp4_gemm` | `0.0189 ms` | `0.0128 ms` | `1.47x` |
+
+                That is a healthy microbenchmark win, but still the kind of result that must stay verification-gated. This lab is here to make that discipline visible."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/nvfp4_gemm:nvfp4_gemm --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/nvfp4_gemm
+                python -m cli.aisp bench run --targets labs/nvfp4_gemm:nvfp4_gemm --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Measure the NVFP4 GEMM path under a strict verification contract.",
+        "Keep low-precision wins attributable to a real benchmark pair instead of a submission-only script.",
+        "Expose when the path regresses verification or only wins on one measurement surface.",
+    ],
+    contents=[
+        ("`baseline_nvfp4_gemm.py`, `optimized_nvfp4_gemm.py`", "Harness entrypoints for the reference and NVFP4 paths."),
+        ("`baseline_submission.py`, `optimized_submission.py`, `local_eval_*.py`", "Submission/evaluation helpers for the kernel lane."),
+        ("`expectations_{hardware_key}.json`", "Regression thresholds for the lab."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/nvfp4_gemm:nvfp4_gemm --profile minimal` should keep the optimized path faster and verification-clean on current hardware.",
+    ],
+    notes=[
+        "The repo's NVFP4 labs are intentionally verification-heavy; a faster incorrect low-precision path is not an acceptable outcome.",
+    ],
+)
+
+ENTRIES["labs/nvfp4_gemv"] = lab_entry(
+    slug="labs/nvfp4_gemv",
+    title="Lab - NVFP4 GEMV",
+    summary=dedent(
+        """\
+        Challenge workspace for the GPUMODE NVFP4 GEMV problem with exact official leaderboard semantics preserved in a local evaluator."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Challenge workspaces need an honest measurement surface. This lab keeps the official leaderboard semantics explicit so the optimized route is judged against the real baseline, not a toy proxy."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - `baseline_submission.py`
+                - official-parity local eval path
+                - correctness and challenge-semantics anchor"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - `optimized_submission.py`
+                - same official eval semantics and clock-locking path
+                - challenge-oriented route with case-specific tuning"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative official-parity local results from `labs/nvfp4_gemv/official_eval_*_20260228.json`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `nvfp4_gemv` | `203.711 us` | `68.206 us` | `2.99x` |
+
+                That is a real challenge-workspace win, and the important part is that it comes from the official evaluator semantics rather than from an easier local proxy."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m labs.nvfp4_gemv.local_eval --submission-file labs/nvfp4_gemv/baseline_submission.py --json
+                python -m labs.nvfp4_gemv.local_eval --submission-file labs/nvfp4_gemv/optimized_submission.py --json
+                ```
+
+                The evaluator produces per-case means plus the official aggregate score, which is the right artifact to compare in this workspace."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m labs.nvfp4_gemv.local_eval --submission-file labs/nvfp4_gemv/baseline_submission.py --json
+                python -m labs.nvfp4_gemv.local_eval --submission-file labs/nvfp4_gemv/optimized_submission.py --json
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep the GEMV challenge workspace aligned with the official evaluator semantics.",
+        "Make the baseline vs optimized submission delta visible with real stored artifacts.",
+        "Prevent local-tuning wins from being claimed without official-parity evidence.",
+    ],
+    contents=[
+        ("`baseline_submission.py`, `optimized_submission.py`, `reference_submission.py`", "Submission files for the challenge workspace."),
+        ("`baseline_nvfp4_gemv.py`, `optimized_nvfp4_gemv.py`", "Wrapper files for benchmark-facing integration."),
+        ("`local_eval.py`, `official_eval_baseline_20260228.json`, `official_eval_optimized_20260228.json`", "Official-parity local evaluator and stored result artifacts."),
+        ("`task.py`, `utils.py`", "Challenge helpers and task definitions."),
+    ],
+    run=RunSection(
+        commands=[
+            "python -m labs.nvfp4_gemv.local_eval --submission-file labs/nvfp4_gemv/baseline_submission.py --json",
+            "python -m labs.nvfp4_gemv.local_eval --submission-file labs/nvfp4_gemv/optimized_submission.py --json",
+        ],
+        notes=[
+            "Use module invocation; direct script invocation is now re-exec'd to the same module entrypoint for compatibility.",
+            "When the Popcorn service is healthy, compare these local official-parity results against benchmark-mode submissions rather than against ad hoc local timings.",
+        ],
+    ),
+    validation=[
+        "The official-parity local evaluator should pass correctness and emit per-case timing plus aggregate score.",
+        "Any promoted route should stay explainable in terms of the official evaluator output, not only custom local scripts.",
+    ],
+    notes=[
+        "This lab already has a cleaner local evidence story than `nvfp4_dual_gemm` because the stored official baseline and optimized reports are checked in.",
+    ],
+)
+
+ENTRIES["labs/nvfp4_group_gemm"] = lab_entry(
+    slug="labs/nvfp4_group_gemm",
+    title="Lab - NVFP4 Grouped GEMM",
+    summary=dedent(
+        """\
+        Explores grouped-GEMM routing and schedule variants across multiple cases so you can see where the grouped NVFP4 path is actually winning and where it is merely legal."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Grouped GEMM tuning is noisy and easy to overclaim. This lab keeps the case routing explicit and benchmarked so promotions are based on repeated verified wins instead of one-off lows."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - per-case baseline grouped GEMM paths
+                - stable routing reference for cases 0-3
+                - useful for showing which grouped shapes are hard versus easy"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - per-case tuned NVFP4 grouped GEMM variants
+                - same grouped workloads, but explicit schedule/routing choices
+                - designed to keep promotions tied to repeated verify and ABAB checks"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict all-case results from `artifacts/runs/20260302_rerun_all_labschapters_strict/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `nvfp4_group_gemm_case0` | `8.361 ms` | `4.180 ms` | `2.00x` |
+                | `nvfp4_group_gemm_case1` | `10.285 ms` | `1.422 ms` | `7.23x` |
+                | `nvfp4_group_gemm_case2` | `3.708 ms` | `1.087 ms` | `3.41x` |
+                | `nvfp4_group_gemm_case3` | `3.348 ms` | `1.117 ms` | `3.00x` |
+
+                Case 1 is the biggest local winner, but the lab is most valuable because it keeps all four cases visible instead of letting one good case stand in for the whole grouped-GEMM story."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/nvfp4_group_gemm --profile deep_dive --single-gpu
+                ```
+
+                Use the harness artifacts for schedule attribution, then use the router/ABAB tooling for promotion decisions. The benchmark pair tells you the shape of the win; the tuning scripts decide whether a default should actually move."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/nvfp4_group_gemm
+                python -m cli.aisp bench run --targets labs/nvfp4_group_gemm --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep grouped-GEMM tuning grounded in repeated verified case-by-case evidence.",
+        "Benchmark the promoted routes for all four grouped cases under one harness family.",
+        "Separate exploration scripts from the regression-tracked benchmark defaults.",
+    ],
+    contents=[
+        ("`baseline_nvfp4_group_gemm_case0.py` ... `baseline_nvfp4_group_gemm_case3.py`", "Per-case baseline grouped-GEMM entrypoints."),
+        ("`optimized_nvfp4_group_gemm_case0*.py` ... `optimized_nvfp4_group_gemm_case3*.py`", "Per-case tuned grouped-GEMM variants."),
+        ("`WORKLOG.md`, `custom_cuda_submission.py`, `cutlass_extension.py`", "Tuning log and implementation plumbing for the promoted routes."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/nvfp4_group_gemm --profile minimal` should keep all promoted case routes verification-clean.",
+        "Default changes should still be gated by the stricter ABAB/verify process documented in the codebase notes, not by a single benchmark run.",
+    ],
+    notes=[
+        "This lab is intentionally stricter than a normal benchmark pair because grouped-GEMM route tuning is unusually noise-prone.",
+    ],
+)
+
+ENTRIES["labs/trtllm_phi_3_5_moe"] = lab_entry(
+    slug="labs/trtllm_phi_3_5_moe",
+    title="Lab - TRT-LLM Phi-3.5 MoE",
+    summary=dedent(
+        """\
+        Benchmarks a TensorRT-LLM style Phi-3.5 MoE serving path against a slower reference path so the repo has a measured inference-stack example, not just kernel-level microbenches."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                End-to-end serving optimizations are easy to misread because setup, engine build, and runtime execution all blur together. This lab keeps a reference path and an optimized TRT-LLM path in the same harness contract so the serving win is measurable."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - slower reference serving/inference path
+                - stable end-to-end anchor for the optimized TRT-LLM route
+                - useful for showing the cost of not using the optimized engine stack"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - TensorRT-LLM-oriented optimized serving path
+                - same workload and verification contract
+                - tuned to show the practical inference-stack win, not just a kernel-local result"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative validated result from `artifacts/runs/20260303_trtllm_phi35moe_minimal_expectations_mixedprov_clean17/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `trtllm_phi_3_5_moe` | `9767.635 ms` | `1065.477 ms` | `9.17x` |
+
+                That is a substantial end-to-end win, and it only became worth documenting after the earlier failure and verification-cleanup passes were sorted out. This is exactly why the repo keeps the validation history instead of hiding the false starts."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/trtllm_phi_3_5_moe:trtllm_phi_3_5_moe --profile deep_dive --single-gpu
+                ```"""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/trtllm_phi_3_5_moe
+                python -m cli.aisp bench run --targets labs/trtllm_phi_3_5_moe:trtllm_phi_3_5_moe --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep a real serving-stack optimization in the repo's benchmark story.",
+        "Measure TRT-LLM value under the same harness discipline as the kernel labs.",
+        "Make it clear when an optimized inference stack is really worth the complexity.",
+    ],
+    contents=[
+        ("`baseline_trtllm_phi_3_5_moe.py`, `optimized_trtllm_phi_3_5_moe.py`", "Baseline and TensorRT-LLM benchmark entrypoints."),
+        ("`trtllm_common.py`", "Shared helpers and workload setup for the pair."),
+        ("`expectations_{hardware_key}.json`", "Regression thresholds for the lab."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/trtllm_phi_3_5_moe:trtllm_phi_3_5_moe --profile minimal` should keep the optimized path verification-clean and materially ahead.",
+    ],
+    notes=[
+        'This lab is one of the best repo examples for "serving-stack optimization" as opposed to pure kernel tuning.',
+    ],
+)
+
+ENTRIES["labs/vllm-deepseek-tuning"] = lab_entry(
+    slug="labs/vllm-deepseek-tuning",
+    title="Lab - vLLM DeepSeek Tuning Harness",
+    summary=dedent(
+        """\
+        A matrix-driven tuning harness for DeepSeek + vLLM scenarios: scenario sweeps, plots, reports, and startup-failure capture. It is a comparison matrix, not a single honest baseline/optimized benchmark pair yet."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Large serving-stack comparisons rarely reduce to one "optimized" switch. TP/EP choices, MTP on/off, model family, and concurrency sweeps all matter, so this lab keeps the experiment matrix explicit instead of pretending there is one universal optimized path."""
+            ),
+        ),
+        MarkdownSection(
+            "What This Lab Is",
+            dedent(
+                """\
+                - a matrix harness around `vllm serve` + `vllm bench serve`
+                - scenario/config/report tooling
+                - useful for comparative serving experiments and artifact generation
+
+                It is not currently a clean benchmark-pair lab because the important comparisons are multiple named variants, not one generic baseline/optimized route."""
+            ),
+        ),
+        MarkdownSection(
+            "Current Artifact State",
+            dedent(
+                """\
+                The checked-in artifact set under `results/` is currently startup-failure/report oriented, not a canonical baseline/optimized pair history. That is still valuable, but it should be described honestly.
+
+                If we want benchmark-pair docs here later, we should first produce canonical successful runs for one or two concrete comparisons instead of extrapolating from the matrix harness."""
+            ),
+        ),
+        MarkdownSection(
+            "What Proper Benchmark Pairs Would Look Like",
+            dedent(
+                """\
+                If we productize this into benchmark targets, the clean shape is to create explicit comparison pairs such as:
+
+                - `baseline_vllm_deepseek_tp2.py` vs `optimized_vllm_deepseek_ep2.py`
+                - `baseline_vllm_deepseek_mtp0.py` vs `optimized_vllm_deepseek_mtp1.py`
+
+                Each pair would need fixed prompts, fixed ISL/OSL/concurrency, stable serve lifecycle handling, and a clear validation/report artifact contract. That is better than inventing one generic `optimized_vllm_deepseek.py` wrapper that hides what actually changed."""
+            ),
+        ),
+    ],
+    goals=[
+        "Keep DeepSeek + vLLM comparison work reproducible and auditable.",
+        "Separate matrix-harness experimentation from benchmark-pair performance claims.",
+        "Provide a cleaner path to future canonical vLLM serving benchmark pairs.",
+    ],
+    contents=[
+        ("`configs/benchmark_matrix.yaml`, `configs/smoke_tiny.yaml`", "Scenario matrices and smoke-test configs."),
+        ("`scripts/run_matrix.py`, `scripts/plot_results.py`, `scripts/report_results.py`", "Serve/bench orchestration plus plotting/report generation."),
+        ("`results/`, `plots/`, `reports/`", "Structured outputs from the matrix harness."),
+        ("`Makefile`, `scripts/vllm_docker.sh`, `scripts/teardown.sh`", "Operational entrypoints for running and cleaning up the matrix."),
+    ],
+    run=RunSection(
+        commands=[
+            "cd labs/vllm-deepseek-tuning",
+            "make smoke",
+            "make full",
+            "make artifacts",
+        ],
+        notes=[
+            "This lab is Makefile/script driven today, not harness-target driven.",
+            "Use Docker-backed `vllm` when host `torch` and host `vllm` are mismatched.",
+        ],
+    ),
+    validation=[
+        "`make smoke` should prove the orchestration path is alive before a full matrix run.",
+        "`make full` should emit raw logs plus structured `results/*.json` records.",
+        "`make artifacts` should regenerate plots and markdown/csv reports from collected results.",
+        "If this lab is promoted into benchmark-pair targets later, create explicit named comparison pairs instead of a fake one-size-fits-all optimized wrapper.",
+    ],
+    notes=[
+        "This README stays intentionally honest: useful matrix harness, not yet a canonical baseline/optimized benchmark lab.",
+    ],
+)
+
 ENTRIES["labs/flexattention"] = lab_entry(
     slug="labs/flexattention",
     title="Lab - FlexAttention Harness",
@@ -3351,6 +4997,69 @@ ENTRIES["labs/flexattention"] = lab_entry(
         """\
         Mirrors the FlexAttention CuTe DSL walkthrough: run eager vs compiled FlexAttention, compare to the CuTe path, and experiment with block masks, score modifiers, and Triton-style compilation."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                FlexAttention and FlashAttention-style paths are easy to describe and harder to verify. This lab is here to answer whether the compiled sparse/masked path in this repo actually beats the eager baseline on the same score modifiers and masks."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager FlexAttention path
+                - straightforward correctness reference
+                - higher Python and kernel-launch overhead"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - compiled FlexAttention path
+                - same masks and score modifiers
+                - tuned for fused execution and fewer launches"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_all_singlegpu/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `flex_attention` | `9.052 ms` | `0.320 ms` | `28.25x` |
+
+                That is exactly why this lab is useful: it keeps the mask/score-mod path visible while still showing a very large compile/fusion win on the local stack."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/flexattention:flex_attention --profile deep_dive --single-gpu
+                python -m cli.aisp tools flex-attention-cute -- --batch 2 --seq-len 1024
+                ```
+
+                The harness run gives you the artifacted baseline/optimized pair. The CuTe tool is the useful fallback when you want to compare semantics on systems without working FlexAttention bindings."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/flexattention
+                python -m cli.aisp bench run --targets labs/flexattention:flex_attention --profile minimal
+                BLOCK_SIZE=64 DOC_SPAN=128 python -m cli.aisp bench run --targets labs/flexattention:flex_attention --profile minimal
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Benchmark FlexAttention eager mode against compiled variants using identical masks/score mods.",
         "Validate CuTe-based FlashAttention fallbacks for platforms where FlexAttention is not available.",
@@ -3380,6 +5089,70 @@ ENTRIES["labs/fullstack_cluster"] = lab_entry(
         """\
         Replays the entire performance-engineering arc as scenarios: from system prep to streaming inference, plus the original cluster GEMM CUDA kernels wired into the harness."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                This lab is where the repo stops being a pile of isolated kernels and starts behaving like a system story. The important question is whether the end-to-end scenario kernels still show the same directional wins once you put them back into a larger flow."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - scenario kernels without Blackwell-specific cluster tuning
+                - useful for a stable reference, but not a good steady-state throughput path
+                - keeps the extension and harness wiring honest"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - optimized cluster GEMM variants
+                - tcgen05 route where available
+                - same harness contract and validation as the rest of the repo"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `cluster_gemm` | `29.213 ms` | `4.583 ms` | `6.37x` |
+                | `cluster_gemm_tcgen05` | `0.240 ms` | `0.230 ms` | `1.04x` |
+
+                The useful split here is that `cluster_gemm` demonstrates the big end-to-end kernel win, while `cluster_gemm_tcgen05` is the fine-grained tcgen05 follow-up where the remaining headroom is much smaller."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/fullstack_cluster:cluster_gemm --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/fullstack_cluster:cluster_gemm_tcgen05 --profile deep_dive --single-gpu
+                ```
+
+                The tcgen05 path is worth profiling separately. Its win is much smaller than the coarse cluster GEMM delta, so Nsight evidence matters more than headline speedup alone."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/fullstack_cluster
+                python -m cli.aisp bench run --targets labs/fullstack_cluster:cluster_gemm --profile minimal
+                python labs/fullstack_cluster/run_lab_fullstack_cluster.py --size 2048
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Run scenario benchmarks that stitch together chapters into end-to-end workflows.",
         "Inspect cluster GEMM kernels (baseline and DSMEM/TMA optimized) via the CUDA extension.",
@@ -3410,6 +5183,73 @@ ENTRIES["labs/moe_cuda"] = lab_entry(
         """\
         Implements mixture-of-experts decode helpers directly in CUDA: decode kernels, KV-transfer graphs, router policies, and validation math so you can iterate on Blackwell-friendly pipelines."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                MoE serving paths usually fail for one of four reasons: decode kernels are too launch-heavy, KV movement is too slow, backend selection is naïve, or routers do too much scalar work. This lab keeps those costs separated so you can see which one actually improved."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - eager CUDA helpers for decode, routing, and KV transfer
+                - good correctness references
+                - too much overhead in the hot path for steady-state serving"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - staged decode kernels
+                - graph-assisted KV transfer
+                - backend and router kernels tuned for Blackwell-friendly execution"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `decode_attention` | `0.259 ms` | `0.207 ms` | `1.25x` |
+                | `kv_transfer` | `1.224 ms` | `0.315 ms` | `3.88x` |
+                | `moe_backend_selection` | `1.747 ms` | `0.308 ms` | `5.67x` |
+                | `router` | `67.265 ms` | `8.674 ms` | `7.75x` |
+
+                That spread is the point of the lab. Not every MoE subsystem gets the same win, and the router/backend work is where the biggest local payoff is showing up."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/moe_cuda:decode_attention --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/moe_cuda:kv_transfer_graphs --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/moe_cuda:router_vectorized --profile deep_dive --single-gpu
+                ```
+
+                Those three targets cover the highest-value slices: decode kernel efficiency, KV movement/orchestration, and router kernel behavior."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/moe_cuda
+                python -m cli.aisp bench run --targets labs/moe_cuda --profile minimal
+                python -m cli.aisp bench verify -t labs/moe_cuda:decode_attention
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Benchmark decode kernels that stage tokens through shared memory and cp.async pipelines.",
         "Optimize KV-transfer strategies (manual, CUDA Graphs) across NVLink fabrics.",
@@ -3469,6 +5309,71 @@ ENTRIES["labs/occupancy_tuning"] = lab_entry(
         """\
         Sweeps Triton matmul schedules for ProtonNet-style workloads on Blackwell, comparing the baseline schedule against optimized block/warp dimensions and reporting how each choice affects occupancy and FLOP/s."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Occupancy work is easy to oversell. This lab exists to measure schedule choices directly and show whether better resident work actually lands a throughput win on the same matmul workload."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - one baseline Triton schedule
+                - stable correctness and a clean occupancy reference
+                - not tuned for this GPU/shape family"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - curated block/warp schedule variants
+                - measured through the same harness contract
+                - designed to answer "which schedule is actually best here?" instead of assuming bigger blocks win"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `proton_matmul` baseline | `0.251 ms` | `0.196 ms` (`bm64_bn64_bk32_nw2`) | `1.28x` |
+                | `proton_matmul` baseline | `0.251 ms` | `0.197 ms` (`bm64_bn256_bk32`) | `1.28x` |
+                | `proton_matmul` baseline | `0.251 ms` | `0.206 ms` (`bm128_bn256_bk64`) | `1.22x` |
+
+                The lab is valuable because it keeps the schedule sweep honest. The win is real, but it is a schedule-selection win, not magic."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/occupancy_tuning:proton_matmul --profile deep_dive --single-gpu
+                python labs/occupancy_tuning/sweep_schedules.py --output artifacts/occupancy_tuning.csv
+                ```
+
+                Use the deep-dive harness run for Nsight evidence and the sweep script when you want to explore candidate schedules before promoting one into the benchmark pair."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/occupancy_tuning
+                python -m cli.aisp bench run --targets labs/occupancy_tuning:proton_matmul --profile minimal
+                python labs/occupancy_tuning/sweep_schedules.py --output artifacts/occupancy_tuning.csv
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Measure how Triton block sizes map to achieved occupancy on SM100/121.",
         "Autogenerate schedule sweeps and record best-performing parameter sets.",
@@ -3488,6 +5393,95 @@ ENTRIES["labs/occupancy_tuning"] = lab_entry(
     notes=[
         "Add new schedules to `triton_matmul_schedules.py` and regenerate the harness targets by rerunning the sweep script.",
         "`expectations_{hardware_key}.json` records FLOP/s per schedule so improvements show up in CI.",
+    ],
+)
+
+ENTRIES["labs/speculative_decode"] = lab_entry(
+    slug="labs/speculative_decode",
+    title="Lab - Speculative Decoding",
+    summary=dedent(
+        """\
+        Accelerates autoregressive generation by letting a smaller draft model propose multiple tokens that the larger target model verifies in parallel."""
+    ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Speculative decoding only pays off when the draft model is accurate enough that verification overhead is amortized. This lab keeps that tradeoff explicit instead of treating speculation as a guaranteed win."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - target-only greedy decode
+                - simple reference for latency and correctness
+                - no draft-model parallelism"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - small draft model proposes multiple tokens per round
+                - target model verifies the draft batch in parallel
+                - rejection/correction logic preserves exactness of the target path"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `speculative_decode` | `105.903 ms` | `34.399 ms` | `3.08x` |
+
+                That result is why the lab matters: speculation is only interesting when the acceptance rate is high enough to beat the verification cost, and this benchmark pair makes that visible on a deterministic toy-model setup."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/speculative_decode:speculative_decode --profile deep_dive --single-gpu
+                ```
+
+                The profiler view is useful here because it shows whether the runtime really shifted work into fewer target-model verification steps instead of just moving cost around."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/speculative_decode
+                python -m cli.aisp bench run --targets labs/speculative_decode:speculative_decode --profile minimal
+                ```"""
+            ),
+        ),
+    ],
+    goals=[
+        "Measure how draft length and acceptance rate combine into real speedup on a deterministic workload.",
+        "Keep the draft/target comparison exact enough that verification still means something.",
+        "Demonstrate when speculative decoding is helpful and when it is not.",
+    ],
+    contents=[
+        ("`baseline_speculative_decode.py`", "Target-only greedy decode baseline."),
+        ("`optimized_speculative_decode.py`", "Draft proposals plus batched target verification."),
+        ("`speculative_decode_common.py`", "Toy-model helpers and workload setup used by both paths."),
+        ("`expectations_{hardware_key}.json`", "Regression thresholds for the benchmark pair."),
+    ],
+    validation=[
+        "`python -m cli.aisp bench run --targets labs/speculative_decode:speculative_decode --profile minimal` should show lower end-to-end decode latency for the optimized path.",
+        "The optimized path should remain verification-clean against the target-only reference path.",
+    ],
+    notes=[
+        "The lab uses a token-local `TokenMLP` so the benchmark stays deterministic and focused on speculative-decoding mechanics instead of model-download/setup noise.",
+        "This is a good lab for studying acceptance-rate sensitivity before trying the same idea in a full serving stack.",
     ],
 )
 
@@ -3697,6 +5691,72 @@ ENTRIES["labs/train_distributed"] = lab_entry(
         """\
         Collects distributed-training recipes for Blackwell clusters: DDP, FSDP, ZeRO-1/2/3, symmetric memory, and flash-attention-aware all-reduce handling, all runnable through the harness."""
     ),
+    lead_sections=[
+        MarkdownSection(
+            "Problem",
+            dedent(
+                """\
+                Distributed training has too many "optimized" labels that mean different things. This lab is here to keep DDP compression, pipeline schedules, and symmetric-memory training as separate benchmarked choices so you can see what actually helps on the current stack."""
+            ),
+        ),
+        MarkdownSection(
+            "Baseline Path",
+            dedent(
+                """\
+                - conservative DDP, pipeline, and symmetric-memory paths
+                - useful for correctness and topology sanity
+                - enough communication overhead to make overlap/compression visible"""
+            ),
+        ),
+        MarkdownSection(
+            "Optimized Path",
+            dedent(
+                """\
+                - overlap-aware pipeline schedules
+                - compression-aware DDP variants
+                - symmetric-memory and sharding strategies run through the same harness"""
+            ),
+        ),
+        MarkdownSection(
+            "Measured Delta",
+            dedent(
+                """\
+                Representative strict result from `artifacts/runs/20260302_full_strict_chapter_lab_singlegpu_v2/`:
+
+                | Target | Baseline | Optimized | Measured delta |
+                | --- | ---: | ---: | ---: |
+                | `ddp_compression` | `1135.768 ms` | `408.656 ms` (`powersgd`) | `2.78x` |
+                | `pipeline_1f1b` | `159.060 ms` | `105.125 ms` | `1.51x` |
+                | `pipeline_dualpipe` | `154.106 ms` | `105.111 ms` | `1.47x` |
+                | `symmem_training` | `177.269 ms` | `167.167 ms` | `1.06x` |
+
+                The useful point is that the lab shows more than one kind of "distributed optimization." Compression and pipeline scheduling move the needle more than the current symmetric-memory path on this local setup."""
+            ),
+        ),
+        MarkdownSection(
+            "Profiler Evidence",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench run --targets labs/train_distributed:ddp_compression --profile deep_dive --single-gpu
+                python -m cli.aisp bench run --targets labs/train_distributed:pipeline_1f1b --profile deep_dive --single-gpu
+                ```
+
+                For the multi-GPU variants, keep using `torchrun` through the lab utilities. The single-GPU harness targets are the evidence-first entrypoint, not a replacement for real cluster validation."""
+            ),
+        ),
+        MarkdownSection(
+            "Repro Commands",
+            dedent(
+                """\
+                ```bash
+                python -m cli.aisp bench list-targets --chapter labs/train_distributed
+                python -m cli.aisp bench run --targets labs/train_distributed:ddp_compression --profile minimal
+                python -m cli.aisp bench run --targets labs/train_distributed:pipeline_1f1b --profile minimal
+                ```"""
+            ),
+        ),
+    ],
     goals=[
         "Benchmark standard DDP vs optimized overlap-aware variants.",
         "Exercise FSDP and ZeRO strategies with shared helper utilities.",

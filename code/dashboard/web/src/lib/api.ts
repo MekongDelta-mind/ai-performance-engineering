@@ -100,6 +100,14 @@ export async function getBenchmarkTrends() {
   return fetchAPI('/benchmark/trends');
 }
 
+export async function getTier1History() {
+  return fetchAPI('/benchmark/tier1/history');
+}
+
+export async function getTier1Trends() {
+  return fetchAPI('/benchmark/tier1/trends');
+}
+
 export async function getBenchmarkCompare(params: Record<string, unknown>) {
   const query = buildQuery(params);
   return fetchAPI(`/benchmark/compare${query}`);

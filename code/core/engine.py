@@ -879,10 +879,18 @@ class BenchmarkDomain:
     def history(self) -> Dict[str, Any]:
         """Get historical benchmark runs with trends."""
         return _get_handler().get_history_runs()
-    
+
     def trends(self) -> Dict[str, Any]:
         """Get performance trends over time."""
         return _get_handler().get_performance_trends()
+
+    def tier1_history(self) -> Dict[str, Any]:
+        """Get canonical tier-1 history runs and latest-run details."""
+        return _get_handler().get_tier1_history_runs()
+
+    def tier1_trends(self) -> Dict[str, Any]:
+        """Get canonical tier-1 trend data."""
+        return _get_handler().get_tier1_trends()
     
     def data(self) -> Dict[str, Any]:
         """Load current benchmark results data."""

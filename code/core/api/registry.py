@@ -162,6 +162,20 @@ _ROUTES: List[ApiRoute] = [
     ),
     ApiRoute(
         "GET",
+        "/api/benchmark/tier1/history",
+        "benchmark.tier1_history",
+        handlers.benchmark_tier1_history,
+        engine_op="benchmark.tier1_history",
+    ),
+    ApiRoute(
+        "GET",
+        "/api/benchmark/tier1/trends",
+        "benchmark.tier1_trends",
+        handlers.benchmark_tier1_trends,
+        engine_op="benchmark.tier1_trends",
+    ),
+    ApiRoute(
+        "GET",
         "/api/benchmark/compare",
         "benchmark.compare",
         handlers.benchmark_compare,

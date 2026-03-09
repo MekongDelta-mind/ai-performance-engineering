@@ -497,6 +497,118 @@ class PerformanceCoreBase:
             "trends": trends,
         }
 
+    def _tier1_history_root(self) -> Path:
+        """Resolve the canonical tier-1 history root."""
+        from core.benchmark.suites.tier1 import load_tier1_suite
+
+        try:
+            suite = load_tier1_suite()
+            return Path(suite.history_root).expanduser().resolve()
+        except Exception:
+            return (CODE_ROOT / "artifacts" / "history" / "tier1").resolve()
+
+    def _load_json_if_exists(self, path: Optional[Path]) -> Optional[dict]:
+        if path is None or not path.exists() or not path.is_file():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def get_tier1_history_runs(self) -> dict:
+        """Return canonical tier-1 history with latest-run details."""
+        from core.analysis.history_index import load_history_index
+
+        history_root = self._tier1_history_root()
+        index_path = history_root / "index.json"
+        index = load_history_index(index_path)
+        run_entries = index.get("runs", []) or []
+
+        runs: List[dict] = []
+        latest_summary: Optional[dict] = None
+        latest_regression: Optional[dict] = None
+        latest_run: Optional[dict] = None
+
+        for entry in run_entries:
+            summary_path = Path(entry.get("summary_path") or "")
+            regression_path_raw = (
+                entry.get("regression_summary_json_path")
+                or entry.get("regression_json_path")
+                or ""
+            )
+            regression_path = Path(regression_path_raw)
+            trend_path = Path(entry.get("trend_snapshot_path") or "")
+            summary_payload = self._load_json_if_exists(summary_path)
+            regression_payload = self._load_json_if_exists(regression_path)
+            if not summary_payload:
+                continue
+
+            summary = summary_payload.get("summary", {}) or {}
+            run = {
+                "run_id": summary_payload.get("run_id") or entry.get("run_id"),
+                "generated_at": summary_payload.get("generated_at"),
+                "suite_name": summary_payload.get("suite_name", index.get("suite_name", "tier1")),
+                "suite_version": summary_payload.get("suite_version", index.get("suite_version", 1)),
+                "target_count": int(summary.get("target_count", len(summary_payload.get("targets", []) or [])) or 0),
+                "succeeded": int(summary.get("succeeded", 0) or 0),
+                "failed": int(summary.get("failed", 0) or 0),
+                "skipped": int(summary.get("skipped", 0) or 0),
+                "missing": int(summary.get("missing", 0) or 0),
+                "avg_speedup": float(summary.get("avg_speedup", 0) or 0),
+                "median_speedup": float(summary.get("median_speedup", 0) or 0),
+                "geomean_speedup": float(summary.get("geomean_speedup", 0) or 0),
+                "representative_speedup": float(summary.get("representative_speedup", 0) or 0),
+                "max_speedup": float(summary.get("max_speedup", 0) or 0),
+                "summary_path": str(summary_path) if summary_path else None,
+                "regression_summary_path": str(Path(entry.get("regression_summary_path"))) if entry.get("regression_summary_path") else None,
+                "regression_summary_json_path": str(regression_path) if regression_path else None,
+                "trend_snapshot_path": str(trend_path) if trend_path else None,
+                "source_result_json": summary_payload.get("source_result_json"),
+                "improvement_count": len((regression_payload or {}).get("improvements", []) or []),
+                "regression_count": len((regression_payload or {}).get("regressions", []) or []),
+            }
+            runs.append(run)
+            latest_summary = summary_payload
+            latest_regression = regression_payload
+            latest_run = run
+
+        return {
+            "suite_name": index.get("suite_name", "tier1"),
+            "suite_version": index.get("suite_version", 1),
+            "history_root": str(history_root),
+            "total_runs": len(runs),
+            "latest_run_id": latest_run.get("run_id") if latest_run else None,
+            "runs": runs,
+            "latest": {
+                "run": latest_run,
+                "summary": latest_summary.get("summary", {}) if latest_summary else {},
+                "targets": latest_summary.get("targets", []) if latest_summary else [],
+                "regressions": (latest_regression or {}).get("regressions", []),
+                "improvements": (latest_regression or {}).get("improvements", []),
+                "new_targets": (latest_regression or {}).get("new_targets", []),
+                "missing_targets": (latest_regression or {}).get("missing_targets", []),
+            },
+        }
+
+    def get_tier1_trends(self) -> dict:
+        """Return canonical tier-1 trend data."""
+        from core.analysis.history_index import load_history_index
+        from core.analysis.trends import build_trend_snapshot
+
+        history_root = self._tier1_history_root()
+        index_path = history_root / "index.json"
+        index = load_history_index(index_path)
+        trend_path_str = None
+        runs = index.get("runs", []) or []
+        if runs:
+            trend_path_str = runs[-1].get("trend_snapshot_path")
+        trend_path = Path(trend_path_str) if trend_path_str else None
+        trend_payload = self._load_json_if_exists(trend_path)
+        if trend_payload:
+            return trend_payload
+        return build_trend_snapshot(index)
+
     # ------------------------------------------------------------------
     # GPU + software info
     # ------------------------------------------------------------------

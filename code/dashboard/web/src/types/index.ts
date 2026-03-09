@@ -359,6 +359,104 @@ export interface BenchmarkTrends {
   }>;
 }
 
+export interface Tier1RunSummary {
+  run_id: string;
+  generated_at?: string | null;
+  suite_name?: string;
+  suite_version?: number;
+  target_count: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  missing: number;
+  avg_speedup: number;
+  median_speedup: number;
+  geomean_speedup: number;
+  representative_speedup: number;
+  max_speedup: number;
+  summary_path?: string | null;
+  regression_summary_path?: string | null;
+  regression_summary_json_path?: string | null;
+  trend_snapshot_path?: string | null;
+  source_result_json?: string | null;
+  improvement_count?: number;
+  regression_count?: number;
+}
+
+export interface Tier1TargetSummary {
+  key: string;
+  target: string;
+  category: string;
+  rationale?: string;
+  status: string;
+  baseline_time_ms?: number | null;
+  best_speedup?: number | null;
+  best_optimized_time_ms?: number | null;
+  best_optimization?: string | null;
+  optimization_goal?: string | null;
+  baseline_memory_mb?: number | null;
+  best_memory_savings_pct?: number | null;
+  baseline_p75_ms?: number | null;
+  baseline_file?: string | null;
+  artifacts?: Record<string, string>;
+}
+
+export interface Tier1LatestRunDetails {
+  run: Tier1RunSummary | null;
+  summary: Record<string, unknown>;
+  targets: Tier1TargetSummary[];
+  regressions: Tier1Delta[];
+  improvements: Tier1Delta[];
+  new_targets: Tier1Delta[];
+  missing_targets: Tier1Delta[];
+}
+
+export interface Tier1Delta {
+  key?: string;
+  target?: string;
+  reason?: string;
+  before?: string | number | null;
+  after?: string | number | null;
+  delta?: number | null;
+  delta_pct?: number | null;
+}
+
+export interface Tier1History {
+  suite_name: string;
+  suite_version?: number;
+  history_root?: string;
+  total_runs: number;
+  latest_run_id?: string | null;
+  runs: Tier1RunSummary[];
+  latest: Tier1LatestRunDetails;
+}
+
+export interface Tier1TrendPoint {
+  run_id: string;
+  generated_at: string;
+  avg_speedup: number;
+  median_speedup: number;
+  geomean_speedup: number;
+  representative_speedup: number;
+  max_speedup: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  missing: number;
+}
+
+export interface Tier1Trends {
+  suite_name: string;
+  run_count: number;
+  latest_run_id?: string | null;
+  history: Tier1TrendPoint[];
+  avg_speedup: number;
+  avg_median_speedup?: number;
+  avg_geomean_speedup?: number;
+  representative_speedup?: number;
+  best_speedup_seen?: number;
+}
+
 export interface BenchmarkCompareDelta {
   key: string;
   chapter: string;

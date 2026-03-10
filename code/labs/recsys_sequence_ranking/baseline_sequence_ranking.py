@@ -25,6 +25,8 @@ from labs.recsys_sequence_ranking.recsys_sequence_ranking_common import (
 class BaselineSequenceRankingBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Baseline sequence-ranking path with explicit per-step sparse work."""
 
+    preferred_ncu_replay_mode = "application"
+
     def __init__(self) -> None:
         super().__init__()
         self.workload = default_workload()
@@ -92,6 +94,10 @@ class BaselineSequenceRankingBenchmark(VerificationPayloadMixin, BaseBenchmark):
             warmup=5,
             measurement_timeout_seconds=90,
             setup_timeout_seconds=90,
+            profiling_warmup=0,
+            profiling_iterations=1,
+            ncu_replay_mode="application",
+            nsys_nvtx_include=["compute_kernel:profile"],
         )
 
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

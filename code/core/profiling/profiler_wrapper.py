@@ -17,6 +17,19 @@ else:
     BenchmarkConfig = Any  # type: ignore[assignment,misc]
 
 
+def _resolve_wrapper_loop_budget(config: BenchmarkConfig) -> tuple[int, int]:
+    """Resolve warmup and profiled iteration counts for wrapper-based captures."""
+
+    profiling_warmup = getattr(config, "profiling_warmup", None)
+    if profiling_warmup is None:
+        profiling_warmup = getattr(config, "warmup", 0)
+    profiling_iterations = getattr(config, "profiling_iterations", None)
+    if profiling_iterations is None:
+        profiling_iterations = min(getattr(config, "iterations", 1), 10)
+
+    return max(int(profiling_warmup), 0), max(int(profiling_iterations), 1)
+
+
 def create_benchmark_wrapper(
     benchmark: BaseBenchmark,
     benchmark_module,
@@ -57,6 +70,8 @@ def create_benchmark_wrapper(
         module_path = Path(module_file).resolve()
         if not module_path.exists():
             return None
+
+        profiling_warmup, profiling_iterations = _resolve_wrapper_loop_budget(config)
         
         # Create temporary wrapper script
         wrapper_script = tempfile.NamedTemporaryFile(
@@ -120,7 +135,7 @@ try:
     benchmark.setup()
     
     # Warmup
-    for _ in range({config.warmup}):
+    for _ in range({profiling_warmup}):
         benchmark.benchmark_fn()
     
     # Synchronize before profiling
@@ -129,7 +144,7 @@ try:
         torch.cuda.synchronize()
     
     # Run benchmark iterations for profiling (limited for profiling overhead)
-    for _ in range({min(config.iterations, 10)}):
+    for _ in range({profiling_iterations}):
         benchmark.benchmark_fn()
     
     if torch.cuda.is_available():

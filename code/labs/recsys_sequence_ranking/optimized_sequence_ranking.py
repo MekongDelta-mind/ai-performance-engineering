@@ -28,6 +28,8 @@ from labs.recsys_sequence_ranking.recsys_sequence_ranking_common import (
 class OptimizedSequenceRankingBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Optimized sequence-ranking path using vectorized and compiled ops."""
 
+    preferred_ncu_replay_mode = "application"
+
     def __init__(self) -> None:
         super().__init__()
         self.workload = default_workload()
@@ -46,6 +48,14 @@ class OptimizedSequenceRankingBenchmark(VerificationPayloadMixin, BaseBenchmark)
             tokens_per_iteration=tokens_per_iteration(self.workload),
         )
 
+    def _should_enable_compile(self) -> bool:
+        config = getattr(self, "_config", None)
+        return bool(
+            self.workload.use_compile
+            and hasattr(torch, "compile")
+            and not bool(getattr(config, "enable_ncu", False))
+        )
+
     def setup(self) -> None:
         if not torch.cuda.is_available():
             raise RuntimeError("labs.recsys_sequence_ranking requires CUDA for fair comparison")
@@ -54,7 +64,7 @@ class OptimizedSequenceRankingBenchmark(VerificationPayloadMixin, BaseBenchmark)
         self.output = None
 
         self.score_backend = resolve_score_backend(self.workload.score_backend)
-        self.compile_enabled = bool(self.workload.use_compile and hasattr(torch, "compile"))
+        self.compile_enabled = self._should_enable_compile()
         self.compiled_tower = None
         if self.compile_enabled and self.state is not None:
             try:
@@ -125,6 +135,10 @@ class OptimizedSequenceRankingBenchmark(VerificationPayloadMixin, BaseBenchmark)
             warmup=5,
             measurement_timeout_seconds=90,
             setup_timeout_seconds=120,
+            profiling_warmup=0,
+            profiling_iterations=1,
+            ncu_replay_mode="application",
+            nsys_nvtx_include=["compute_kernel:profile"],
         )
 
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

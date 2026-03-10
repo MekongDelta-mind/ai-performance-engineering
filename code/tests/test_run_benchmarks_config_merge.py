@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from inspect import signature
+import os
+from pathlib import Path
 
 from core.benchmark.defaults import BenchmarkDefaults
 from core.harness.benchmark_harness import BenchmarkConfig, LaunchVia
+from core.harness import run_benchmarks as run_benchmarks_mod
 from core.harness.run_benchmarks import (
     _compute_locked_fields,
     _merge_benchmark_config,
@@ -210,6 +214,24 @@ def test_merge_enforces_policy_invariants() -> None:
 
     assert merged.timeout_multiplier == base.timeout_multiplier
     assert merged.enforce_environment_validation == base.enforce_environment_validation
+
+
+def test_run_benchmarks_entrypoints_leave_ncu_replay_mode_unset_by_default() -> None:
+    impl_param = signature(run_benchmarks_mod._test_chapter_impl).parameters["ncu_replay_mode"]
+    public_param = signature(run_benchmarks_mod.test_chapter).parameters["ncu_replay_mode"]
+
+    assert impl_param.default is None
+    assert public_param.default is None
+
+
+def test_harden_profile_env_prepends_startup_stub() -> None:
+    env = run_benchmarks_mod._harden_profile_env({}, repo_root=Path.cwd(), chapter_dir=Path.cwd() / "labs")
+    pythonpath_entries = [entry for entry in env["PYTHONPATH"].split(os.pathsep) if entry]
+
+    assert pythonpath_entries
+    assert pythonpath_entries[0].endswith("aisp_profile_python_startup")
+    assert (Path(pythonpath_entries[0]) / "sitecustomize.py").exists()
+    assert (Path(pythonpath_entries[0]) / "usercustomize.py").exists()
 
 
 def test_expectation_policy_strict_without_write_flags_is_preview_only() -> None:

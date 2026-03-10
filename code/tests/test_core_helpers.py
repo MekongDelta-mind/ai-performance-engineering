@@ -427,7 +427,9 @@ def test_nsight_automation_build_env_adds_startup_stub(tmp_path: Path):
     assert "aisp_profile_python_startup" in pythonpath_entries[0]
     assert env.get("PYTHONNOUSERSITE") == "1"
     startup_stub = Path(pythonpath_entries[0]) / "sitecustomize.py"
+    user_stub = Path(pythonpath_entries[0]) / "usercustomize.py"
     assert startup_stub.exists()
+    assert user_stub.exists()
 
 
 def test_profile_nsys_mcp_schema_includes_safety_defaults():

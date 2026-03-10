@@ -106,6 +106,12 @@ def pytest_configure(config):
 
 def pytest_addoption(parser):
     parser.addini("timeout", "Global timeout (seconds)", default="0")
+    parser.addoption(
+        "--full-benchmark-tests",
+        action="store_true",
+        default=False,
+        help="Run full benchmark test suite (all chapters) instead of the quick whitelist",
+    )
 
 
 @pytest.hookimpl(hookwrapper=True)

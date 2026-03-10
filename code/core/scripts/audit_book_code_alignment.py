@@ -80,6 +80,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print every resolved sample, not just chapter summaries and mismatches.",
     )
+    parser.add_argument(
+        "--book-dir",
+        type=Path,
+        default=BOOK_DIR,
+        help="Book manuscript directory to audit (default: repo_root/book).",
+    )
     return parser.parse_args()
 
 
@@ -359,7 +365,8 @@ def resolve_label(
 
 
 def selected_chapters(args: argparse.Namespace) -> list[Path]:
-    all_books = sorted(path for path in BOOK_DIR.glob("ch*.md") if CHAPTER_RE.fullmatch(path.name))
+    book_dir = Path(args.book_dir).resolve()
+    all_books = sorted(path for path in book_dir.glob("ch*.md") if CHAPTER_RE.fullmatch(path.name))
     if not args.chapter:
         return all_books
 

@@ -1905,6 +1905,26 @@ def _harden_profile_env(
     repo_root: Path,
     chapter_dir: Optional[Path] = None,
 ) -> Dict[str, str]:
+    startup_stub_dir = Path(tempfile.gettempdir()) / "aisp_profile_python_startup"
+    startup_stub_dir.mkdir(parents=True, exist_ok=True)
+    for filename, contents in {
+        "sitecustomize.py": (
+            '"""AISP profiling startup shim.\n'
+            "\n"
+            "Overrides host-level sitecustomize side effects during profiler launches.\n"
+            '"""\n'
+        ),
+        "usercustomize.py": (
+            '"""AISP profiling startup shim.\n'
+            "\n"
+            "Shadows incompatible host-level usercustomize hooks during profiler launches.\n"
+            '"""\n'
+        ),
+    }.items():
+        stub_path = startup_stub_dir / filename
+        if not stub_path.exists() or stub_path.read_text() != contents:
+            stub_path.write_text(contents)
+
     env = dict(base_env or os.environ.copy())
     force_no_user_site = str(env.get("AISP_PROFILE_NO_USER_SITE", "")).strip().lower() in {
         "1",
@@ -1920,7 +1940,7 @@ def _harden_profile_env(
         include_user_site = include_user_site_raw in {"1", "true", "yes", "on"}
     if force_no_user_site:
         include_user_site = False
-    pythonpath_entries = [str(repo_root)]
+    pythonpath_entries = [str(startup_stub_dir), str(repo_root)]
     if chapter_dir is not None:
         pythonpath_entries.append(str(chapter_dir))
     user_site: Optional[str] = None
@@ -3168,7 +3188,7 @@ def _test_chapter_impl(
     update_expectations: bool = False,
     allow_mixed_provenance: bool = False,
     ncu_metric_set: str = "minimal",
-    ncu_replay_mode: Optional[str] = "kernel",
+    ncu_replay_mode: Optional[str] = None,
     pm_sampling_interval: Optional[int] = None,
     nsys_timeout_seconds: Optional[int] = None,
     ncu_timeout_seconds: Optional[int] = None,
@@ -9011,7 +9031,7 @@ def test_chapter(
     update_expectations: bool = False,
     allow_mixed_provenance: bool = False,
     ncu_metric_set: str = "minimal",
-    ncu_replay_mode: Optional[str] = "kernel",
+    ncu_replay_mode: Optional[str] = None,
     pm_sampling_interval: Optional[int] = None,
     nsys_timeout_seconds: Optional[int] = None,
     ncu_timeout_seconds: Optional[int] = None,

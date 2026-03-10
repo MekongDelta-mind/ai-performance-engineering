@@ -424,7 +424,7 @@ def run_tier1_suite(
     update_expectations: bool = False,
     allow_mixed_provenance: bool = False,
     ncu_metric_set: str = "minimal",
-    ncu_replay_mode: Optional[str] = "kernel",
+    ncu_replay_mode: Optional[str] = None,
     pm_sampling_interval: Optional[int] = None,
     nsys_timeout_seconds: Optional[int] = None,
     ncu_timeout_seconds: Optional[int] = None,

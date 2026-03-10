@@ -196,15 +196,24 @@ class NsightAutomation:
             return self._python_startup_stub_dir
         stub_dir = Path(tempfile.gettempdir()) / "aisp_profile_python_startup"
         stub_dir.mkdir(parents=True, exist_ok=True)
-        stub_path = stub_dir / "sitecustomize.py"
-        stub_contents = (
-            '"""AISP profiling startup shim.\n'
-            "\n"
-            "Overrides host-level sitecustomize side effects during profiler launches.\n"
-            '"""\n'
-        )
-        if not stub_path.exists() or stub_path.read_text() != stub_contents:
-            stub_path.write_text(stub_contents)
+        startup_hooks = {
+            "sitecustomize.py": (
+                '"""AISP profiling startup shim.\n'
+                "\n"
+                "Overrides host-level sitecustomize side effects during profiler launches.\n"
+                '"""\n'
+            ),
+            "usercustomize.py": (
+                '"""AISP profiling startup shim.\n'
+                "\n"
+                "Shadows incompatible host-level usercustomize hooks during profiler launches.\n"
+                '"""\n'
+            ),
+        }
+        for filename, contents in startup_hooks.items():
+            stub_path = stub_dir / filename
+            if not stub_path.exists() or stub_path.read_text() != contents:
+                stub_path.write_text(contents)
         self._python_startup_stub_dir = stub_dir
         return stub_dir
 

@@ -553,7 +553,8 @@ class ProfilerConfig:
             "--metrics", ",".join(metrics),
         ]
 
-        if preset == "minimal":
+        minimal_capture = preset == "minimal" or metric_set_norm == "minimal"
+        if minimal_capture:
             replay_mode = self.ncu_replay_mode if self.honor_replay_mode_in_minimal else "kernel"
             cmd.extend([
                 "--replay-mode", replay_mode,
@@ -562,8 +563,9 @@ class ProfilerConfig:
                 cmd.extend(["--pm-sampling-interval", str(self.pm_sampling_interval)])
             cmd.extend([
                 "--target-processes", "all",
-                # Minimal profiling should not spend minutes collecting thousands of
-                # kernel instances. Capture a single representative kernel launch.
+                # Minimal NCU captures should not spend minutes collecting thousands
+                # of kernel instances, even when the overall profile preset is
+                # deep_dive for richer NSYS/Torch traces.
                 "--launch-count", "1",
             ])
         else:

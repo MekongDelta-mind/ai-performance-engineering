@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 
 from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.env import apply_env_defaults
 from core.harness.benchmark_harness import (
     BaseBenchmark,
     BenchmarkConfig,
@@ -22,6 +23,9 @@ from core.harness.benchmark_harness import (
     BenchmarkMode,
     WorkloadMetadata,
 )
+
+
+apply_env_defaults()
 
 
 def _preload_torch_cuda_symbols() -> None:

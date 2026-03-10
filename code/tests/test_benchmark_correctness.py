@@ -23,7 +23,11 @@ from core.env import apply_env_defaults
 apply_env_defaults()
 
 import torch
-from core.utils.chapter_compare_template import discover_benchmarks, load_benchmark
+from core.utils.chapter_compare_template import (
+    discover_benchmarks,
+    get_last_load_error,
+    load_benchmark,
+)
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, BenchmarkMode, BenchmarkConfig
 
 
@@ -36,21 +40,43 @@ pytestmark = pytest.mark.skipif(
 # Whitelist of chapters/benchmarks for quick correctness checks
 # Only test a few representative benchmarks to keep CI fast
 QUICK_TEST_WHITELIST = [
-    ("ch01", "baseline_ilp.py"),
-    ("ch01", "optimized_ilp.py"),
-    ("ch18", "baseline_quantization.py"),
-    ("ch18", "optimized_quantization.py"),
+    ("ch01", "baseline_performance.py"),
+    ("ch01", "optimized_performance.py"),
+    ("ch07", "baseline_copy_uncoalesced.py"),
+    ("ch07", "optimized_copy_uncoalesced_coalesced.py"),
 ]
 
 
-def pytest_addoption(parser):
-    """Add command-line options for pytest."""
-    parser.addoption(
-        "--full-benchmark-tests",
-        action="store_true",
-        default=False,
-        help="Run full benchmark test suite (all chapters) instead of the quick whitelist"
+def _is_environment_skip(message: str | None) -> bool:
+    if not message:
+        return False
+    normalized = message.lower()
+    return (
+        "requires >=" in normalized and "gpu" in normalized
+        or normalized.startswith("skipped:")
+        or "requires transformer engine" in normalized
+        or "requires grace-blackwell" in normalized
     )
+
+
+def _load_or_skip(module_path: Path) -> BaseBenchmark | None:
+    benchmark = load_benchmark(module_path, timeout_seconds=20)
+    if benchmark is not None:
+        return benchmark
+    if _is_environment_skip(get_last_load_error()):
+        return None
+    assert benchmark is not None, f"{module_path}: {get_last_load_error()}"
+    return None
+
+
+def _run_with_environment_skip(action, module_path: Path) -> bool:
+    try:
+        action()
+        return True
+    except RuntimeError as exc:
+        if _is_environment_skip(str(exc)):
+            return False
+        raise AssertionError(f"{module_path}: {exc}") from exc
 
 
 def get_test_chapters(request):
@@ -104,22 +130,29 @@ def test_benchmark_loadable(request):
     """Test that whitelisted benchmarks can be loaded."""
     test_items = get_test_chapters(request)
     run_full_tests = request.config.getoption("--full-benchmark-tests", default=False)
+    checked = 0
     
     for test_item in test_items:
         if run_full_tests:
             chapter_dir = test_item
             pairs = discover_benchmarks(chapter_dir)
-            for baseline_path, optimized_paths in pairs:
-                baseline = load_benchmark(baseline_path)
-                assert baseline is not None
+            for baseline_path, optimized_paths, _example_name in pairs:
+                baseline = _load_or_skip(baseline_path)
+                if baseline is None:
+                    continue
+                checked += 1
                 for optimized_path in optimized_paths:
-                    optimized = load_benchmark(optimized_path)
-                    assert optimized is not None
+                    optimized = _load_or_skip(optimized_path)
+                    if optimized is None:
+                        continue
+                    checked += 1
         else:
             chapter_dir, benchmark_files = test_item
             for benchmark_path in benchmark_files:
-                benchmark = load_benchmark(benchmark_path)
+                benchmark = _load_or_skip(benchmark_path)
                 assert benchmark is not None
+                checked += 1
+    assert checked > 0
 
 
 @pytest.mark.slow
@@ -127,25 +160,30 @@ def test_benchmark_setup_teardown(request, harness):
     """Test that benchmarks can run setup and teardown without errors."""
     test_items = get_test_chapters(request)
     run_full_tests = request.config.getoption("--full-benchmark-tests", default=False)
+    checked = 0
     
     for test_item in test_items:
         if run_full_tests:
             chapter_dir = test_item
             pairs = discover_benchmarks(chapter_dir)
-            for baseline_path, optimized_paths in pairs:
-                baseline = load_benchmark(baseline_path)
-                baseline.setup()
-                baseline.teardown()
+            for baseline_path, optimized_paths, _example_name in pairs:
+                baseline = _load_or_skip(baseline_path)
+                if baseline is not None and _run_with_environment_skip(baseline.setup, baseline_path):
+                    baseline.teardown()
+                    checked += 1
                 for optimized_path in optimized_paths:
-                    optimized = load_benchmark(optimized_path)
-                    optimized.setup()
-                    optimized.teardown()
+                    optimized = _load_or_skip(optimized_path)
+                    if optimized is not None and _run_with_environment_skip(optimized.setup, optimized_path):
+                        optimized.teardown()
+                        checked += 1
         else:
             chapter_dir, benchmark_files = test_item
             for benchmark_path in benchmark_files:
                 benchmark = load_benchmark(benchmark_path)
                 benchmark.setup()
                 benchmark.teardown()
+                checked += 1
+    assert checked > 0
 
 
 @pytest.mark.slow
@@ -153,21 +191,24 @@ def test_benchmark_execution(request, harness):
     """Test that benchmarks can execute benchmark_fn without errors."""
     test_items = get_test_chapters(request)
     run_full_tests = request.config.getoption("--full-benchmark-tests", default=False)
+    checked = 0
     
     for test_item in test_items:
         if run_full_tests:
             chapter_dir = test_item
             pairs = discover_benchmarks(chapter_dir)
-            for baseline_path, optimized_paths in pairs:
-                baseline = load_benchmark(baseline_path)
-                baseline.setup()
-                baseline.benchmark_fn()
-                baseline.teardown()
+            for baseline_path, optimized_paths, _example_name in pairs:
+                baseline = _load_or_skip(baseline_path)
+                if baseline is not None and _run_with_environment_skip(baseline.setup, baseline_path):
+                    _run_with_environment_skip(baseline.benchmark_fn, baseline_path)
+                    baseline.teardown()
+                    checked += 1
                 for optimized_path in optimized_paths:
-                    optimized = load_benchmark(optimized_path)
-                    optimized.setup()
-                    optimized.benchmark_fn()
-                    optimized.teardown()
+                    optimized = _load_or_skip(optimized_path)
+                    if optimized is not None and _run_with_environment_skip(optimized.setup, optimized_path):
+                        _run_with_environment_skip(optimized.benchmark_fn, optimized_path)
+                        optimized.teardown()
+                        checked += 1
         else:
             chapter_dir, benchmark_files = test_item
             for benchmark_path in benchmark_files:
@@ -175,6 +216,8 @@ def test_benchmark_execution(request, harness):
                 benchmark.setup()
                 benchmark.benchmark_fn()
                 benchmark.teardown()
+                checked += 1
+    assert checked > 0
 
 
 @pytest.mark.slow
@@ -182,25 +225,34 @@ def test_benchmark_config(request):
     """Test that benchmarks return valid config from get_config()."""
     test_items = get_test_chapters(request)
     run_full_tests = request.config.getoption("--full-benchmark-tests", default=False)
+    checked = 0
     
     for test_item in test_items:
         if run_full_tests:
             chapter_dir = test_item
             pairs = discover_benchmarks(chapter_dir)
-            for baseline_path, optimized_paths in pairs:
-                baseline = load_benchmark(baseline_path)
+            for baseline_path, optimized_paths, _example_name in pairs:
+                baseline = _load_or_skip(baseline_path)
+                if baseline is None:
+                    continue
                 config = baseline.get_config()
                 assert config is None or isinstance(config, BenchmarkConfig)
+                checked += 1
                 for optimized_path in optimized_paths:
-                    optimized = load_benchmark(optimized_path)
+                    optimized = _load_or_skip(optimized_path)
+                    if optimized is None:
+                        continue
                     config = optimized.get_config()
                     assert config is None or isinstance(config, BenchmarkConfig)
+                    checked += 1
         else:
             chapter_dir, benchmark_files = test_item
             for benchmark_path in benchmark_files:
                 benchmark = load_benchmark(benchmark_path)
                 config = benchmark.get_config()
                 assert config is None or isinstance(config, BenchmarkConfig)
+                checked += 1
+    assert checked > 0
 
 
 @pytest.mark.slow
@@ -208,25 +260,28 @@ def test_benchmark_validation(request):
     """Test that benchmarks pass validate_result() if implemented."""
     test_items = get_test_chapters(request)
     run_full_tests = request.config.getoption("--full-benchmark-tests", default=False)
+    checked = 0
     
     for test_item in test_items:
         if run_full_tests:
             chapter_dir = test_item
             pairs = discover_benchmarks(chapter_dir)
-            for baseline_path, optimized_paths in pairs:
-                baseline = load_benchmark(baseline_path)
-                baseline.setup()
-                baseline.benchmark_fn()
-                validation_error = baseline.validate_result()
-                assert validation_error is None or isinstance(validation_error, str)
-                baseline.teardown()
-                for optimized_path in optimized_paths:
-                    optimized = load_benchmark(optimized_path)
-                    optimized.setup()
-                    optimized.benchmark_fn()
-                    validation_error = optimized.validate_result()
+            for baseline_path, optimized_paths, _example_name in pairs:
+                baseline = _load_or_skip(baseline_path)
+                if baseline is not None and _run_with_environment_skip(baseline.setup, baseline_path):
+                    _run_with_environment_skip(baseline.benchmark_fn, baseline_path)
+                    validation_error = baseline.validate_result()
                     assert validation_error is None or isinstance(validation_error, str)
-                    optimized.teardown()
+                    baseline.teardown()
+                    checked += 1
+                for optimized_path in optimized_paths:
+                    optimized = _load_or_skip(optimized_path)
+                    if optimized is not None and _run_with_environment_skip(optimized.setup, optimized_path):
+                        _run_with_environment_skip(optimized.benchmark_fn, optimized_path)
+                        validation_error = optimized.validate_result()
+                        assert validation_error is None or isinstance(validation_error, str)
+                        optimized.teardown()
+                        checked += 1
         else:
             chapter_dir, benchmark_files = test_item
             for benchmark_path in benchmark_files:
@@ -236,6 +291,8 @@ def test_benchmark_validation(request):
                 validation_error = benchmark.validate_result()
                 assert validation_error is None or isinstance(validation_error, str)
                 benchmark.teardown()
+                checked += 1
+    assert checked > 0
 
 
 def test_benchmark_protocol_compliance():

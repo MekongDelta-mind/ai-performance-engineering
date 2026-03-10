@@ -187,6 +187,26 @@ class TestProfilerConfig:
         )
         assert "ncu" in cmd
         assert "/usr/bin/true" in cmd
+
+    def test_ncu_minimal_metric_set_keeps_lightweight_capture_in_deep_dive(self):
+        """Deep-dive runs with minimal NCU metrics should still capture one launch."""
+        config = ProfilerConfig(
+            preset="deep_dive",
+            metric_set="minimal",
+            ncu_replay_mode="application",
+            honor_replay_mode_in_minimal=True,
+        )
+        cmd = config.get_ncu_command_for_target(
+            output_path="/tmp/test",
+            target_command=["/usr/bin/true"],
+        )
+
+        replay_idx = cmd.index("--replay-mode")
+        target_idx = cmd.index("--target-processes")
+        count_idx = cmd.index("--launch-count")
+        assert cmd[replay_idx + 1] == "application"
+        assert cmd[target_idx + 1] == "all"
+        assert cmd[count_idx + 1] == "1"
     
     def test_torch_profiler_config_minimal(self):
         """Minimal preset should return lightweight config."""

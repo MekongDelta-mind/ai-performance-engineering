@@ -690,6 +690,10 @@ class BenchmarkConfig:
     pm_sampling_interval: Optional[int] = field(default_factory=lambda: _get_default_value("pm_sampling_interval", None))
     ncu_replay_mode: str = field(default_factory=lambda: _get_default_value("ncu_replay_mode", "application"))
     ncu_replay_mode_override: bool = field(default_factory=lambda: _get_default_value("ncu_replay_mode_override", False))
+    profiling_warmup: Optional[int] = field(default_factory=lambda: _get_default_value("profiling_warmup", None))
+    """Warmup iterations used by wrapper-based profiler runs (nsys/ncu/proton)."""
+    profiling_iterations: Optional[int] = field(default_factory=lambda: _get_default_value("profiling_iterations", None))
+    """Iteration count used by wrapper-based profiler runs (nsys/ncu/proton)."""
 
     # Triton-style best practices (based on triton/testing.py)
     # See: https://github.com/triton-lang/triton/blob/main/python/triton/testing.py

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import torch
 
+from core.harness.benchmark_harness import BenchmarkConfig, ReadOnlyBenchmarkConfigView
+from labs.recsys_sequence_ranking.baseline_sequence_ranking import BaselineSequenceRankingBenchmark
+from labs.recsys_sequence_ranking.optimized_sequence_ranking import OptimizedSequenceRankingBenchmark
 from labs.recsys_sequence_ranking.recsys_sequence_ranking_common import (
     SequenceRankingWorkload,
     apply_cli_overrides,
@@ -66,3 +69,26 @@ def test_resolve_score_backend_respects_availability() -> None:
     assert resolved in {"torch", "triton"}
     assert resolve_score_backend("torch") == "torch"
 
+
+def test_benchmarks_prefer_application_replay_and_explicit_nvtx_scope_for_ncu() -> None:
+    baseline = BaselineSequenceRankingBenchmark()
+    optimized = OptimizedSequenceRankingBenchmark()
+
+    assert baseline.preferred_ncu_replay_mode == "application"
+    assert optimized.preferred_ncu_replay_mode == "application"
+    assert baseline.get_config().ncu_replay_mode == "application"
+    assert optimized.get_config().ncu_replay_mode == "application"
+    assert baseline.get_config().nsys_nvtx_include == ["compute_kernel:profile"]
+    assert optimized.get_config().nsys_nvtx_include == ["compute_kernel:profile"]
+    assert baseline.get_config().profiling_warmup == 0
+    assert optimized.get_config().profiling_warmup == 0
+    assert baseline.get_config().profiling_iterations == 1
+    assert optimized.get_config().profiling_iterations == 1
+
+
+def test_optimized_benchmark_disables_compile_for_ncu_wrapper_runs() -> None:
+    optimized = OptimizedSequenceRankingBenchmark()
+    profiling_config = BenchmarkConfig(enable_profiling=True, enable_ncu=True, enable_nvtx=True)
+    optimized._config = ReadOnlyBenchmarkConfigView.from_config(profiling_config)
+
+    assert optimized._should_enable_compile() is False

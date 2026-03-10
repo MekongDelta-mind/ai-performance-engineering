@@ -404,3 +404,94 @@ def test_bench_run_defaults_bench_root_to_repo_root(tmp_path: Path, monkeypatch)
     assert result.exit_code == 0, result.stdout
     assert Path(captured["bench_root"]) == Path(bench_commands.__file__).resolve().parents[2]
     assert captured["targets"] == ["labs/flashattention4:flashattention4_alibi"]
+    assert captured["ncu_replay_mode"] is None
+
+
+def test_bench_run_passes_explicit_ncu_replay_mode(tmp_path: Path, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_execute_benchmarks(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True}
+
+    monkeypatch.setattr(bench_commands, "_execute_benchmarks", _fake_execute_benchmarks)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "bench",
+            "run",
+            "--targets",
+            "labs/flashattention4:flashattention4_alibi",
+            "--profile",
+            "none",
+            "--ncu-replay-mode",
+            "application",
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+            "--run-id",
+            "bench_run_explicit_replay_smoke",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert captured["ncu_replay_mode"] == "application"
+
+
+def test_run_tier1_defaults_ncu_replay_mode_to_none(tmp_path: Path, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_run_tier1_suite(**kwargs):
+        captured.update(kwargs)
+        return {
+            "execution": {"run_id": "tier1_smoke", "total_failed": 0},
+            "summary_path": tmp_path / "summary.json",
+            "regression_summary_path": tmp_path / "regressions.json",
+            "trend_snapshot_path": tmp_path / "trend.json",
+            "history_root": tmp_path / "history",
+        }
+
+    monkeypatch.setattr("core.benchmark.suites.tier1.run_tier1_suite", _fake_run_tier1_suite)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "bench",
+            "run-tier1",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert captured["ncu_replay_mode"] is None
+
+
+def test_run_tier1_passes_explicit_ncu_replay_mode(tmp_path: Path, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_run_tier1_suite(**kwargs):
+        captured.update(kwargs)
+        return {
+            "execution": {"run_id": "tier1_smoke", "total_failed": 0},
+            "summary_path": tmp_path / "summary.json",
+            "regression_summary_path": tmp_path / "regressions.json",
+            "trend_snapshot_path": tmp_path / "trend.json",
+            "history_root": tmp_path / "history",
+        }
+
+    monkeypatch.setattr("core.benchmark.suites.tier1.run_tier1_suite", _fake_run_tier1_suite)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "bench",
+            "run-tier1",
+            "--ncu-replay-mode",
+            "application",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert captured["ncu_replay_mode"] == "application"

@@ -437,6 +437,9 @@ def _execute_benchmarks(
         run_kind="bench",
         run_label=run_label,
     )
+    # Propagate a stable run marker before any helper subprocesses launch so
+    # same-run profiler/isolated children can be attributed correctly.
+    os.environ["AISP_BENCHMARK_OWNER_RUN_ID"] = artifact_manager.run_id
     if log_file is None:
         log_file = artifact_manager.get_log_path()
     output_json = artifact_manager.get_result_path("benchmark_test_results.json")

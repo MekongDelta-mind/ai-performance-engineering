@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import core.benchmark.bench_commands as bench_commands
@@ -354,6 +355,24 @@ def test_execute_benchmarks_defaults_bench_root_to_repo_root(tmp_path: Path, mon
     assert Path(result["bench_root"]) == Path(bench_commands.__file__).resolve().parents[2]
     assert result["run_id"] == "tier1_default_root_smoke"
     assert result["error"] == "Benchmark dependencies missing"
+
+
+def test_execute_benchmarks_sets_owner_run_id_env(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(bench_commands, "BENCHMARK_AVAILABLE", False)
+    monkeypatch.setattr(bench_commands, "TEST_FUNCTIONS_AVAILABLE", False)
+    monkeypatch.delenv("AISP_BENCHMARK_OWNER_RUN_ID", raising=False)
+
+    bench_commands._execute_benchmarks(
+        targets=["ch04:gradient_fusion"],
+        bench_root=None,
+        output_format="json",
+        profile_type="none",
+        artifacts_dir=str(tmp_path / "artifacts"),
+        run_id="tier1_owner_env_smoke",
+        exit_on_failure=False,
+    )
+
+    assert os.environ["AISP_BENCHMARK_OWNER_RUN_ID"] == "tier1_owner_env_smoke"
 
 
 def test_bench_run_defaults_bench_root_to_repo_root(tmp_path: Path, monkeypatch) -> None:

@@ -43,6 +43,7 @@ class GradientCompressionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.devices: List[torch.device] = []
         self.inputs: List[torch.Tensor] = []
         self.output: Optional[torch.Tensor] = None
+        self._fp32_output: Optional[torch.Tensor] = None
         self._verify_input: Optional[torch.Tensor] = None
         self._fp32_buffers: List[torch.Tensor] = []
         self._fp32_outputs: List[torch.Tensor] = []
@@ -84,7 +85,8 @@ class GradientCompressionBenchmark(VerificationPayloadMixin, BaseBenchmark):
             torch.randn(numel, device=device, dtype=torch.float32) for device in self.devices
         ]
         self._verify_input = self.inputs[0]
-        self.output = torch.empty_like(self.inputs[0])
+        self.output = None
+        self._fp32_output = torch.empty_like(self.inputs[0])
         self._bucket_slices = self._build_bucket_slices()
         self._fp32_outputs = [torch.empty_like(t) for t in self.inputs]
         if not self.multi_gpu and self.simulate_single_gpu_transfer:
@@ -133,9 +135,10 @@ class GradientCompressionBenchmark(VerificationPayloadMixin, BaseBenchmark):
                         self._fp32_outputs[0].copy_(self._fp32_buffers[0])
                         self.output = self._fp32_outputs[0]
                     else:
-                        if self.output is None:
+                        if self._fp32_output is None:
                             raise RuntimeError("FP32 output buffer not initialized")
-                        self.output.copy_(self.inputs[0])
+                        self._fp32_output.copy_(self.inputs[0])
+                        self.output = self._fp32_output
             elif self.compression == "fp16":
                 if self.comm_only or self.use_prealloc_buffers:
                     if not self._fp16_buffers:
@@ -360,6 +363,7 @@ class GradientCompressionBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def teardown(self) -> None:
         self.inputs = []
         self.output = None
+        self._fp32_output = None
         self._verify_input = None
         self._fp32_buffers = []
         self._fp32_outputs = []

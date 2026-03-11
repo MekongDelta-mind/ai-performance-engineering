@@ -46,6 +46,7 @@ class LoopUnrollingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.inputs: Optional[torch.Tensor] = None
         self.weights: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         # Loop unrolling benchmark: fixed dimensions for measurement
 
     def setup(self) -> None:
@@ -68,7 +69,8 @@ class LoopUnrollingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
             device=self.device,
             dtype=torch.float32,
         )
-        self.output = torch.empty(
+        self.output = None
+        self._output_buffer = torch.empty(
             self.rows,
             device=self.device,
             dtype=torch.float32,
@@ -82,8 +84,9 @@ class LoopUnrollingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         enable_nvtx = get_nvtx_enabled(config) if config else False
 
         with nvtx_range(self.nvtx_label, enable=enable_nvtx):
-            if self.output is None:
+            if self._output_buffer is None:
                 raise RuntimeError("setup() must initialize the output buffer")
+            self.output = self._output_buffer
             for _ in range(self.inner_iterations):
                 self._invoke_kernel()
         if self.inputs is None or self.weights is None or self.output is None:
@@ -106,6 +109,7 @@ class LoopUnrollingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.inputs = None
         self.weights = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     def _invoke_kernel(self) -> None:

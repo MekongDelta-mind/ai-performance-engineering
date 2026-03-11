@@ -18,6 +18,7 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().__init__()
         self.input: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.N = 4_000_000
         self.adaptive_chunk: Optional[int] = None
         self.prefetch_stream: Optional[torch.cuda.Stream] = None
@@ -32,7 +33,8 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize with adaptive configuration."""
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = torch.empty_like(self.input)
+        self.output = None
+        self._output_buffer = torch.empty_like(self.input)
         props = torch.cuda.get_device_properties(self.device)
         sm_count = props.multi_processor_count
         warp_allocation = props.warp_size * sm_count
@@ -55,7 +57,7 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         assert self.prefetch_stream is not None
         assert self.input is not None
         assert self.adaptive_chunk is not None
-        assert self.output is not None and self.output.shape == self.input.shape
+        assert self._output_buffer is not None and self._output_buffer.shape == self.input.shape
         with self._nvtx_range("optimized_adaptive"):
             chunk_plan = []
             start = 0
@@ -71,7 +73,8 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
                     slice_buf.copy_(next_slice, non_blocking=True)
                 torch.cuda.current_stream().wait_stream(self.prefetch_stream)
                 transformed = self._transform(slice_buf)
-                self.output[start : start + span].copy_(transformed, non_blocking=True)
+                self._output_buffer[start : start + span].copy_(transformed, non_blocking=True)
+            self.output = self._output_buffer
 
     def capture_verification_payload(self) -> None:
         self._set_verification_payload(
@@ -86,6 +89,7 @@ class OptimizedAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Teardown: Clean up resources."""
         self.input = None
         self.output = None
+        self._output_buffer = None
         self.stage_buffers = []
         self.prefetch_stream = None
         torch.cuda.empty_cache()

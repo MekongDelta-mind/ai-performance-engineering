@@ -38,6 +38,7 @@ class OptimizedGpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.model: Optional[nn.Module] = None
         self.input: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self._reduction_buffer: Optional[torch.Tensor] = None
         
         tokens = self.batch_size * self.hidden_dim
@@ -60,8 +61,9 @@ class OptimizedGpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         
         self.input = torch.randn(self.batch_size, self.hidden_dim, device=self.device)
         reduced_rows = self.batch_size // self.num_shards
-        self.output = torch.empty((reduced_rows, self.hidden_dim), device=self.device)
-        self._reduction_buffer = torch.empty_like(self.output)
+        self.output = None
+        self._output_buffer = torch.empty((reduced_rows, self.hidden_dim), device=self.device)
+        self._reduction_buffer = torch.empty_like(self._output_buffer)
         torch.cuda.synchronize(self.device)
 
     def benchmark_fn(self) -> None:
@@ -80,15 +82,16 @@ class OptimizedGpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
             shards = torch.chunk(out, chunks=self.num_shards, dim=0)
             
             # In-place sum reduction (stays on GPU)
-            if self._reduction_buffer is None or self.output is None:
+            if self._reduction_buffer is None or self._output_buffer is None:
                 raise RuntimeError("Reduction buffers not initialized")
             self._reduction_buffer.zero_()
             for shard in shards:
                 self._reduction_buffer.add_(shard)
             
             # Average
-            self.output.copy_(self._reduction_buffer)
-            self.output.div_(self.num_shards)
+            self._output_buffer.copy_(self._reduction_buffer)
+            self._output_buffer.div_(self.num_shards)
+            self.output = self._output_buffer
         
 
     def capture_verification_payload(self) -> None:
@@ -113,6 +116,7 @@ class OptimizedGpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.model = None
         self.input = None
         self.output = None
+        self._output_buffer = None
         self._reduction_buffer = None
         torch.cuda.empty_cache()
 

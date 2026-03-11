@@ -18,6 +18,7 @@ class OptimizedBankConflictsBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().__init__()
         self.input: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.N = 8_000_000
         self._extension = None
         self.repeats = 8
@@ -33,16 +34,18 @@ class OptimizedBankConflictsBenchmark(VerificationPayloadMixin, BaseBenchmark):
         
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = torch.empty_like(self.input)
+        self.output = None
+        self._output_buffer = torch.empty_like(self.input)
         self._synchronize()
     
     def benchmark_fn(self) -> None:
         """Benchmark: padding eliminates bank conflicts."""
         assert self._extension is not None and self.input is not None
-        assert self.output is not None and self.output.shape == self.input.shape
+        assert self._output_buffer is not None and self._output_buffer.shape == self.input.shape
         with self._nvtx_range("bank_conflicts_optimized"):
             for _ in range(self.repeats):
-                self._extension.bank_conflicts_padded(self.output, self.input)
+                self._extension.bank_conflicts_padded(self._output_buffer, self.input)
+            self.output = self._output_buffer
 
     def capture_verification_payload(self) -> None:
         self._set_verification_payload(
@@ -57,6 +60,7 @@ class OptimizedBankConflictsBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Clean up resources."""
         self.input = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     

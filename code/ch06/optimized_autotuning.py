@@ -24,6 +24,7 @@ class OptimizedAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().__init__()
         self.input: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.N = 4_000_000
         self.candidates = [1024, 2048, 4096, 8192]
         self.optimal_chunk: Optional[int] = None
@@ -38,7 +39,8 @@ class OptimizedAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize tensors and perform autotuning."""
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = torch.empty_like(self.input)
+        self.output = None
+        self._output_buffer = torch.empty_like(self.input)
         scratch = torch.empty_like(self.input)
         self.optimal_chunk = self._autotune_chunk_size(scratch)
         self._synchronize()
@@ -75,14 +77,15 @@ class OptimizedAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def benchmark_fn(self) -> None:
         """Benchmark: Operations with autotuned parameters."""
         assert self.input is not None and self.optimal_chunk is not None
-        assert self.output is not None and self.output.shape == self.input.shape
+        assert self._output_buffer is not None and self._output_buffer.shape == self.input.shape
         with self._nvtx_range("optimized_autotuning"):
             chunk = self.optimal_chunk
             for offset in range(0, self.N, chunk):
                 span = min(chunk, self.N - offset)
                 window = self.input[offset : offset + span]
                 transformed = self._transform(window)
-                self.output[offset : offset + span].copy_(transformed, non_blocking=True)
+                self._output_buffer[offset : offset + span].copy_(transformed, non_blocking=True)
+            self.output = self._output_buffer
 
     def capture_verification_payload(self) -> None:
         self._set_verification_payload(
@@ -97,6 +100,7 @@ class OptimizedAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Teardown: Clean up resources."""
         self.input = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

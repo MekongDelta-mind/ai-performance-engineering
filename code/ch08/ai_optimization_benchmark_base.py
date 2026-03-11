@@ -28,6 +28,7 @@ class AiOptimizationBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.inputs: Optional[torch.Tensor] = None
         self.weights: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.register_workload_metadata(requests_per_iteration=float(self.inner_iterations))
 
     def setup(self) -> None:
@@ -46,7 +47,8 @@ class AiOptimizationBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
             dtype=torch.float32,
         ).contiguous()
         self.weights = torch.randn(self.cols, device=self.device, dtype=torch.float32).contiguous()
-        self.output = torch.empty(self.rows, device=self.device, dtype=torch.float32)
+        self.output = None
+        self._output_buffer = torch.empty(self.rows, device=self.device, dtype=torch.float32)
         torch.cuda.synchronize()
 
     def benchmark_fn(self) -> None:
@@ -55,8 +57,9 @@ class AiOptimizationBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         config = self.get_config()
         enable_nvtx = get_nvtx_enabled(config) if config else False
         with nvtx_range(self.nvtx_label, enable=enable_nvtx):
-            if self.output is None:
+            if self._output_buffer is None:
                 raise RuntimeError("setup() must initialize the output buffer")
+            self.output = self._output_buffer
             for _ in range(self.inner_iterations):
                 self._invoke_kernel()
 
@@ -77,6 +80,7 @@ class AiOptimizationBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.inputs = None
         self.weights = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     def _invoke_kernel(self) -> None:

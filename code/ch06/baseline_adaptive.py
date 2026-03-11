@@ -18,6 +18,7 @@ class BaselineAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().__init__()
         self.input: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.N = 4_000_000
         self.static_chunk = 2048
         # Chunked processing benchmark - fixed input size
@@ -30,7 +31,8 @@ class BaselineAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Setup: Initialize with static configuration."""
         torch.manual_seed(42)
         self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
-        self.output = torch.empty_like(self.input)
+        self.output = None
+        self._output_buffer = torch.empty_like(self.input)
         self._synchronize()
 
     def _transform(self, tensor: torch.Tensor) -> torch.Tensor:
@@ -42,13 +44,14 @@ class BaselineAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
     def benchmark_fn(self) -> None:
         """Benchmark: static configuration operations."""
         assert self.input is not None
-        assert self.output is not None and self.output.shape == self.input.shape
+        assert self._output_buffer is not None and self._output_buffer.shape == self.input.shape
         with self._nvtx_range("baseline_adaptive"):
             for start in range(0, self.N, self.static_chunk):
                 end = min(start + self.static_chunk, self.N)
                 window = self.input[start:end]
                 transformed = self._transform(window)
-                self.output[start:end].copy_(transformed)
+                self._output_buffer[start:end].copy_(transformed)
+            self.output = self._output_buffer
 
     def capture_verification_payload(self) -> None:
         self._set_verification_payload(
@@ -63,6 +66,7 @@ class BaselineAdaptiveBenchmark(VerificationPayloadMixin, BaseBenchmark):
         """Teardown: Clean up resources."""
         self.input = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

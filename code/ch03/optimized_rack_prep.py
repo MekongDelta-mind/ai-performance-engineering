@@ -6,6 +6,7 @@ import os
 import argparse
 import shutil
 import subprocess
+from pathlib import Path
 from typing import List, Optional
 
 import torch
@@ -157,7 +158,12 @@ class OptimizedRackPrepBenchmark(VerificationPayloadMixin, BaseBenchmark):
         super().teardown()
 
     def get_config(self) -> BenchmarkConfig:
-        return BenchmarkConfig(iterations=12, warmup=10)
+        return BenchmarkConfig(
+            iterations=12,
+            warmup=10,
+            timing_method="wall_clock",
+            full_device_sync=True,
+        )
 
     def get_custom_streams(self) -> list["torch.cuda.Stream"]:
         return [self.copy_stream]

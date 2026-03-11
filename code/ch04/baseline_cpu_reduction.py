@@ -38,6 +38,7 @@ class BaselineCpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.model: Optional[nn.Module] = None
         self.input: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         
         tokens = self.batch_size * self.hidden_dim
         self._workload = WorkloadMetadata(
@@ -58,7 +59,8 @@ class BaselineCpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         
         self.input = torch.randn(self.batch_size, self.hidden_dim, device=self.device)
         reduced_rows = self.batch_size // self.num_shards
-        self.output = torch.empty((reduced_rows, self.hidden_dim), device=self.device)
+        self.output = None
+        self._output_buffer = torch.empty((reduced_rows, self.hidden_dim), device=self.device)
         torch.cuda.synchronize(self.device)
     
     def benchmark_fn(self) -> None:
@@ -73,9 +75,10 @@ class BaselineCpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
                 cpu_shards = [shard.cpu() for shard in shards]
                 reduced = sum(cpu_shards) / float(self.num_shards)
                 # Copy result back to GPU
-                if self.output is None:
+                if self._output_buffer is None:
                     raise RuntimeError("Output buffer not initialized")
-                self.output.copy_(reduced, non_blocking=False)
+                self._output_buffer.copy_(reduced, non_blocking=False)
+                self.output = self._output_buffer
 
     def capture_verification_payload(self) -> None:
         if self.input is None or self.output is None:
@@ -100,6 +103,7 @@ class BaselineCpuReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
         self.model = None
         self.input = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
     
     def get_config(self) -> BenchmarkConfig:

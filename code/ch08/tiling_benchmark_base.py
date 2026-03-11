@@ -41,6 +41,7 @@ class TilingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.matrix_a: Optional[torch.Tensor] = None
         self.matrix_b: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.register_workload_metadata(requests_per_iteration=float(self.inner_iterations))
 
     # --------------------------------------------------------------------- #
@@ -64,7 +65,8 @@ class TilingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
             device=self.device,
             dtype=self.tensor_dtype,
         )
-        self.output = torch.empty(
+        self.output = None
+        self._output_buffer = torch.empty(
             self.matrix_rows,
             self.matrix_cols,
             device=self.device,
@@ -79,8 +81,9 @@ class TilingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         config = self.get_config()
         enable_nvtx = get_nvtx_enabled(config) if config else False
 
-        if self.output is None:
+        if self._output_buffer is None:
             raise RuntimeError("setup() must initialize the output buffer")
+        self.output = self._output_buffer
 
         with nvtx_range(self.nvtx_label, enable=enable_nvtx):
             for _ in range(self.inner_iterations):
@@ -108,6 +111,7 @@ class TilingBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.matrix_a = None
         self.matrix_b = None
         self.output = None
+        self._output_buffer = None
         torch.cuda.empty_cache()
 
     # --------------------------------------------------------------------- #

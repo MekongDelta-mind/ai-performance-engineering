@@ -34,6 +34,7 @@ class HBMBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.matrix_row: Optional[torch.Tensor] = None
         self.matrix_col: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
         self.host_col: Optional[torch.Tensor] = None
 
     def setup(self) -> None:
@@ -53,7 +54,8 @@ class HBMBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.host_col = host_col.pin_memory()
         self.matrix_row = host_row.to(self.device, non_blocking=False).contiguous()
         self.matrix_col = self.host_col.to(self.device, non_blocking=False).contiguous()
-        self.output = torch.empty(self.rows, device=self.device, dtype=torch.float32)
+        self.output = None
+        self._output_buffer = torch.empty(self.rows, device=self.device, dtype=torch.float32)
         torch.cuda.synchronize()
 
     def benchmark_fn(self) -> None:
@@ -62,8 +64,9 @@ class HBMBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         config = self.get_config()
         enable_nvtx = get_nvtx_enabled(config) if config else False
         with nvtx_range(self.nvtx_label, enable=enable_nvtx):
-            if self.output is None:
+            if self._output_buffer is None:
                 raise RuntimeError("setup() must initialize the output buffer")
+            self.output = self._output_buffer
             for _ in range(self.inner_iterations):
                 self._invoke_kernel()
         if self.matrix_row is None or self.matrix_col is None or self.output is None:
@@ -86,6 +89,7 @@ class HBMBenchmarkBase(VerificationPayloadMixin, BaseBenchmark):
         self.matrix_row = None
         self.matrix_col = None
         self.output = None
+        self._output_buffer = None
         self.host_col = None
         torch.cuda.empty_cache()
 

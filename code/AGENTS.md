@@ -186,6 +186,9 @@
 - Use the repo’s clock-locking mechanism (`lock_gpu_clocks` in the harness); do not manually invoke `nvidia-smi` to lock clocks.
 - Confirm app_clock (SM/memory) is present in both console telemetry and the run manifest for every benchmark run; treat missing app_clock as invalid.
 - NEVER disable Nsight tools (ncu/nsys); profiling runs must use both and they must succeed.
+- Prefer the most local correct fix for benchmark failures. Patch the harness only for cross-cutting infrastructure defects that can affect many benchmarks (for example profiler path handling or safe generic profiling controls).
+- Keep benchmark-specific semantics local to the benchmark. If an example declares the wrong timing model, publishes outputs during `setup()`, misstates metadata, or needs profile-specific replay/metric preferences, fix that in the chapter/example code instead of weakening the harness.
+- Do not relax harness validity checks to make broken examples pass. Keep the harness strict, fix the example to satisfy the contract, and only add harness abstractions when the same safe pattern clearly repeats across multiple benchmarks.
 
 ## NVFP4 Grouped GEMM Perf Playbook (CRITICAL)
 - Treat `--verify` as the hard gate for every tuning candidate; do not promote non-verified wins.

@@ -311,7 +311,12 @@ class StaticFP8Benchmark(VerificationPayloadMixin, BaseBenchmark):
         torch.cuda.empty_cache()
 
     def get_config(self) -> BenchmarkConfig:
-        return BenchmarkConfig(iterations=50, warmup=10)
+        return BenchmarkConfig(
+            iterations=50,
+            warmup=10,
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
+        )
     
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:
         return self._workload

@@ -51,6 +51,21 @@ constexpr int BLOCK_SIZE = 256;
 constexpr int CLUSTER_SIZE = 4;  // 4 CTAs per cluster
 constexpr int ELEMENTS_PER_BLOCK = 4096;
 
+namespace {
+int env_or_default(const char* name, int fallback) {
+    const char* raw = std::getenv(name);
+    if (!raw || !*raw) {
+        return fallback;
+    }
+    char* end = nullptr;
+    long parsed = std::strtol(raw, &end, 10);
+    if (end == raw || (end && *end != '\0') || parsed < 0 || parsed > 1000000) {
+        return fallback;
+    }
+    return static_cast<int>(parsed);
+}
+}  // namespace
+
 //============================================================================
 // Warp-level reduction
 //============================================================================
@@ -288,8 +303,8 @@ int main() {
     CUDA_CHECK(cudaEventCreate(&start));
     CUDA_CHECK(cudaEventCreate(&stop));
     
-    const int warmup = 5;
-    const int iterations = 50;
+    const int warmup = env_or_default("AISP_CUDA_BINARY_PROFILE_WARMUP", 5);
+    const int iterations = env_or_default("AISP_CUDA_BINARY_PROFILE_ITERATIONS", 50);
     
     //========================================================================
     // Benchmark Standard Two-Pass Reduction

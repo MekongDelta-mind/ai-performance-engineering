@@ -12,6 +12,7 @@ from core.utils.python_entrypoints import (
     build_repo_python_env,
     build_torchrun_entry_command,
     install_local_module_override,
+    load_module_from_path,
 )
 
 
@@ -83,6 +84,35 @@ def test_install_local_module_override_loads_package_without_sys_path_mutation(t
         assert sys.path == original_sys_path
     finally:
         sys.modules.pop("numba", None)
+
+
+def test_load_module_from_path_registers_module_for_dataclass_introspection(tmp_path: Path) -> None:
+    module_path = tmp_path / "dataclass_module.py"
+    module_path.write_text(
+        "\n".join(
+            [
+                "from __future__ import annotations",
+                "from dataclasses import dataclass",
+                "",
+                "@dataclass",
+                "class Payload:",
+                "    value: int",
+                "",
+                "RESULT = Payload(7)",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    module_name = "tmp_dataclass_module"
+    sys.modules.pop(module_name, None)
+    try:
+        module = load_module_from_path(module_name, module_path)
+        assert module.RESULT.value == 7
+        assert sys.modules[module_name] is module
+    finally:
+        sys.modules.pop(module_name, None)
 
 
 def test_ch01_ch02_ch03_ch04_ch05_ch06_ch07_ch08_ch09_ch10_ch11_ch12_ch13_ch14_ch15_ch16_ch17_ch18_ch19_and_ch20_are_free_of_local_sys_path_bootstrap() -> None:

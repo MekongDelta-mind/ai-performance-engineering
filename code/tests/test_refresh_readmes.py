@@ -218,7 +218,7 @@ def test_playbook_and_matrix_lab_docs_render_honest_nonpair_sections() -> None:
     assert "## What This Component Is" in rustbpe_markdown
     assert "## Why This Is Not A Benchmark Pair" in rustbpe_markdown
     assert "## How It Fits Into NanoChat" in rustbpe_markdown
-    assert "Edition 2024 support" in rustbpe_markdown
+    assert "Rust Edition 2021" in rustbpe_markdown
 
     assert "## What This Lab Is" in python_concurrency_markdown
     assert "## What A Proper Benchmark Pair Would Look Like" in python_concurrency_markdown

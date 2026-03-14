@@ -193,9 +193,10 @@ Generated from `mcp.mcp_server.TOOLS`. Run `python -m scripts.generate_mcp_docs`
 - `inference_quantization` — Get quantization recommendations: precision format, method, expected accuracy/speedup tradeoffs
 - `inference_vllm` — Generate optimized vLLM configuration for inference serving (explicit model size required)
 
-### Benchmark (16)
+### Benchmark (17)
 - `benchmark_compare` — Compare two benchmark run JSON files (baseline vs candidate)
 - `benchmark_compare_runs` — Compare two benchmark runs showing speedup deltas, regressions, and improvements
+- `benchmark_contracts` — Return the repo benchmark methodology, warehouse, and BenchmarkRun contract surfaces
 - `benchmark_data` — Fetch benchmark results with filtering/sorting/pagination (dashboard data view)
 - `benchmark_deep_dive_compare` — ONE-SHOT deep-dive workflow: run benchmarks with profile='deep_dive' AND return structured diffs from Nsight Systems + Nsight Compute (+ any available profiler artifacts)
 - `benchmark_explore` — Copy a baseline_*.py (or baseline_*.cu; auto-generates wrapper if missing), run minimal profiling with LLM patch variants, compare resource utilization across variants, and optionally run deep_dive profiling when minimal results are inconclusive
@@ -262,7 +263,8 @@ Generated from `mcp.mcp_server.TOOLS`. Run `python -m scripts.generate_mcp_docs`
 - `status` — 🚀 QUICK STATUS CHECK: Fast snapshot of GPU, software, and AI backend health
 - `triage` — 🎯 START HERE: Quick triage = status check + context summary in one call
 
-### Other (1)
+### Other (2)
 - `info_features` — GPU feature detection: TMA, thread block clusters, async copy, etc
+- `render_benchmark_run` — Render BenchmarkRun YAML through the shared backend template renderer
 
 <!-- END MCP TOOL LIST -->

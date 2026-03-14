@@ -456,10 +456,11 @@ if rustbpe is None or not hasattr(rustbpe, "Tokenizer"):
                 return self.pattern
 
             def get_mergeable_ranks(self):
-                ranks = []
-                for (p0, p1), idx in self._tok.merges.items():
-                    ranks.append((bytes([p0 % 256, p1 % 256]), idx))
-                return ranks
+                return [
+                    (bytes(token_bytes), token_id)
+                    for token_id, token_bytes in sorted(self._tok.vocab.items())
+                    if isinstance(token_id, int) and isinstance(token_bytes, (bytes, bytearray))
+                ]
 
     rustbpe = _RustBPEStub()  # type: ignore[assignment]
 

@@ -9,7 +9,7 @@ from core.benchmark.contracts_surface import get_benchmark_contracts_summary
 
 
 def main() -> int:
-    print(json.dumps(get_benchmark_contracts_summary(), indent=2, sort_keys=True))
+    print(json.dumps(get_benchmark_contracts_summary(), indent=2))
     return 0
 
 

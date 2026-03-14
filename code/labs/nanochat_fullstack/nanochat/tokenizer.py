@@ -8,6 +8,7 @@ Two implementations are available:
 
 import os
 import copy
+import importlib
 from functools import lru_cache
 
 SPECIAL_TOKENS = [
@@ -182,8 +183,12 @@ if rustbpe is None:
                 return self.pattern
 
             def get_mergeable_ranks(self):
-                merges = getattr(self._tok, "merges", {}) if self._tok is not None else {}
-                return list(merges.items())
+                vocab = getattr(self._tok, "vocab", {}) if self._tok is not None else {}
+                return [
+                    (bytes(token_bytes), token_id)
+                    for token_id, token_bytes in sorted(vocab.items())
+                    if isinstance(token_id, int) and isinstance(token_bytes, (bytes, bytearray))
+                ]
 
     rustbpe = _RustBPEStub()  # type: ignore[assignment]
 
@@ -214,6 +219,35 @@ if tiktoken is None:
 
     tiktoken = _TiktokenStub()  # type: ignore[assignment]
 
+
+def _refresh_optional_module(module_name, current_module, required_attr: str | None = None):
+    try:
+        module = importlib.import_module(module_name)
+    except Exception:
+        return current_module
+    if required_attr is not None and not hasattr(module, required_attr):
+        return current_module
+    globals()[module_name] = module
+    return module
+
+
+def _coerce_mergeable_ranks(mergeable_ranks_list):
+    mergeable_ranks = {}
+    for token_bytes, rank in mergeable_ranks_list:
+        if isinstance(token_bytes, (bytes, bytearray)):
+            mergeable_ranks[bytes(token_bytes)] = rank
+            continue
+        if isinstance(token_bytes, (list, tuple)) and all(
+            isinstance(byte, int) and 0 <= byte <= 255 for byte in token_bytes
+        ):
+            mergeable_ranks[bytes(token_bytes)] = rank
+            continue
+        raise ValueError(
+            "rustbpe.get_mergeable_ranks() must yield token-byte sequences; "
+            f"received {type(token_bytes).__name__}: {token_bytes!r}"
+        )
+    return mergeable_ranks
+
 class RustBPETokenizer:
     """Light wrapper around tiktoken (for efficient inference) but train with rustbpe"""
 
@@ -223,8 +257,10 @@ class RustBPETokenizer:
 
     @classmethod
     def train_from_iterator(cls, text_iterator, vocab_size):
+        rustbpe_module = _refresh_optional_module("rustbpe", rustbpe, required_attr="Tokenizer")
+        tiktoken_module = _refresh_optional_module("tiktoken", tiktoken, required_attr="Encoding")
         # 1) train using rustbpe
-        tokenizer = rustbpe.Tokenizer()
+        tokenizer = rustbpe_module.Tokenizer()
         # the special tokens are inserted later in __init__, we don't train them here
         vocab_size_no_special = vocab_size - len(SPECIAL_TOKENS)
         assert vocab_size_no_special >= 256, f"vocab_size_no_special must be at least 256, got {vocab_size_no_special}"
@@ -232,10 +268,10 @@ class RustBPETokenizer:
         # 2) construct the associated tiktoken encoding for inference
         pattern = tokenizer.get_pattern()
         mergeable_ranks_list = tokenizer.get_mergeable_ranks()
-        mergeable_ranks = {bytes(k): v for k, v in mergeable_ranks_list}
+        mergeable_ranks = _coerce_mergeable_ranks(mergeable_ranks_list)
         tokens_offset = len(mergeable_ranks)
         special_tokens = {name: tokens_offset + i for i, name in enumerate(SPECIAL_TOKENS)}
-        enc = tiktoken.Encoding(
+        enc = tiktoken_module.Encoding(
             name="rustbpe",
             pat_str=pattern,
             mergeable_ranks=mergeable_ranks, # dict[bytes, int] (token bytes -> merge priority rank)
@@ -253,7 +289,8 @@ class RustBPETokenizer:
     @classmethod
     def from_pretrained(cls, tiktoken_name):
         # https://github.com/openai/tiktoken/blob/eedc8563/tiktoken_ext/openai_public.py
-        enc = tiktoken.get_encoding(tiktoken_name)
+        tiktoken_module = _refresh_optional_module("tiktoken", tiktoken, required_attr="Encoding")
+        enc = tiktoken_module.get_encoding(tiktoken_name)
         # tiktoken calls the special document delimiter token "<|endoftext|>"
         # yes this is confusing because this token is almost always PREPENDED to the beginning of the document
         # it most often is used to signal the start of a new sequence to the LLM during inference etc.

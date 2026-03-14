@@ -113,6 +113,8 @@ class OptimizedKernelLaunchesBenchmark(VerificationPayloadMixin, BaseBenchmark):
             iterations=50,
             warmup=10,
             ncu_replay_mode="application",
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
     
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

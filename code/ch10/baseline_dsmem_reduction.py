@@ -19,7 +19,9 @@ class BaselineDSMEMReductionBenchmark(CudaBinaryBenchmark):
             friendly_name="Baseline Dsmem Reduction",
             iterations=3,
             warmup=5,
-            timeout_seconds=120,
+            # Full deep-dive instrumentation can slow the standalone CUDA binary
+            # enough that the default subprocess budget becomes a false failure.
+            timeout_seconds=600,
             workload_params={
                 "batch_size": 1024,
                 "dtype": "float32",
@@ -48,6 +50,20 @@ class BaselineDSMEMReductionBenchmark(CudaBinaryBenchmark):
 
     def get_output_tolerance(self) -> tuple[float, float]:
         return (0.0, 0.0)
+
+    def get_config(self) -> BenchmarkConfig:
+        config = super().get_config()
+        # This standalone CUDA binary does not benefit from full library tracing,
+        # and full-timeline NSYS captures are slow to finalize under deep-dive.
+        config.nsys_timeout_seconds = 300
+        config.nsys_preset_override = "light"
+        config.profiling_warmup = 0
+        config.profiling_iterations = 1
+        config.profile_env_overrides = {
+            "AISP_CUDA_BINARY_PROFILE_WARMUP": "0",
+            "AISP_CUDA_BINARY_PROFILE_ITERATIONS": "1",
+        }
+        return config
 def get_benchmark() -> BaseBenchmark:
     """Factory for discover_benchmarks()."""
     return BaselineDSMEMReductionBenchmark()

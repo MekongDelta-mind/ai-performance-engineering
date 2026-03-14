@@ -112,6 +112,8 @@ class OptimizedGraphBandwidthBenchmark(VerificationPayloadMixin, BaseBenchmark):
             timing_method="wall_clock",
             full_device_sync=True,
             ncu_replay_mode="application",
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
 
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import ast
 import importlib.util
+import sys
 import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple

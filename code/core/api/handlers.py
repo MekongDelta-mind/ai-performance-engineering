@@ -409,6 +409,12 @@ def benchmark_contracts(_: Dict[str, Any]) -> Dict[str, Any]:
     return get_benchmark_contracts_summary()
 
 
+def benchmark_contracts_render_run(params: Dict[str, Any]) -> Dict[str, Any]:
+    from core.benchmark.contracts_surface import render_benchmark_run_yaml
+
+    return render_benchmark_run_yaml(params)
+
+
 def benchmark_overview(_: Dict[str, Any]) -> Dict[str, Any]:
     data = get_engine().benchmark.data()
     benchmarks = [_normalize_benchmark_record(b) for b in data.get("benchmarks", [])]

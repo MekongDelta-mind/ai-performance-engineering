@@ -153,6 +153,8 @@ class OptimizedMatmulCUTLASSBenchmark(VerificationPayloadMixin, BaseBenchmark):
             enable_memory_tracking=False,
             enable_profiling=False,
             setup_timeout_seconds=180,  # torch.compile compilation can take 60-120 seconds
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
     def get_custom_metrics(self) -> Optional[dict]:
         """Return domain-specific metrics using standardized helper."""

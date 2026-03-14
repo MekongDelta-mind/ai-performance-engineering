@@ -6,6 +6,7 @@ Provides functions to discover benchmarks across chapters and CUDA benchmarks.
 from __future__ import annotations
 
 import os
+import re
 import warnings
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
@@ -82,6 +83,26 @@ def is_benchmark_entrypoint_file(file_path: Path) -> bool:
     if file_path.suffix != ".py":
         return False
     return _has_get_benchmark(file_path) or _has_benchmark_decorator(file_path)
+
+
+def is_generated_benchmark_copy(file_path: Path) -> bool:
+    """Return True for generated exploration copies that should not be auto-discovered."""
+    stem = file_path.stem
+    for prefix in ("baseline_", "optimized_"):
+        if stem.startswith(prefix):
+            stem = stem[len(prefix):]
+            break
+    return bool(re.search(r"_mcp_copy(?:_\d+)?$", stem))
+
+
+def should_ignore_benchmark_candidate(file_path: Path) -> bool:
+    """Return True for baseline_/optimized_ files reserved for non-harness helper flows."""
+    stem = file_path.stem
+    return stem in {
+        "baseline_submission",
+        "optimized_submission",
+        "reference_submission",
+    } or stem.startswith("optimized_submission_") or is_generated_benchmark_copy(file_path)
 
 
 def is_cuda_binary_benchmark_file(file_path: Path) -> bool:
@@ -203,7 +224,10 @@ def _lab_dirs(repo_root: Path, bench_root: Optional[Path] = None) -> Iterable[Pa
         if not p.is_dir() or p.name.startswith(('_', '.')):
             continue
         # Check if directory has any baseline_*.py files (benchmark convention)
-        has_benchmarks = any(p.glob("baseline_*.py")) or any(p.glob("level*.py"))
+        has_benchmarks = any(
+            path for path in p.glob("baseline_*.py")
+            if not is_generated_benchmark_copy(path)
+        ) or any(p.glob("level*.py"))
         if has_benchmarks:
             lab_dirs.append(p)
     
@@ -259,6 +283,7 @@ def _iter_benchmark_dirs(bench_root: Path) -> Iterable[Path]:
         ]
         if any(
             fname.startswith("baseline_") and fname.endswith(".py")
+            and not is_generated_benchmark_copy(Path(current) / fname)
             for fname in filenames
         ):
             yield Path(current)
@@ -391,7 +416,7 @@ def discover_benchmarks(
     baseline_files = sorted(
         path
         for path in chapter_dir.glob("baseline_*.py")
-        if not _is_submission_helper(path)
+        if not should_ignore_benchmark_candidate(path)
     )
 
     example_names = {
@@ -414,7 +439,7 @@ def discover_benchmarks(
         # Pattern 1: optimized_{name}_*.{ext} (e.g., optimized_moe_sparse.py)
         pattern1 = chapter_dir / f"optimized_{example_name}_*{ext}"
         for opt_path in pattern1.parent.glob(pattern1.name):
-            if _is_submission_helper(opt_path):
+            if should_ignore_benchmark_candidate(opt_path):
                 continue
             # Always exclude Python files missing get_benchmark(); warnings are optional.
             if not validate_benchmark_file(opt_path, warn=warn_missing):
@@ -440,7 +465,7 @@ def discover_benchmarks(
         # Pattern 2: optimized_{name}.{ext} (e.g., optimized_moe.py / optimized_moe.cu)
         pattern2 = chapter_dir / f"optimized_{example_name}{ext}"
         if pattern2.exists():
-            if _is_submission_helper(pattern2):
+            if should_ignore_benchmark_candidate(pattern2):
                 continue
             if validate_benchmark_file(pattern2, warn=warn_missing):
                 optimized_files.append(pattern2)
@@ -452,10 +477,6 @@ def discover_benchmarks(
     
     return pairs
 
-
-def _is_submission_helper(path: Path) -> bool:
-    """Ignore challenge submission helpers that are not harness benchmarks."""
-    return path.name in {"baseline_submission.py", "optimized_submission.py", "reference_submission.py"}
 
 
 def discover_cuda_benchmarks(repo_root: Path) -> List[Path]:

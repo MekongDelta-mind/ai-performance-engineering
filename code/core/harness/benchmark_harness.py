@@ -660,6 +660,7 @@ class BenchmarkConfig:
     subprocess_stderr_dir: Optional[str] = field(default_factory=lambda: _get_default_value("subprocess_stderr_dir", None))
     profile_mode: Optional[str] = field(default_factory=lambda: _get_default_value("profile_mode", "none"))
     profile_type: str = field(default_factory=lambda: _get_default_value("profile_type", "minimal"))
+    nsys_preset_override: Optional[str] = field(default_factory=lambda: _get_default_value("nsys_preset_override", None))
     nsys_nvtx_include: Optional[List[str]] = field(default_factory=lambda: _get_default_value("nsys_nvtx_include", None))
     backend_policy: str = field(default_factory=lambda: _get_default_value("backend_policy", "performance"))
     enable_nvtx: Optional[bool] = field(default_factory=lambda: _get_default_value("enable_nvtx", None))
@@ -695,6 +696,8 @@ class BenchmarkConfig:
     """Warmup iterations used by wrapper-based profiler runs (nsys/ncu/proton)."""
     profiling_iterations: Optional[int] = field(default_factory=lambda: _get_default_value("profiling_iterations", None))
     """Iteration count used by wrapper-based profiler runs (nsys/ncu/proton)."""
+    profile_env_overrides: Optional[Dict[str, str]] = field(default_factory=lambda: _get_default_value("profile_env_overrides", None))
+    """Optional environment overrides applied only to profiler subprocesses."""
 
     # Triton-style best practices (based on triton/testing.py)
     # See: https://github.com/triton-lang/triton/blob/main/python/triton/testing.py
@@ -906,6 +909,14 @@ class BenchmarkConfig:
         if self.enable_nvtx is None:
             # Auto-enable NVTX whenever profiling is requested (for nsys traces)
             self.enable_nvtx = self.enable_profiling
+
+        if self.nsys_preset_override is not None:
+            preset = str(self.nsys_preset_override).strip().lower()
+            if preset not in {"light", "full"}:
+                raise ValueError(
+                    f"Invalid nsys_preset_override={self.nsys_preset_override!r}. Expected 'light' or 'full'."
+                )
+            self.nsys_preset_override = preset
         
         # Apply timeout multiplier to all timeout fields
         if self.timeout_multiplier != 1.0:

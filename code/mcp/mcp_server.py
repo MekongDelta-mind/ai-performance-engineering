@@ -9060,7 +9060,7 @@ def tool_tools_probe_hw(params: Dict[str, Any]) -> Dict[str, Any]:
     "benchmark_contracts",
     "Tags: benchmark, methodology, warehouse, docs, contract. "
     "Return the repo benchmark methodology, warehouse, and BenchmarkRun contract surfaces. "
-    "Returns: {contracts, interfaces}. "
+    "Returns: {schema_version, contracts, interface_entries, generator}. "
     "⚡ FAST (<1s). USE when: You need the stable methodology/warehouse contract or want the CLI, dashboard, and MCP entrypoints in one place.",
     {"type": "object", "properties": with_context_params({})},
 )
@@ -9069,6 +9069,60 @@ def tool_benchmark_contracts(params: Dict[str, Any]) -> Dict[str, Any]:
     from core.benchmark.contracts_surface import get_benchmark_contracts_summary
 
     result = get_benchmark_contracts_summary()
+    return attach_context_if_requested(result, include_context, context_level)
+
+
+@register_tool(
+    "render_benchmark_run",
+    "Tags: benchmark, generator, yaml, contract. "
+    "Render BenchmarkRun YAML through the shared backend template renderer. "
+    "Returns: {schema_version, template_path, applied_values, rendered_yaml}. "
+    "⚡ FAST (<1s). USE when: You need a lockstep BenchmarkRun preview or want to script the same generator used by the dashboard.",
+    {"type": "object", "properties": with_context_params({
+        "name": {"type": "string", "description": "BenchmarkRun metadata.name override."},
+        "benchmarkClass": {"type": "string", "enum": ["publication_grade", "realism_grade"]},
+        "workloadType": {"type": "string", "enum": ["training", "inference", "mixed"]},
+        "schedulerPath": {"type": "string", "description": "Scheduler path identifier."},
+        "cadence": {"type": "string", "enum": ["canary", "nightly", "pre_release"]},
+        "model": {"type": "string", "description": "Model identifier."},
+        "precision": {"type": "string", "description": "Precision override."},
+        "batchingPolicy": {"type": "string", "description": "Batching policy override."},
+        "concurrencyModel": {"type": "string", "description": "Concurrency model override."},
+        "comparisonVariable": {
+            "type": "string",
+            "enum": [
+                "hardware_generation",
+                "runtime_version",
+                "scheduler_path",
+                "control_plane_path",
+                "driver_stack",
+                "network_topology",
+                "storage_stack",
+            ],
+        },
+    })},
+)
+def tool_render_benchmark_run(params: Dict[str, Any]) -> Dict[str, Any]:
+    include_context, context_level = extract_context_opts(params)
+    from core.benchmark.contracts_surface import render_benchmark_run_yaml
+
+    overrides = {
+        key: value
+        for key, value in params.items()
+        if key in {
+            "name",
+            "benchmarkClass",
+            "workloadType",
+            "schedulerPath",
+            "cadence",
+            "model",
+            "precision",
+            "batchingPolicy",
+            "concurrencyModel",
+            "comparisonVariable",
+        }
+    }
+    result = render_benchmark_run_yaml(overrides)
     return attach_context_if_requested(result, include_context, context_level)
 
 @register_tool(

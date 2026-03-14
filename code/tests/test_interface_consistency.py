@@ -127,11 +127,11 @@ class TestMCPToolsConsistency:
     """Verify MCP tools align with Engine domains."""
     
     def test_mcp_tool_count(self):
-        """MCP should have ~90-100 consolidated tools."""
+        """MCP should stay within the current consolidated tool budget."""
         from mcp.mcp_server import TOOLS
         
         tool_count = len(TOOLS)
-        assert 90 <= tool_count <= 105, f"Expected 90-105 tools, got {tool_count}"
+        assert 90 <= tool_count <= 120, f"Expected 90-120 tools, got {tool_count}"
     
     def test_mcp_tools_have_no_prefix(self):
         """All MCP tools should be unprefixed."""

@@ -33,6 +33,21 @@ constexpr int BLOCK_SIZE = 256;
 constexpr int CLUSTER_SIZE = 2;  // Keep small for reliability
 constexpr int ELEMENTS_PER_BLOCK = 4096;
 
+namespace {
+int env_or_default(const char* name, int fallback) {
+    const char* raw = std::getenv(name);
+    if (!raw || !*raw) {
+        return fallback;
+    }
+    char* end = nullptr;
+    long parsed = std::strtol(raw, &end, 10);
+    if (end == raw || (end && *end != '\0') || parsed < 0 || parsed > 1000000) {
+        return fallback;
+    }
+    return static_cast<int>(parsed);
+}
+}  // namespace
+
 __device__ __forceinline__ float warp_reduce_sum(float val) {
     #pragma unroll
     for (int offset = 16; offset > 0; offset /= 2) {
@@ -210,7 +225,7 @@ int main() {
     printf("Launching with cudaLaunchKernelExC (void* args[])...\n");
     
     // Warmup
-    const int warmup = 5;
+    const int warmup = env_or_default("AISP_CUDA_BINARY_PROFILE_WARMUP", 5);
     for (int i = 0; i < warmup; ++i) {
         NVTX_RANGE("warmup");
         CUDA_CHECK(cudaLaunchKernelExC(&config, (void*)dsmem_reduction_kernel_v3, args));
@@ -218,7 +233,7 @@ int main() {
     CUDA_CHECK(cudaDeviceSynchronize());
     
     // Benchmark
-    const int iterations = 50;
+    const int iterations = env_or_default("AISP_CUDA_BINARY_PROFILE_ITERATIONS", 50);
     CUDA_CHECK(cudaEventRecord(start));
     for (int i = 0; i < iterations; ++i) {
         NVTX_RANGE("iteration");

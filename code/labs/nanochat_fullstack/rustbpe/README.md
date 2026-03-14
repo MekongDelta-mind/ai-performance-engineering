@@ -34,12 +34,12 @@ cargo build --release
 cargo test
 ```
 - This is a Rust-native component workflow, not a harness-target workflow.
-- You need a Rust/Cargo toolchain with Edition 2024 support for these commands to work; older Cargo builds fail while parsing `edition = "2024"` in `Cargo.toml`.
+- The crate is pinned to Rust Edition 2021 so it builds on stable Cargo toolchains used by the repo test environment.
 - Use the parent NanoChat docs for end-to-end training/inference context.
 
 ## Validation Checklist
-- `cargo build --release` should compile the library cleanly once the host toolchain supports Rust Edition 2024.
-- `cargo test` should keep the component healthy as the NanoChat tree evolves after the toolchain precondition is satisfied.
+- `cargo build --release` should compile the library cleanly on the repo's supported stable Rust toolchain.
+- `cargo test` should keep the component healthy as the NanoChat tree evolves.
 
 ## How It Fits Into NanoChat
 `rustbpe` is the tokenizer-training companion inside the broader [labs/nanochat_fullstack/README.md](/home/cfregly/ai-performance-engineering/code/labs/nanochat_fullstack/README.md) tree.
@@ -50,4 +50,4 @@ cargo test
 
 ## Notes
 - This doc intentionally uses the same generator path as the benchmark-facing labs so the repo stays tidy, even when the component itself is not a benchmark pair.
-- On this host, `cargo test` currently fails before compilation because the installed Cargo is too old to parse `edition = "2024"`; the doc reflects that requirement explicitly.
+- The crate no longer requires a nightly-or-newer Cargo parser just to read `Cargo.toml`; keep it 2021-compatible unless the code actually needs a newer edition feature.

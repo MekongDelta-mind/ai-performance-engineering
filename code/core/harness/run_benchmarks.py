@@ -2123,6 +2123,24 @@ def _harden_profile_env(
     return env
 
 
+def _apply_profile_env_overrides(
+    env: Optional[Dict[str, str]],
+    *,
+    config: Optional[BenchmarkConfig] = None,
+    benchmark: Optional[Any] = None,
+) -> Dict[str, str]:
+    """Apply benchmark-local profiler env overrides after generic hardening."""
+    merged = dict(env or {})
+    for source in (config, benchmark):
+        if source is None:
+            continue
+        overrides = getattr(source, "profile_env_overrides", None)
+        if not overrides:
+            continue
+        merged.update({str(key): str(value) for key, value in overrides.items()})
+    return merged
+
+
 def _profile_bench_dir(profile_root: Path, chapter_id: str) -> Path:
     safe_chapter = slugify(str(chapter_id).replace("/", "_").replace("\\", "_"))
     return profile_root / "bench" / safe_chapter
@@ -2212,16 +2230,13 @@ def profile_python_benchmark(
         from core.profiling.nsight_automation import NsightAutomation
 
         wrapper_script.write(f"""
-import importlib.util
 from pathlib import Path
 from contextlib import nullcontext
 
 _BENCHMARK_PATH = Path(r"{benchmark_path}")
-_BENCHMARK_SPEC = importlib.util.spec_from_file_location("profile_benchmark_module", _BENCHMARK_PATH)
-if _BENCHMARK_SPEC is None or _BENCHMARK_SPEC.loader is None:
-    raise RuntimeError(f"Failed to create benchmark module spec for {{_BENCHMARK_PATH}}")
-_BENCHMARK_MODULE = importlib.util.module_from_spec(_BENCHMARK_SPEC)
-_BENCHMARK_SPEC.loader.exec_module(_BENCHMARK_MODULE)
+from core.utils.python_entrypoints import load_module_from_path
+
+_BENCHMARK_MODULE = load_module_from_path("profile_benchmark_module", _BENCHMARK_PATH)
 get_benchmark = _BENCHMARK_MODULE.get_benchmark
 
 from core.harness.benchmark_harness import (
@@ -2298,9 +2313,7 @@ if __name__ == "__main__":
         else:
             target_command = [sys.executable, wrapper_script.name]
             env = None
-        preset = str(getattr(bench_config, "profile_type", None) or "minimal").lower()
-        profile_preset = "light" if preset == "minimal" else "full"
-        full_timeline = profile_preset == "full"
+        profile_preset, full_timeline = _resolve_nsys_profile_mode(bench_config)
         trace_forks = bool(use_torchrun)
         timeout = 120
         if bench_config is not None and hasattr(bench_config, "get_effective_timeout"):
@@ -2319,7 +2332,11 @@ if __name__ == "__main__":
             wait_mode="primary",
             finalize_grace_seconds=20.0,
             force_lineinfo=True,
-            extra_env=_harden_profile_env(env, repo_root=repo_root, chapter_dir=chapter_dir),
+            extra_env=_apply_profile_env_overrides(
+                _harden_profile_env(env, repo_root=repo_root, chapter_dir=chapter_dir),
+                config=bench_config,
+                benchmark=benchmark,
+            ),
             sanitize_python_startup=True,
         )
         if nsys_report and Path(nsys_report).exists():
@@ -2331,10 +2348,20 @@ if __name__ == "__main__":
         Path(wrapper_script.name).unlink(missing_ok=True)
 
 
+def _resolve_nsys_profile_mode(config: Optional[BenchmarkConfig]) -> tuple[str, bool]:
+    preset = str(getattr(config, "profile_type", None) or "minimal").lower()
+    profile_preset = str(getattr(config, "nsys_preset_override", None) or "").strip().lower()
+    if not profile_preset:
+        profile_preset = "light" if preset == "minimal" else "full"
+    return profile_preset, profile_preset == "full"
+
+
 def profile_cuda_executable(
     executable: Path,
     chapter_dir: Path,
     output_dir: Path,
+    config: Optional[BenchmarkConfig] = None,
+    benchmark: Optional[Any] = None,
     variant: str = "baseline",
     output_stem: Optional[str] = None,
     timeout_seconds: Optional[int] = None,
@@ -2375,10 +2402,14 @@ def profile_cuda_executable(
             wait_mode="primary",
             finalize_grace_seconds=20.0,
             force_lineinfo=True,
-            extra_env=_harden_profile_env(
-                None,
-                repo_root=Path(__file__).resolve().parents[2],
-                chapter_dir=chapter_dir,
+            extra_env=_apply_profile_env_overrides(
+                _harden_profile_env(
+                    None,
+                    repo_root=Path(__file__).resolve().parents[2],
+                    chapter_dir=chapter_dir,
+                ),
+                config=config,
+                benchmark=benchmark,
             ),
             sanitize_python_startup=True,
         )
@@ -2585,16 +2616,13 @@ def profile_python_benchmark_ncu(
     
     try:
         wrapper_script.write(f"""
-import importlib.util
 from pathlib import Path
 from contextlib import nullcontext
 
 _BENCHMARK_PATH = Path(r"{benchmark_path}")
-_BENCHMARK_SPEC = importlib.util.spec_from_file_location("profile_benchmark_module", _BENCHMARK_PATH)
-if _BENCHMARK_SPEC is None or _BENCHMARK_SPEC.loader is None:
-    raise RuntimeError(f"Failed to create benchmark module spec for {{_BENCHMARK_PATH}}")
-_BENCHMARK_MODULE = importlib.util.module_from_spec(_BENCHMARK_SPEC)
-_BENCHMARK_SPEC.loader.exec_module(_BENCHMARK_MODULE)
+from core.utils.python_entrypoints import load_module_from_path
+
+_BENCHMARK_MODULE = load_module_from_path("profile_benchmark_module", _BENCHMARK_PATH)
 get_benchmark = _BENCHMARK_MODULE.get_benchmark
 
 from core.harness.benchmark_harness import (
@@ -2688,7 +2716,11 @@ if __name__ == "__main__":
                 metrics=metrics_override,
                 nvtx_includes=ncu_nvtx_includes,
             )
-        env = _harden_profile_env(env, repo_root=repo_root, chapter_dir=chapter_dir)
+        env = _apply_profile_env_overrides(
+            _harden_profile_env(env, repo_root=repo_root, chapter_dir=chapter_dir),
+            config=config,
+            benchmark=benchmark,
+        )
         ncu_env_overrides = getattr(benchmark, "ncu_env_overrides", None)
         if ncu_env_overrides:
             env.update({str(key): str(value) for key, value in ncu_env_overrides.items()})
@@ -2771,6 +2803,7 @@ def profile_cuda_executable_ncu(
     chapter_dir: Path,
     output_dir: Path,
     config: BenchmarkConfig,
+    benchmark: Optional[Any] = None,
     variant: str = "baseline",
     output_stem: Optional[str] = None,
 ) -> Optional[Path]:
@@ -2833,6 +2866,15 @@ def profile_cuda_executable_ncu(
             stderr=subprocess.PIPE,
             text=True,
             start_new_session=True,
+            env=_apply_profile_env_overrides(
+                _harden_profile_env(
+                    None,
+                    repo_root=Path(__file__).resolve().parents[2],
+                    chapter_dir=chapter_dir,
+                ),
+                config=config,
+                benchmark=benchmark,
+            ),
         )
         stdout_text = ""
         stderr_text = ""
@@ -2925,16 +2967,13 @@ def profile_python_benchmark_torch(
     wrapper_path = Path(wrapper_script.name)
     wrapper_script.write(
         f"""
-import importlib.util
 from pathlib import Path
 from contextlib import nullcontext
 
 _BENCHMARK_PATH = Path(r"{benchmark_path}")
-_BENCHMARK_SPEC = importlib.util.spec_from_file_location("profile_benchmark_module", _BENCHMARK_PATH)
-if _BENCHMARK_SPEC is None or _BENCHMARK_SPEC.loader is None:
-    raise RuntimeError(f"Failed to create benchmark module spec for {{_BENCHMARK_PATH}}")
-_BENCHMARK_MODULE = importlib.util.module_from_spec(_BENCHMARK_SPEC)
-_BENCHMARK_SPEC.loader.exec_module(_BENCHMARK_MODULE)
+from core.utils.python_entrypoints import load_module_from_path
+
+_BENCHMARK_MODULE = load_module_from_path("profile_benchmark_module", _BENCHMARK_PATH)
 get_benchmark = _BENCHMARK_MODULE.get_benchmark
 from core.harness.benchmark_harness import (
     BenchmarkConfig,
@@ -3002,7 +3041,11 @@ if __name__ == "__main__":
     wrapper_script.close()
 
     cmd = [sys.executable, str(wrapper_path)]
-    env = _harden_profile_env(None, repo_root=repo_root, chapter_dir=chapter_dir)
+    env = _apply_profile_env_overrides(
+        _harden_profile_env(None, repo_root=repo_root, chapter_dir=chapter_dir),
+        config=existing_cfg,
+        benchmark=benchmark,
+    )
 
     stdout_log = log_base.with_suffix(".stdout.log")
     stderr_log = log_base.with_suffix(".stderr.log")
@@ -3122,6 +3165,8 @@ def _compute_locked_fields(
     cli_iterations_provided: bool,
     cli_warmup_provided: bool,
     cli_ncu_replay_mode_provided: bool = False,
+    cli_nsys_timeout_provided: bool = False,
+    cli_ncu_timeout_provided: bool = False,
     enable_profiling: bool,
 ) -> Set[str]:
     """Compute run-level config fields that benchmarks may not override."""
@@ -3133,6 +3178,10 @@ def _compute_locked_fields(
     if cli_ncu_replay_mode_provided:
         locked_fields.add("ncu_replay_mode")
         locked_fields.add("ncu_replay_mode_override")
+    if cli_nsys_timeout_provided:
+        locked_fields.add("nsys_timeout_seconds")
+    if cli_ncu_timeout_provided:
+        locked_fields.add("ncu_timeout_seconds")
 
     runner_locked_when_true: Set[str] = {"enable_memory_tracking", "detect_setup_precomputation"}
     if enable_profiling:
@@ -3239,29 +3288,6 @@ def _merge_benchmark_config(
 
     merged._sync_execution_mode()
     merged._sync_launch_via()
-
-    # Prevent benchmark-specific defaults from widening CLI/base timeouts.
-    timeout_fields = (
-        "setup_timeout_seconds",
-        "warmup_timeout_seconds",
-        "measurement_timeout_seconds",
-        "profiling_timeout_seconds",
-        "nsys_timeout_seconds",
-        "ncu_timeout_seconds",
-        "proton_timeout_seconds",
-        "timeout_seconds",
-    )
-    for field_name in timeout_fields:
-        base_value = getattr(base_config, field_name, None)
-        merged_value = getattr(merged, field_name, None)
-        if base_value is None or merged_value is None:
-            continue
-        try:
-            if merged_value > base_value:
-                setattr(merged, field_name, base_value)
-        except TypeError:
-            # Non-numeric timeout values are unexpected; keep merged value.
-            pass
 
     # Explicit invariants: benchmarks must not override run-level policy knobs.
     merged.timeout_multiplier = getattr(base_config, "timeout_multiplier", merged.timeout_multiplier)
@@ -3748,6 +3774,8 @@ def _test_chapter_impl(
         cli_iterations_provided=cli_iterations_provided,
         cli_warmup_provided=cli_warmup_provided,
         cli_ncu_replay_mode_provided=ncu_replay_mode is not None,
+        cli_nsys_timeout_provided=nsys_timeout_seconds is not None,
+        cli_ncu_timeout_provided=ncu_timeout_seconds is not None,
         enable_profiling=enable_profiling,
     )
 
@@ -3974,7 +4002,7 @@ def _test_chapter_impl(
         for baseline_path, optimized_paths, example_name in python_pairs:
             logger.info(f"\n  Example: {example_name}")
             logger.info(f"    Baseline: {baseline_path.name}")
-            example_type = "cuda" if _is_cuda_wrapper(baseline_path) else "python"
+            example_type = "cuda" if is_cuda_binary_benchmark_file(baseline_path) else "python"
             emit_event(
                 event_logger,
                 logger,
@@ -6356,15 +6384,17 @@ def _test_chapter_impl(
                         example_type="cuda",
                         variant="baseline",
                         profiler="nsys",
-                        timeout_seconds=base_config.get_effective_timeout("nsys"),
+                        timeout_seconds=baseline_config.get_effective_timeout("nsys"),
                     )
                     nsys_path = profile_cuda_executable(
                         baseline_executable,
                         chapter_dir,
                         baseline_profile_dir,
+                        config=baseline_config,
+                        benchmark=baseline_benchmark,
                         variant="baseline",
                         output_stem=example_profile_stem,
-                        timeout_seconds=base_config.get_effective_timeout("nsys"),
+                        timeout_seconds=baseline_config.get_effective_timeout("nsys"),
                     )
                     if nsys_path:
                         result_entry['baseline_nsys_rep'] = _repo_relative_path(nsys_path, repo_root)
@@ -6438,13 +6468,14 @@ def _test_chapter_impl(
                         example_type="cuda",
                         variant="baseline",
                         profiler="ncu",
-                        timeout_seconds=base_config.get_effective_timeout("ncu"),
+                        timeout_seconds=baseline_config.get_effective_timeout("ncu"),
                     )
                     ncu_path = profile_cuda_executable_ncu(
                         baseline_executable,
                         chapter_dir,
                         baseline_profile_dir,
-                        base_config,
+                        baseline_config,
+                        benchmark=baseline_benchmark,
                         variant="baseline",
                         output_stem=example_profile_stem,
                     )
@@ -6778,7 +6809,7 @@ def _test_chapter_impl(
                 ):
                     cuda_optimized_profile_candidates[technique] = {
                         "executable": optimized_executable,
-                        "config": base_config,
+                        "config": optimized_config,
                         "result": opt_result,
                     }
 
@@ -6815,15 +6846,17 @@ def _test_chapter_impl(
                             variant="optimized",
                             profiler="nsys",
                             technique=technique,
-                            timeout_seconds=base_config.get_effective_timeout("nsys"),
+                            timeout_seconds=optimized_config.get_effective_timeout("nsys"),
                         )
                         nsys_path = profile_cuda_executable(
                             optimized_executable,
                             chapter_dir,
                             pair_dir,
+                            config=optimized_config,
+                            benchmark=optimized_benchmark,
                             variant="optimized",
                             output_stem=example_profile_stem,
-                            timeout_seconds=base_config.get_effective_timeout("nsys"),
+                            timeout_seconds=optimized_config.get_effective_timeout("nsys"),
                         )
                         if nsys_path:
                             opt_result['optimized_nsys_rep'] = _repo_relative_path(nsys_path, repo_root)
@@ -6900,13 +6933,14 @@ def _test_chapter_impl(
                             variant="optimized",
                             profiler="ncu",
                             technique=technique,
-                            timeout_seconds=base_config.get_effective_timeout("ncu"),
+                            timeout_seconds=optimized_config.get_effective_timeout("ncu"),
                         )
                         ncu_path = profile_cuda_executable_ncu(
                             optimized_executable,
                             chapter_dir,
                             pair_dir,
-                            base_config,
+                            optimized_config,
+                            benchmark=optimized_benchmark,
                             variant="optimized",
                             output_stem=example_profile_stem,
                         )
@@ -7075,6 +7109,8 @@ def _test_chapter_impl(
                                     optimized_executable,
                                     chapter_dir,
                                     pair_dir,
+                                    config=optimized_config,
+                                    benchmark=optimized_benchmark,
                                     variant="optimized",
                                     output_stem=example_profile_stem,
                                     timeout_seconds=optimized_config.get_effective_timeout("nsys") if optimized_config else None,
@@ -7159,6 +7195,7 @@ def _test_chapter_impl(
                                     chapter_dir,
                                     pair_dir,
                                     optimized_config,
+                                    benchmark=optimized_benchmark,
                                     variant="optimized",
                                     output_stem=example_profile_stem,
                                 )
@@ -9801,11 +9838,9 @@ def _preflight_target_coverage_and_assets(
     def _is_cuda_wrapper_pair(pair: Tuple[Path, List[Path], str]) -> bool:
         baseline_path = pair[0]
         try:
-            text = baseline_path.read_text(encoding="utf-8")
+            return is_cuda_binary_benchmark_file(baseline_path)
         except Exception:
             return False
-        # Match the harness wrapper contract used across chapter/lab CUDA wrappers.
-        return "CudaBinaryBenchmark" in text and "cuda_binary_path" in text
 
     for chapter_dir in chapter_dirs:
         chapter_id = chapter_slug(chapter_dir, repo_root)

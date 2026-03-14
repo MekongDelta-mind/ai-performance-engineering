@@ -43,6 +43,21 @@ constexpr int CLUSTER_SIZE = 4;
 constexpr int ELEMENTS_PER_BLOCK = 4096;
 constexpr int WARPS_PER_BLOCK = BLOCK_SIZE / 32;
 
+namespace {
+int env_or_default(const char* name, int fallback) {
+    const char* raw = std::getenv(name);
+    if (!raw || !*raw) {
+        return fallback;
+    }
+    char* end = nullptr;
+    long parsed = std::strtol(raw, &end, 10);
+    if (end == raw || (end && *end != '\0') || parsed < 0 || parsed > 1000000) {
+        return fallback;
+    }
+    return static_cast<int>(parsed);
+}
+}  // namespace
+
 //============================================================================
 // Warp reduction with shuffle
 //============================================================================
@@ -246,8 +261,10 @@ int main() {
     const int N_param = N;
     const int elements_param = elements_per_cluster;
     
+    const int warmup = env_or_default("AISP_CUDA_BINARY_PROFILE_WARMUP", 10);
+
     // Warmup
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < warmup; ++i) {
         NVTX_RANGE("warmup");
         CUDA_CHECK(cudaLaunchKernelEx(&config,
                                        dsmem_warp_specialized_reduction_kernel,
@@ -256,7 +273,7 @@ int main() {
     CUDA_CHECK(cudaDeviceSynchronize());
     
     // Benchmark
-    const int iterations = 100;
+    const int iterations = env_or_default("AISP_CUDA_BINARY_PROFILE_ITERATIONS", 100);
     CUDA_CHECK(cudaEventRecord(start));
     for (int i = 0; i < iterations; ++i) {
         NVTX_RANGE("iteration");

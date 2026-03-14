@@ -214,7 +214,13 @@ class OptimizedTEFP8Benchmark(VerificationPayloadMixin, BaseBenchmark):
         super().teardown()
 
     def get_config(self) -> BenchmarkConfig:
-        return BenchmarkConfig(iterations=50, warmup=10, backend_policy="fp32_strict")
+        return BenchmarkConfig(
+            iterations=50,
+            warmup=10,
+            backend_policy="fp32_strict",
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
+        )
 
     def get_custom_metrics(self) -> Optional[dict]:
         """Return domain-specific metrics using standardized helper."""

@@ -109,6 +109,8 @@ class OptimizedComputeBoundBenchmark(VerificationPayloadMixin, BaseBenchmark):
             warmup=5,
             enable_memory_tracking=False,
             enable_profiling=False,
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
     
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

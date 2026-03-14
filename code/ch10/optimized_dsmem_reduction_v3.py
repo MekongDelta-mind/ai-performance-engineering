@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Optional
 from pathlib import Path
 
-from core.harness.benchmark_harness import BaseBenchmark, BenchmarkHarness, BenchmarkMode
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, BenchmarkHarness, BenchmarkMode
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
 from core.benchmark.verification import simple_signature
 
@@ -27,7 +27,9 @@ class OptimizedDSMEMReductionV3Benchmark(CudaBinaryBenchmark):
             friendly_name="Optimized Dsmem Reduction V3",
             iterations=3,
             warmup=5,
-            timeout_seconds=120,
+            # Full deep-dive instrumentation can slow the standalone CUDA binary
+            # enough that the default subprocess budget becomes a false failure.
+            timeout_seconds=600,
             workload_params={
                 "batch_size": 2048,
                 "dtype": "float32",
@@ -56,6 +58,20 @@ class OptimizedDSMEMReductionV3Benchmark(CudaBinaryBenchmark):
 
     def get_output_tolerance(self) -> tuple[float, float]:
         return (0.0, 0.0)
+
+    def get_config(self) -> BenchmarkConfig:
+        config = super().get_config()
+        # This standalone CUDA binary does not benefit from full library tracing,
+        # and deep-dive NSYS captures are more reliable with the light preset.
+        config.nsys_timeout_seconds = 300
+        config.nsys_preset_override = "light"
+        config.profiling_warmup = 0
+        config.profiling_iterations = 1
+        config.profile_env_overrides = {
+            "AISP_CUDA_BINARY_PROFILE_WARMUP": "0",
+            "AISP_CUDA_BINARY_PROFILE_ITERATIONS": "1",
+        }
+        return config
 
 
 def get_benchmark() -> BaseBenchmark:

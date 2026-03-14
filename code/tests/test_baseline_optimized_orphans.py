@@ -27,7 +27,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterable, List, Tuple
 
-from core.discovery import discover_all_chapters
+from core.discovery import discover_all_chapters, should_ignore_benchmark_candidate
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -115,10 +115,14 @@ def test_no_orphan_baseline_or_optimized_files_in_harness_dirs() -> None:
             }
 
             for path in bench_dir.glob(f"baseline_*{ext}"):
+                if should_ignore_benchmark_candidate(path):
+                    continue
                 key = path.stem.replace("baseline_", "", 1)
                 groups["baseline"][key].append(path)
 
             for path in bench_dir.glob(f"optimized_*{ext}"):
+                if should_ignore_benchmark_candidate(path):
+                    continue
                 key = path.stem.replace("optimized_", "", 1)
                 groups["optimized"][key].append(path)
 

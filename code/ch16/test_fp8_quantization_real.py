@@ -24,6 +24,7 @@ robust FP8 training/inference, but this script uses PyTorch native APIs.
 
 from core.harness.arch_config import prefer_flash_sdpa
 
+import os
 import torch
 import torch.nn as nn
 import time

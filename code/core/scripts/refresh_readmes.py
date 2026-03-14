@@ -4372,15 +4372,15 @@ ENTRIES["labs/nanochat_fullstack/rustbpe"] = lab_entry(
         ],
         notes=[
             "This is a Rust-native component workflow, not a harness-target workflow.",
-            "You need a Rust/Cargo toolchain with Edition 2024 support for these commands to work; older Cargo builds fail while parsing `edition = \"2024\"` in `Cargo.toml`.",
+            "The crate is pinned to Rust Edition 2021 so it builds on stable Cargo toolchains used by the repo test environment.",
             "Use the parent NanoChat docs for end-to-end training/inference context.",
         ],
     ),
     run_heading="Building and Testing",
     run_intro="Use Cargo directly for this component.",
     validation=[
-        "`cargo build --release` should compile the library cleanly once the host toolchain supports Rust Edition 2024.",
-        "`cargo test` should keep the component healthy as the NanoChat tree evolves after the toolchain precondition is satisfied.",
+        "`cargo build --release` should compile the library cleanly on the repo's supported stable Rust toolchain.",
+        "`cargo test` should keep the component healthy as the NanoChat tree evolves.",
     ],
     extra_sections=[
         dedent(
@@ -4396,7 +4396,7 @@ ENTRIES["labs/nanochat_fullstack/rustbpe"] = lab_entry(
     ],
     notes=[
         "This doc intentionally uses the same generator path as the benchmark-facing labs so the repo stays tidy, even when the component itself is not a benchmark pair.",
-        "On this host, `cargo test` currently fails before compilation because the installed Cargo is too old to parse `edition = \"2024\"`; the doc reflects that requirement explicitly.",
+        "The crate no longer requires a nightly-or-newer Cargo parser just to read `Cargo.toml`; keep it 2021-compatible unless the code actually needs a newer edition feature.",
     ],
 )
 
@@ -4876,7 +4876,8 @@ ENTRIES["labs/trtllm_phi_3_5_moe"] = lab_entry(
                 """\
                 - TensorRT-LLM-oriented optimized serving path
                 - same workload and verification contract
-                - tuned to show the practical inference-stack win, not just a kernel-local result"""
+                - tuned to show the practical inference-stack win, not just a kernel-local result
+                - verifies a deterministic generated-token prefix rather than the more fragile full-logits or full-suffix path"""
             ),
         ),
         MarkdownSection(
@@ -4923,7 +4924,7 @@ ENTRIES["labs/trtllm_phi_3_5_moe"] = lab_entry(
         ("`expectations_{hardware_key}.json`", "Regression thresholds for the lab."),
     ],
     validation=[
-        "`python -m cli.aisp bench run --targets labs/trtllm_phi_3_5_moe:trtllm_phi_3_5_moe --profile minimal` should keep the optimized path verification-clean and materially ahead.",
+        "`python -m cli.aisp bench run --targets labs/trtllm_phi_3_5_moe:trtllm_phi_3_5_moe --profile minimal` should keep the optimized path verification-clean on the shared generated-token prefix and materially ahead.",
     ],
     notes=[
         'This lab is one of the best repo examples for "serving-stack optimization" as opposed to pure kernel tuning.',

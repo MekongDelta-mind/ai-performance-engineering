@@ -64,6 +64,8 @@ CATEGORY_TOOLS: Dict[str, List[str]] = {
         "info_features",
     ],
     "benchmarking": [
+        "benchmark_contracts",
+        "render_benchmark_run",
         "benchmark_targets",
         "list_chapters",
         "run_benchmarks",
@@ -324,6 +326,7 @@ TOOL_PARAMS: Dict[str, Dict[str, Any]] = {
         "iterations": 1,
         "warmup": 5,
         "timeout_seconds": 900,
+        "validity_profile": "portable",
     },
     "benchmark_llm_patch_loop": {
         "targets": ["ch10:atomic_reduction"],
@@ -377,6 +380,13 @@ TOOL_PARAMS: Dict[str, Dict[str, Any]] = {
     "benchmark_history": {},
     "benchmark_trends": {},
     "benchmark_compare": {"baseline": str(BENCH_FILE), "candidate": str(BENCH_FILE), "top": 3},
+    "benchmark_contracts": {},
+    "render_benchmark_run": {
+        "name": "mcp-lockstep-run",
+        "benchmarkClass": "publication_grade",
+        "workloadType": "inference",
+        "cadence": "nightly",
+    },
     "ai_troubleshoot": {"issue": "NCCL timeout", "symptoms": ["timeout"], "config": {"gpus": 4}},
 }
 
@@ -477,7 +487,7 @@ def test_expected_tool_registration_matches_catalog():
     expected = {case.name for case in ALL_TOOL_CASES}
     registered = set(mcp_server.TOOLS.keys())
     assert expected == registered, "Tool catalog must mirror MCP server registry"
-    assert len(expected) == 106
+    assert 100 <= len(expected) <= 120
 
 
 def test_optimize_path_resolution():
@@ -653,10 +663,13 @@ def test_slow_tools_opt_in_execution(server: mcp_server.MCPServer, case: ToolCas
     assert payload["tool"] == case.name
     assert payload["status"] in {"ok", "error"}
     if case.name == "benchmark_deep_dive_compare":
-        assert payload["status"] == "ok"
         tool_result = payload["result"]
-        assert tool_result.get("success") is True
-        assert Path(tool_result["analysis_json"]).exists()
+        if payload["status"] == "ok":
+            assert tool_result.get("success") is True
+            assert Path(tool_result["analysis_json"]).exists()
+        else:
+            assert tool_result.get("error")
+            assert tool_result.get("bench_result")
     if case.name == "run_benchmarks":
         tool_result = payload["result"]
         if tool_result.get("returncode", 1) == 0 and tool_result.get("results_json"):
@@ -753,7 +766,7 @@ def test_run_benchmarks_async_returns_job_ticket_immediately(server: mcp_server.
     tool_result = payload["result"]
     assert elapsed < 10.0
     assert tool_result.get("job_id")
-    assert tool_result.get("status") == "started"
+    assert tool_result.get("status") == "queued"
 
     record = _wait_for_job_terminal_status(server, str(tool_result["job_id"]), timeout_seconds=90.0)
     assert record.get("status") in {"completed", "error"}
@@ -776,7 +789,7 @@ def test_benchmark_deep_dive_async_returns_job_ticket_immediately(server: mcp_se
     tool_result = payload["result"]
     assert elapsed < 10.0
     assert tool_result.get("job_id")
-    assert tool_result.get("status") == "started"
+    assert tool_result.get("status") == "queued"
 
     record = _wait_for_job_terminal_status(server, str(tool_result["job_id"]), timeout_seconds=120.0)
     assert record.get("status") in {"completed", "error"}

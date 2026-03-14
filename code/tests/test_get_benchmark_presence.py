@@ -13,7 +13,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-from core.discovery import discover_all_chapters  # noqa: E402
+from core.discovery import discover_all_chapters, should_ignore_benchmark_candidate  # noqa: E402
 
 
 def _has_get_benchmark_symbol(path: Path) -> bool:
@@ -41,6 +41,8 @@ def test_all_discoverable_python_benchmarks_have_get_benchmark() -> None:
     missing: list[Path] = []
     for bench_dir in discover_all_chapters(REPO_ROOT):
         for path in list(bench_dir.glob("baseline_*.py")) + list(bench_dir.glob("optimized_*.py")):
+            if should_ignore_benchmark_candidate(path):
+                continue
             try:
                 if not _has_get_benchmark_symbol(path):
                     missing.append(path)

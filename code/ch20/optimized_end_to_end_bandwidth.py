@@ -137,6 +137,8 @@ class OptimizedEndToEndBandwidthBenchmark(VerificationPayloadMixin, BaseBenchmar
             warmup=10,
             enable_memory_tracking=True,
             enable_profiling=False,
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
     
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

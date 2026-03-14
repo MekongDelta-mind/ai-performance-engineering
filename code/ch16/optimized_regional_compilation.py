@@ -269,6 +269,8 @@ class OptimizedRegionalCompilationBenchmark(VerificationPayloadMixin, BaseBenchm
             measurement_timeout_seconds=240,
             use_subprocess=True,
             adaptive_iterations=False,
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
 
     def get_custom_metrics(self) -> Optional[dict]:

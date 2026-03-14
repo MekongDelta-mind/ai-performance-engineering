@@ -78,13 +78,74 @@ export interface BenchmarkContractEntry {
   summary?: BenchmarkContractYamlSummary;
 }
 
+export interface BenchmarkContractInterfaceEntry {
+  id: 'cli' | 'dashboard_api' | 'mcp';
+  label: string;
+  transport: 'cli' | 'http' | 'mcp';
+  entrypoint: string;
+  method?: string;
+  description: string;
+}
+
+export interface BenchmarkRunGeneratorDefaults {
+  name: string;
+  benchmarkClass: 'publication_grade' | 'realism_grade';
+  workloadType: 'training' | 'inference' | 'mixed';
+  schedulerPath: string;
+  cadence: 'canary' | 'nightly' | 'pre_release';
+  model: string;
+  precision: string;
+  batchingPolicy: string;
+  concurrencyModel: string;
+  comparisonVariable:
+    | 'hardware_generation'
+    | 'runtime_version'
+    | 'scheduler_path'
+    | 'control_plane_path'
+    | 'driver_stack'
+    | 'network_topology'
+    | 'storage_stack';
+}
+
+export interface BenchmarkRunRenderResult {
+  schema_version: string;
+  generated_at_utc: string;
+  template_path: string;
+  applied_values: BenchmarkRunGeneratorDefaults;
+  rendered_yaml: string;
+}
+
 export interface BenchmarkContractsSummary {
+  schema_version: string;
+  generated_at_utc: string;
   available: boolean;
   repo_root: string;
+  surface_order: string[];
+  surface_count: number;
+  missing_surface_count: number;
+  missing_surfaces: string[];
   interfaces: {
     cli: string;
     dashboard_api: string;
     mcp_tool: string;
+  };
+  interface_entries: BenchmarkContractInterfaceEntry[];
+  generator: {
+    template_path: string;
+    defaults: BenchmarkRunGeneratorDefaults;
+    preview_yaml: string;
+    choices: {
+      benchmarkClass: BenchmarkRunGeneratorDefaults['benchmarkClass'][];
+      workloadType: BenchmarkRunGeneratorDefaults['workloadType'][];
+      cadence: BenchmarkRunGeneratorDefaults['cadence'][];
+      comparisonVariable: BenchmarkRunGeneratorDefaults['comparisonVariable'][];
+    };
+    render_interfaces: {
+      cli: string;
+      dashboard_api: string;
+      mcp_tool: string;
+    };
+    render_interface_entries: BenchmarkContractInterfaceEntry[];
   };
   contracts: Record<string, BenchmarkContractEntry>;
 }

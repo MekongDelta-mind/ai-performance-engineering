@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   Braces,
   Copy,
@@ -15,9 +15,15 @@ import {
 } from 'lucide-react';
 import { DashboardShell } from '@/components/DashboardShell';
 import { useToast } from '@/components/Toast';
-import { getBenchmarkContracts } from '@/lib/api';
+import { getBenchmarkContracts, renderBenchmarkRun } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import type { BenchmarkContractEntry, BenchmarkContractsSummary } from '@/types';
+import type {
+  BenchmarkContractEntry,
+  BenchmarkContractInterfaceEntry,
+  BenchmarkContractsSummary,
+  BenchmarkRunGeneratorDefaults,
+  BenchmarkRunRenderResult,
+} from '@/types';
 
 type GeneratorForm = {
   name: string;
@@ -39,7 +45,7 @@ type GeneratorForm = {
     | 'storage_stack';
 };
 
-const DEFAULT_FORM: GeneratorForm = {
+const FALLBACK_FORM: GeneratorForm = {
   name: 'publication-inference-stack-b200',
   benchmarkClass: 'publication_grade',
   workloadType: 'inference',
@@ -56,266 +62,51 @@ function contractIcon(kind: BenchmarkContractEntry['kind']) {
   return kind === 'yaml' ? FileCode2 : FileText;
 }
 
+function fallbackInterfaceEntries(summary?: BenchmarkContractsSummary | null): BenchmarkContractInterfaceEntry[] {
+  if (summary?.interface_entries?.length) {
+    return summary.interface_entries;
+  }
+  return [
+    {
+      id: 'cli',
+      label: 'CLI',
+      transport: 'cli',
+      entrypoint: summary?.interfaces.cli || 'python -m cli.aisp tools benchmark-contracts',
+      description: 'Print the shared contract summary as JSON.',
+    },
+    {
+      id: 'dashboard_api',
+      label: 'Dashboard API',
+      transport: 'http',
+      entrypoint: summary?.interfaces.dashboard_api || '/api/benchmark/contracts',
+      method: 'GET',
+      description: 'Read-only route used by the contracts tab and other UI clients.',
+    },
+    {
+      id: 'mcp',
+      label: 'MCP',
+      transport: 'mcp',
+      entrypoint: summary?.interfaces.mcp_tool || 'benchmark_contracts',
+      description: 'MCP tool exposing the same summary object to remote clients.',
+    },
+  ];
+}
+
+function normalizeGeneratorDefaults(summary?: BenchmarkContractsSummary | null): GeneratorForm {
+  const defaults = summary?.generator?.defaults;
+  if (!defaults) return FALLBACK_FORM;
+  return {
+    ...FALLBACK_FORM,
+    ...(defaults as BenchmarkRunGeneratorDefaults),
+  };
+}
+
 function slugify(value: string) {
   return value
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'benchmark-run';
-}
-
-function yamlString(value: string) {
-  return JSON.stringify(value);
-}
-
-function buildBenchmarkRunYaml(form: GeneratorForm) {
-  const trainingEnabled = form.workloadType === 'training' || form.workloadType === 'mixed';
-  const inferenceEnabled = form.workloadType === 'inference' || form.workloadType === 'mixed';
-  const realismMultiTenant = form.benchmarkClass === 'realism_grade';
-
-  return `apiVersion: benchmarking.aisp.dev/v1alpha1
-kind: BenchmarkRun
-metadata:
-  name: ${slugify(form.name)}
-  labels:
-    aisp.dev/benchmark-class: ${form.benchmarkClass}
-    aisp.dev/owner: performance-engineering
-spec:
-  intent:
-    benchmarkClass: ${form.benchmarkClass}
-    workloadType: ${form.workloadType}
-    schedulerPath: ${yamlString(form.schedulerPath)}
-    cadence: ${form.cadence}
-  layers:
-    - name: micro
-      enabled: true
-      objective: Isolate subsystem ceilings and regressions before rolling up to user-visible behavior.
-      suites:
-        - name: nccl-allreduce
-          repoCommand: cluster/scripts/run_allreduce_stability.sh --run-id \${RUN_ID}
-    - name: component
-      enabled: true
-      objective: Measure serving, data pipeline, and control-plane subsystems with stable workload specs.
-      suites:
-        - name: stack-under-test
-          repoCommand: python -m cli.aisp cluster common-eval --preset common-answer-fast
-    - name: end_to_end
-      enabled: true
-      objective: Validate realistic workflows after micro and component bottlenecks are understood.
-      suites:
-        - name: customer-workflow
-          repoCommand: python -m cli.aisp cluster common-eval --preset modern-llm
-  workload:
-    model: ${yamlString(form.model)}
-    sequenceLengthMix:
-      - inputTokens: 512
-        outputTokens: 128
-        weight: 0.7
-      - inputTokens: 1024
-        outputTokens: 256
-        weight: 0.3
-    precision: ${yamlString(form.precision)}
-    batchingPolicy: ${yamlString(form.batchingPolicy)}
-    concurrencyModel: ${yamlString(form.concurrencyModel)}
-    datasetRef: ${yamlString('eval_datasets/README.md')}
-    fixedAcrossTrials:
-      - model
-      - sequenceLengthMix
-      - precision
-      - batchingPolicy
-      - concurrencyModel
-  comparison:
-    variableUnderTest: ${form.comparisonVariable}
-    baseline:
-      artifactRef: ${yamlString('cluster/published/current')}
-      description: ${yamlString('currently published canonical package')}
-    candidate:
-      artifactRef: ${yamlString('cluster/runs/${RUN_ID}')}
-      description: ${yamlString('run under test')}
-    controls:
-      fixed:
-        model: ${yamlString(form.model)}
-        sequenceLengthMix: ${yamlString('[{512/128@0.7},{1024/256@0.3}]')}
-        precision: ${yamlString(form.precision)}
-        batchingPolicy: ${yamlString(form.batchingPolicy)}
-        concurrencyModel: ${yamlString(form.concurrencyModel)}
-      compareOneVariableAtATime: true
-  metrics:
-    training:
-      enabled: ${trainingEnabled}
-      primary:
-        - time_to_train_hours
-        - mfu_pct
-        - scaling_efficiency_pct
-        - training_reliability_pct
-    inference:
-      enabled: ${inferenceEnabled}
-      primary:
-        - ttft_ms
-        - tokens_per_second
-        - p99_latency_ms
-        - jitter_ms
-        - cost_per_request_usd
-        - cost_per_token_usd
-  trials:
-    minReplicates: 5
-    confidenceLevel: 0.95
-    outlierPolicy:
-      method: mad
-      action: flag_and_keep
-    report:
-      distributions: true
-      confidenceIntervals: true
-      rankLevelOutliers: true
-  bottleneckAnalysis:
-    taxonomy:
-      - compute_bound
-      - comm_bound
-      - input_bound
-      - control_plane_bound
-    decomposeOverheads:
-      - compute
-      - communication
-      - storage
-      - orchestration
-    instrumentation:
-      compute_bound:
-        - model_server_metrics
-        - gpu_counters
-        - ncu
-      comm_bound:
-        - nccl_traces
-        - rdma_probes
-        - nvlink_exporter
-      input_bound:
-        - storage_probes
-        - dataloader_metrics
-        - network_probes
-      control_plane_bound:
-        - scheduler_timing
-        - queue_depth
-        - job_startup_trace
-  distributed:
-    requireRankLevelVisibility: true
-    collectives:
-      - latency
-      - bandwidth
-      - outliers
-    nodeDiagnosis:
-      validate:
-        - rdma_pathing
-        - gpu_nic_affinity
-        - pcie_link_health
-        - nvlink_health
-        - thermal_throttling
-      remediation:
-        - isolate_bad_node
-        - cordon_problematic_node
-  observability:
-    correlation:
-      stableJoinKeys:
-        - run_id
-        - benchmark_case_id
-        - scheduler_run_id
-        - job_uid
-        - pod_uid
-        - node_name
-        - gpu_uuid
-        - rank_id
-        - request_id
-        - trace_id
-      publishedNumberLineage:
-        rawArtifactManifestDigest: true
-        warehouseRowLineage: true
-        querySpecCaptured: true
-    telemetrySources:
-      service:
-        - model_server_metrics
-        - request_traces
-        - queue_time
-      infrastructure:
-        - dcgm-exporter
-        - nvlink-exporter
-        - node-pci-exporter
-        - ping-exporter
-        - node-problem-detector
-        - hpc-verification
-      scheduler:
-        - kubernetes_events
-        - kueue
-        - slinky
-    scenarioPlaybooks:
-      - tail_latency_regression
-      - low_gpu_utilization
-      - distributed_straggler
-      - scheduler_backpressure
-  provenance:
-    capture:
-      pinnedWorkloadSpec: true
-      imageDigest: true
-      driverCudaNcclRuntimeVersions: true
-      hardwareTopology: true
-      immutableRawArtifacts: true
-      auditTrail: true
-    signing:
-      required: true
-      backend: sigstore
-      attestationFormat: in_toto
-  executionPolicy:
-    publicationGrade:
-      dedicatedNodes: true
-      stableBackgroundLoad: true
-      fixedTopology: true
-      topologyExclusiveScheduling: true
-    realismGrade:
-      multiTenantScenarios: ${realismMultiTenant}
-      captureClusterContext: true
-  sinks:
-    rawArtifacts:
-      store: object_storage
-      pathTemplate: ${yamlString('s3://benchmarks/raw/${RUN_ID}/')}
-      retentionClass: cold_immutable
-      artifacts:
-        - logs
-        - traces
-        - profiler_reports
-        - manifests
-    hotMetrics:
-      store: prometheus
-      retentionDays: 30
-      cardinalityBudget:
-        maxActiveSeries: 2000000
-        dropDimensions:
-          - request_id
-          - trace_id
-    curatedWarehouse:
-      store: parquet_duckdb
-      layout:
-        facts:
-          - benchmark_run_fact
-          - serving_outcome_fact
-          - training_outcome_fact
-          - telemetry_slice_fact
-        dimensions:
-          - software_version_dim
-          - hardware_topology_dim
-          - cluster_region_dim
-          - workload_dim
-          - artifact_lineage_dim
-      retention:
-        hotDays: 30
-        warmDays: 180
-        coldDays: 730
-      lineage:
-        publishedNumbersTraceableToRaw: true
-        manifestDigestColumn: true
-        workloadSpecDigestColumn: true
-  automation:
-    ci:
-      canary: true
-      nightly: true
-      preRelease: true
-`;
 }
 
 function ContractsSkeleton() {
@@ -454,16 +245,17 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<GeneratorForm>(DEFAULT_FORM);
-
-  const yamlPreview = useMemo(() => buildBenchmarkRunYaml(form), [form]);
+  const [form, setForm] = useState<GeneratorForm | null>(null);
+  const [yamlRender, setYamlRender] = useState<BenchmarkRunRenderResult | null>(null);
+  const [yamlError, setYamlError] = useState<string | null>(null);
+  const [renderingYaml, setRenderingYaml] = useState(false);
 
   const loadContracts = useCallback(async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
       setError(null);
       const payload = await getBenchmarkContracts();
-      setData(payload as BenchmarkContractsSummary);
+      setData(payload);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load benchmark contracts.');
     } finally {
@@ -477,12 +269,58 @@ export default function ContractsPage() {
   }, [loadContracts]);
 
   useEffect(() => {
+    if (!data) return;
+    setForm((current) => current ?? normalizeGeneratorDefaults(data));
+    setYamlRender((current) =>
+      current
+        ?? {
+          schema_version: data.schema_version,
+          generated_at_utc: data.generated_at_utc,
+          template_path: data.generator.template_path,
+          applied_values: normalizeGeneratorDefaults(data),
+          rendered_yaml: data.generator.preview_yaml,
+        }
+    );
+  }, [data]);
+
+  useEffect(() => {
     if (!data || typeof window === 'undefined' || !window.location.hash) return;
     const target = document.getElementById(window.location.hash.slice(1));
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [data]);
+
+  const generatorDefaults = useMemo(() => normalizeGeneratorDefaults(data), [data]);
+  const currentForm = form ?? generatorDefaults;
+  const deferredForm = useDeferredValue(currentForm);
+  const yamlPreview = yamlRender?.rendered_yaml || data?.generator.preview_yaml || '';
+
+  useEffect(() => {
+    if (!data) return;
+    let cancelled = false;
+    setRenderingYaml(true);
+    setYamlError(null);
+    renderBenchmarkRun(deferredForm)
+      .then((result) => {
+        if (!cancelled) {
+          setYamlRender(result);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setYamlError(e instanceof Error ? e.message : 'Failed to render BenchmarkRun YAML.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setRenderingYaml(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, deferredForm]);
 
   const copyText = useCallback(
     async (text: string, successMessage: string) => {
@@ -504,18 +342,35 @@ export default function ContractsPage() {
     [copyText]
   );
 
+  const updateForm = useCallback(
+    (patch: Partial<GeneratorForm>) => {
+      setForm((current) => ({
+        ...(current ?? generatorDefaults),
+        ...patch,
+      }));
+    },
+    [generatorDefaults]
+  );
+
   const downloadYaml = useCallback(() => {
     const blob = new Blob([yamlPreview], { type: 'text/yaml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${slugify(form.name)}.yaml`;
+    a.download = `${slugify(currentForm.name)}.yaml`;
     a.click();
     URL.revokeObjectURL(url);
     showToast('BenchmarkRun YAML downloaded.', 'success');
-  }, [form.name, showToast, yamlPreview]);
+  }, [currentForm.name, showToast, yamlPreview]);
 
-  const entries = useMemo(() => Object.values(data?.contracts || {}), [data?.contracts]);
+  const entries = useMemo(() => {
+    if (!data) return [];
+    const names = data.surface_order?.length ? data.surface_order : Object.keys(data.contracts || {});
+    return names
+      .map((name) => data.contracts[name])
+      .filter((entry): entry is BenchmarkContractEntry => Boolean(entry));
+  }, [data]);
+  const interfaceEntries = useMemo(() => fallbackInterfaceEntries(data), [data]);
   const docCount = entries.filter((entry) => entry.kind === 'doc').length;
   const yamlCount = entries.filter((entry) => entry.kind === 'yaml').length;
 
@@ -576,48 +431,27 @@ export default function ContractsPage() {
                 </div>
               </div>
               <div className="card-body grid grid-cols-1 gap-3">
-                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-2">CLI</div>
-                      <div className="font-mono text-sm text-white/85">{data?.interfaces.cli}</div>
+                {interfaceEntries.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-white/10 bg-black/20 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <div className="text-[11px] uppercase tracking-[0.2em] text-white/40">{entry.label}</div>
+                          <span className="badge badge-info">{entry.transport}</span>
+                          {entry.method && <span className="badge badge-warning">{entry.method}</span>}
+                        </div>
+                        <div className="font-mono text-sm text-white/85">{entry.entrypoint}</div>
+                        <div className="text-xs text-white/50 mt-2">{entry.description}</div>
+                      </div>
+                      <button
+                        onClick={() => copyText(entry.entrypoint, `${entry.label} entrypoint copied.`)}
+                        className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-white/80 hover:bg-white/10"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => copyText(data?.interfaces.cli || '', 'CLI command copied.')}
-                      className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-white/80 hover:bg-white/10"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
                   </div>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-2">Dashboard API</div>
-                      <div className="font-mono text-sm text-white/85">{data?.interfaces.dashboard_api}</div>
-                    </div>
-                    <button
-                      onClick={() => copyText(data?.interfaces.dashboard_api || '', 'Dashboard API route copied.')}
-                      className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-white/80 hover:bg-white/10"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-2">MCP</div>
-                      <div className="font-mono text-sm text-white/85">{data?.interfaces.mcp_tool}</div>
-                    </div>
-                    <button
-                      onClick={() => copyText(data?.interfaces.mcp_tool || '', 'MCP tool name copied.')}
-                      className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-white/80 hover:bg-white/10"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -635,7 +469,7 @@ export default function ContractsPage() {
               </div>
               <div className="card-body space-y-4">
                 <div>
-                  <div className="text-3xl font-semibold text-white">{entries.length}</div>
+                  <div className="text-3xl font-semibold text-white">{data?.surface_count ?? entries.length}</div>
                   <div className="text-sm text-white/50">total surfaces</div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -648,6 +482,10 @@ export default function ContractsPage() {
                     <div className="text-xs text-white/50 uppercase tracking-[0.2em] mt-1">YAML</div>
                   </div>
                 </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <div className="text-xl font-semibold text-white">{data?.missing_surface_count ?? 0}</div>
+                  <div className="text-xs text-white/50 uppercase tracking-[0.2em] mt-1">Missing</div>
+                </div>
               </div>
             </div>
 
@@ -658,13 +496,24 @@ export default function ContractsPage() {
                     <Braces className="w-5 h-5 text-accent-warning" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-white">Repo Root</h2>
-                    <p className="text-xs text-white/50">Path used by the shared contract surface.</p>
+                    <h2 className="text-lg font-semibold text-white">Contract Metadata</h2>
+                    <p className="text-xs text-white/50">Schema, generation time, and repo source.</p>
                   </div>
                 </div>
               </div>
-              <div className="card-body">
+              <div className="card-body space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="text-xs text-white/50 uppercase tracking-[0.2em] mb-1">Schema</div>
+                    <div className="font-mono text-xs text-white/80">{data?.schema_version}</div>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="text-xs text-white/50 uppercase tracking-[0.2em] mb-1">Generated</div>
+                    <div className="font-mono text-xs text-white/80 break-all">{data?.generated_at_utc}</div>
+                  </div>
+                </div>
                 <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-2">Repo root</div>
                   <div className="font-mono text-xs text-white/75 break-all">{data?.repo_root}</div>
                 </div>
               </div>
@@ -698,106 +547,134 @@ export default function ContractsPage() {
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Run Name</div>
                     <input
-                      value={form.name}
-                      onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
+                      value={currentForm.name}
+                      onChange={(e) => updateForm({ name: e.target.value })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     />
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Benchmark Class</div>
                     <select
-                      value={form.benchmarkClass}
-                      onChange={(e) => setForm((current) => ({ ...current, benchmarkClass: e.target.value as GeneratorForm['benchmarkClass'] }))}
+                      value={currentForm.benchmarkClass}
+                      onChange={(e) => updateForm({ benchmarkClass: e.target.value as GeneratorForm['benchmarkClass'] })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     >
-                      <option value="publication_grade">publication_grade</option>
-                      <option value="realism_grade">realism_grade</option>
+                      {data?.generator?.choices.benchmarkClass?.map((choice) => (
+                        <option key={choice} value={choice}>{choice}</option>
+                      )) ?? (
+                        <>
+                          <option value="publication_grade">publication_grade</option>
+                          <option value="realism_grade">realism_grade</option>
+                        </>
+                      )}
                     </select>
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Workload Type</div>
                     <select
-                      value={form.workloadType}
-                      onChange={(e) => setForm((current) => ({ ...current, workloadType: e.target.value as GeneratorForm['workloadType'] }))}
+                      value={currentForm.workloadType}
+                      onChange={(e) => updateForm({ workloadType: e.target.value as GeneratorForm['workloadType'] })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     >
-                      <option value="inference">inference</option>
-                      <option value="training">training</option>
-                      <option value="mixed">mixed</option>
+                      {data?.generator?.choices.workloadType?.map((choice) => (
+                        <option key={choice} value={choice}>{choice}</option>
+                      )) ?? (
+                        <>
+                          <option value="inference">inference</option>
+                          <option value="training">training</option>
+                          <option value="mixed">mixed</option>
+                        </>
+                      )}
                     </select>
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Cadence</div>
                     <select
-                      value={form.cadence}
-                      onChange={(e) => setForm((current) => ({ ...current, cadence: e.target.value as GeneratorForm['cadence'] }))}
+                      value={currentForm.cadence}
+                      onChange={(e) => updateForm({ cadence: e.target.value as GeneratorForm['cadence'] })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     >
-                      <option value="canary">canary</option>
-                      <option value="nightly">nightly</option>
-                      <option value="pre_release">pre_release</option>
+                      {data?.generator?.choices.cadence?.map((choice) => (
+                        <option key={choice} value={choice}>{choice}</option>
+                      )) ?? (
+                        <>
+                          <option value="canary">canary</option>
+                          <option value="nightly">nightly</option>
+                          <option value="pre_release">pre_release</option>
+                        </>
+                      )}
                     </select>
                   </label>
                   <label className="space-y-1 md:col-span-2">
                     <div className="text-xs uppercase text-white/40">Scheduler Path</div>
                     <input
-                      value={form.schedulerPath}
-                      onChange={(e) => setForm((current) => ({ ...current, schedulerPath: e.target.value }))}
+                      value={currentForm.schedulerPath}
+                      onChange={(e) => updateForm({ schedulerPath: e.target.value })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     />
                   </label>
                   <label className="space-y-1 md:col-span-2">
                     <div className="text-xs uppercase text-white/40">Model</div>
                     <input
-                      value={form.model}
-                      onChange={(e) => setForm((current) => ({ ...current, model: e.target.value }))}
+                      value={currentForm.model}
+                      onChange={(e) => updateForm({ model: e.target.value })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     />
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Precision</div>
                     <input
-                      value={form.precision}
-                      onChange={(e) => setForm((current) => ({ ...current, precision: e.target.value }))}
+                      value={currentForm.precision}
+                      onChange={(e) => updateForm({ precision: e.target.value })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     />
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Batching Policy</div>
                     <input
-                      value={form.batchingPolicy}
-                      onChange={(e) => setForm((current) => ({ ...current, batchingPolicy: e.target.value }))}
+                      value={currentForm.batchingPolicy}
+                      onChange={(e) => updateForm({ batchingPolicy: e.target.value })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     />
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Concurrency Model</div>
                     <input
-                      value={form.concurrencyModel}
-                      onChange={(e) => setForm((current) => ({ ...current, concurrencyModel: e.target.value }))}
+                      value={currentForm.concurrencyModel}
+                      onChange={(e) => updateForm({ concurrencyModel: e.target.value })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     />
                   </label>
                   <label className="space-y-1">
                     <div className="text-xs uppercase text-white/40">Variable Under Test</div>
                     <select
-                      value={form.comparisonVariable}
-                      onChange={(e) => setForm((current) => ({ ...current, comparisonVariable: e.target.value as GeneratorForm['comparisonVariable'] }))}
+                      value={currentForm.comparisonVariable}
+                      onChange={(e) => updateForm({ comparisonVariable: e.target.value as GeneratorForm['comparisonVariable'] })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none"
                     >
-                      <option value="hardware_generation">hardware_generation</option>
-                      <option value="runtime_version">runtime_version</option>
-                      <option value="scheduler_path">scheduler_path</option>
-                      <option value="control_plane_path">control_plane_path</option>
-                      <option value="driver_stack">driver_stack</option>
-                      <option value="network_topology">network_topology</option>
-                      <option value="storage_stack">storage_stack</option>
+                      {data?.generator?.choices.comparisonVariable?.map((choice) => (
+                        <option key={choice} value={choice}>{choice}</option>
+                      )) ?? (
+                        <>
+                          <option value="hardware_generation">hardware_generation</option>
+                          <option value="runtime_version">runtime_version</option>
+                          <option value="scheduler_path">scheduler_path</option>
+                          <option value="control_plane_path">control_plane_path</option>
+                          <option value="driver_stack">driver_stack</option>
+                          <option value="network_topology">network_topology</option>
+                          <option value="storage_stack">storage_stack</option>
+                        </>
+                      )}
                     </select>
                   </label>
                 </div>
 
                 <div className="rounded-lg border border-accent-info/20 bg-accent-info/10 px-4 py-3 text-sm text-white/75">
-                  This is a dense starter that stays valid against the current repo contract. It is meant to be copied, then tightened against the actual workload and cluster before submission.
+                  This starter follows the current repo contract metadata instead of a frontend-only default. It is still meant to be tightened against the actual workload and cluster before submission.
+                </div>
+                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-2">Template source</div>
+                  <div className="font-mono text-xs text-white/75 break-all">{data?.generator?.template_path}</div>
                 </div>
               </div>
             </div>
@@ -810,10 +687,11 @@ export default function ContractsPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-white">Generated YAML</h2>
-                    <p className="text-xs text-white/50">Copy, download, or apply from here.</p>
+                    <p className="text-xs text-white/50">Backend-rendered from the shared template source of truth.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {renderingYaml && <span className="badge badge-info">rendering</span>}
                   <button
                     onClick={() => copyText(yamlPreview, 'BenchmarkRun YAML copied.')}
                     className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-white/80 hover:bg-white/10"
@@ -835,13 +713,18 @@ export default function ContractsPage() {
                 </div>
               </div>
               <div className="card-body space-y-4">
+                {yamlError && (
+                  <div className="rounded-lg border border-accent-danger/20 bg-accent-danger/10 px-4 py-3 text-sm text-white/75">
+                    {yamlError}
+                  </div>
+                )}
                 <div className="rounded-lg border border-white/10 bg-black/40 p-4">
                   <pre className="font-mono text-xs text-white/80 overflow-x-auto whitespace-pre-wrap">{yamlPreview}</pre>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-black/20 p-4">
                   <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-2">Suggested next command</div>
                   <div className="font-mono text-xs text-white/80 break-all">
-                    kubectl apply -f {slugify(form.name)}.yaml
+                    kubectl apply -f {slugify(currentForm.name)}.yaml
                   </div>
                 </div>
               </div>

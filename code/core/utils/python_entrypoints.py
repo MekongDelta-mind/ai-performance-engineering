@@ -82,6 +82,33 @@ def install_local_module_override(module_name: str, package_path: str | Path) ->
     return module
 
 
+def load_module_from_path(
+    module_name: str,
+    module_path: str | Path,
+    *,
+    extra_sys_path: Optional[Sequence[str | Path]] = None,
+) -> ModuleType:
+    """Load a module from disk and register it in ``sys.modules`` before exec.
+
+    Registering first is required for Python 3.12 features like ``@dataclass``
+    that consult ``sys.modules`` while the module body is still executing.
+    """
+    resolved_path = Path(module_path).resolve()
+    spec = importlib_util.spec_from_file_location(module_name, resolved_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to create import spec for {module_name} from {resolved_path}")
+    module = importlib_util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        search_path = [resolved_path.parent, *(extra_sys_path or ())]
+        with temporary_sys_path(*search_path):
+            spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(module_name, None)
+        raise
+    return module
+
+
 def build_python_entry_command(
     *,
     module_name: Optional[str] = None,

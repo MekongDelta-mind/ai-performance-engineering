@@ -118,15 +118,10 @@ benchmark._config = ReadOnlyBenchmarkConfigView.from_config(_profiling_config)
         
         wrapper_content = f'''import importlib.util
 from pathlib import Path
-from core.utils.python_entrypoints import temporary_sys_path
+from core.utils.python_entrypoints import load_module_from_path
 
 _MODULE_PATH = Path(r"{module_path}")
-_MODULE_SPEC = importlib.util.spec_from_file_location("{module_name}", _MODULE_PATH)
-if _MODULE_SPEC is None or _MODULE_SPEC.loader is None:
-    raise RuntimeError(f"Failed to create import spec for {{_MODULE_PATH}}")
-_benchmark_module = importlib.util.module_from_spec(_MODULE_SPEC)
-with temporary_sys_path(_MODULE_PATH.parent):
-    _MODULE_SPEC.loader.exec_module(_benchmark_module)
+_benchmark_module = load_module_from_path("{module_name}", _MODULE_PATH)
 
 {instantiation_code}
 

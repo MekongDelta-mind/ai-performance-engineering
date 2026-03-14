@@ -10,7 +10,7 @@ def _wait_for_job(store: JobStore, job_id: str, timeout: float = 2.0):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         record = store.get_status(job_id)
-        if record and record.get("status") != "running":
+        if record and record.get("status") not in {"queued", "running"}:
             return record
         time.sleep(0.01)
     return store.get_status(job_id)
@@ -27,7 +27,7 @@ def test_job_store_queue_and_complete():
         runner,
         run_metadata={"artifact": Path("artifacts/test.json")},
     )
-    assert ticket["status"] == "started"
+    assert ticket["status"] == "queued"
     assert ticket["tool"] == "test"
     assert ticket["artifact"] == "artifacts/test.json"
 

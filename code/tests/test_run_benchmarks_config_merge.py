@@ -14,6 +14,7 @@ from core.harness.run_benchmarks import (
     _apply_preferred_ncu_profile_overrides,
     _compute_locked_fields,
     _merge_benchmark_config,
+    _resolve_nsys_profile_mode,
     _resolve_expectation_validation_policy,
 )
 
@@ -175,7 +176,7 @@ def test_merge_env_passthrough_ignores_empty_override() -> None:
     assert merged.env_passthrough == ["CUDA_VISIBLE_DEVICES", "FOO"]
 
 
-def test_merge_clamps_timeouts_to_base() -> None:
+def test_merge_allows_benchmark_timeouts_to_widen_defaults() -> None:
     base = _base_config(measurement_timeout_seconds=10, setup_timeout_seconds=10)
     locked = _compute_locked_fields(
         base_config=base,
@@ -192,8 +193,40 @@ def test_merge_clamps_timeouts_to_base() -> None:
         locked_fields=locked,
     )
 
-    assert merged.measurement_timeout_seconds == base.measurement_timeout_seconds
-    assert merged.setup_timeout_seconds == base.setup_timeout_seconds
+    assert merged.measurement_timeout_seconds == 999
+    assert merged.setup_timeout_seconds == 999
+
+
+def test_merge_locks_explicit_cli_profiler_timeouts() -> None:
+    base = _base_config(nsys_timeout_seconds=540, ncu_timeout_seconds=7200)
+    locked = _compute_locked_fields(
+        base_config=base,
+        cli_iterations_provided=False,
+        cli_warmup_provided=False,
+        cli_nsys_timeout_provided=True,
+        cli_ncu_timeout_provided=True,
+        enable_profiling=False,
+    )
+    override = BenchmarkConfig(nsys_timeout_seconds=1200, ncu_timeout_seconds=10800, timeout_multiplier=1.0)
+
+    merged = _merge_benchmark_config(
+        base_config=base,
+        benchmark_obj=_DummyBenchmark(override),
+        defaults_obj=BenchmarkDefaults(),
+        locked_fields=locked,
+    )
+
+    assert merged.nsys_timeout_seconds == 540
+    assert merged.ncu_timeout_seconds == 7200
+
+
+def test_resolve_nsys_profile_mode_honors_benchmark_override() -> None:
+    config = BenchmarkConfig(profile_type="deep_dive", nsys_preset_override="light")
+
+    preset, full_timeline = _resolve_nsys_profile_mode(config)
+
+    assert preset == "light"
+    assert full_timeline is False
 
 
 def test_merge_enforces_policy_invariants() -> None:

@@ -64,18 +64,16 @@ void quantize_to_nvfp4(const float* input,
                        __nv_fp8_e4m3* scales,
                        int rows,
                        int cols) {
+    NVTX_RANGE("setup:quantize_to_nvfp4");
     const int packed_cols = cols / 2;
     const int num_scale_cols = cols / FP4_BLOCK_SIZE;
 
     for (int r = 0; r < rows; ++r) {
-        NVTX_RANGE("iteration");
         for (int block = 0; block < num_scale_cols; ++block) {
-            NVTX_RANGE("iteration");
             const int block_start = block * FP4_BLOCK_SIZE;
 
             float max_abs = 0.0f;
             for (int i = 0; i < FP4_BLOCK_SIZE; ++i) {
-                NVTX_RANGE("iteration");
                 max_abs = std::max(max_abs, std::abs(input[r * cols + block_start + i]));
             }
 
@@ -83,7 +81,6 @@ void quantize_to_nvfp4(const float* input,
             scales[r * num_scale_cols + block] = __nv_fp8_e4m3(scale);
 
             for (int i = 0; i < FP4_BLOCK_SIZE; i += 2) {
-                NVTX_RANGE("iteration");
                 float v0 = input[r * cols + block_start + i];
                 float v1 = input[r * cols + block_start + i + 1];
 
@@ -131,17 +128,21 @@ int main() {
 
     std::mt19937 gen(42);
     std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
-    for (auto& v : h_A_fp32) {
-        NVTX_RANGE("batch");
-        v = dis(gen);
+    {
+        NVTX_RANGE("setup:fill_host_a");
+        for (auto& v : h_A_fp32) {
+            v = dis(gen);
+        }
     }
-    for (auto& v : h_B_fp32) {
-        NVTX_RANGE("batch");
+    {
+        NVTX_RANGE("setup:fill_host_b");
+        for (auto& v : h_B_fp32) {
         v = dis(gen);
+        }
     }
 
     for (int batch = 0; batch < kBatchCount; ++batch) {
-        NVTX_RANGE("batch");
+        NVTX_RANGE("setup:quantize_batch");
         quantize_to_nvfp4(h_A_fp32.data() + batch * kM * kK,
                           h_A_packed.data() + batch * elements_A_packed,
                           h_A_scales.data() + batch * num_scales_A,
@@ -264,10 +265,9 @@ int main() {
     CUDA_CHECK(cudaEventCreate(&stop));
 
     CUDA_CHECK(cudaEventRecord(start, stream));
+    NVTX_RANGE("benchmark:ltmatmul_loop");
     for (int iter = 0; iter < kIterations; ++iter) {
-        NVTX_RANGE("batch");
         for (int batch = 0; batch < kBatchCount; ++batch) {
-            NVTX_RANGE("compute_math:ltmatmul");
             const size_t offset_A = batch * elements_A_packed;
             const size_t offset_B = batch * elements_B_packed;
             const size_t offset_C = batch * elements_C;
@@ -295,9 +295,11 @@ int main() {
     std::vector<float> h_scales(kN);
     std::mt19937 scale_gen(42);
     std::uniform_real_distribution<float> scale_dis(0.75f, 1.25f);
-    for (auto& v : h_scales) {
-        NVTX_RANGE("setup");
+    {
+        NVTX_RANGE("setup:fill_output_scales");
+        for (auto& v : h_scales) {
         v = scale_dis(scale_gen);
+        }
     }
     float* d_scales = nullptr;
     CUDA_CHECK(cudaMalloc(&d_scales, kN * sizeof(float)));
@@ -316,8 +318,8 @@ int main() {
 #ifdef VERIFY
     CUDA_CHECK(cudaMemcpy(h_C.data(), d_C, elements_C * kBatchCount * sizeof(__half), cudaMemcpyDeviceToHost));
     double checksum = 0.0;
+    NVTX_RANGE("verify:checksum");
     for (size_t i = 0; i < elements_C * kBatchCount; ++i) {
-        NVTX_RANGE("verify");
         checksum += std::abs(static_cast<double>(__half2float(h_C[i])));
     }
     VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));

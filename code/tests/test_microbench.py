@@ -77,7 +77,7 @@ def test_mcp_tools_registration():
 
 def test_cli_microbench_disk():
     import subprocess, sys
-    cmd = [sys.executable, "cli/aisp.py", "hw", "disk", "--size-mb", "1", "--block-kb", "64"]
+    cmd = [sys.executable, "cli/aisp.py", "benchmark", "disk", "--size-mb", "1", "--block-kb", "64"]
     env = {**os.environ, "PYTHONPATH": str(REPO_ROOT)}
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=env)
     assert result.returncode == 0, f"CLI failed: {result.stderr}"

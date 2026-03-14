@@ -73,13 +73,21 @@ class AutoOptimizer:
         self.verbose = verbose
         self.max_iterations = max_iterations
         self.target_speedup = target_speedup
-        
-        # Import analysis tools
-        from core.analysis.llm_profile_analyzer import LLMProfileAnalyzer
+
+        # Defer LLM analyzer construction until an optimization pass actually needs it.
+        # This keeps local initialization/test flows usable without API credentials.
+        self.analyzer = None
+
         from core.analysis.llm_patch_applier import LLMPatchApplier
-        
-        self.analyzer = LLMProfileAnalyzer(provider=llm_provider, model=self.model)
+
         self.patch_applier = LLMPatchApplier()
+
+    def _get_analyzer(self):
+        if self.analyzer is None:
+            from core.analysis.llm_profile_analyzer import LLMProfileAnalyzer
+
+            self.analyzer = LLMProfileAnalyzer(provider=self.llm_provider, model=self.model)
+        return self.analyzer
     
     def optimize_file(
         self,
@@ -555,7 +563,7 @@ Return JSON with:
 """
         
         try:
-            response = self.analyzer._call_llm(prompt)
+            response = self._get_analyzer()._call_llm(prompt)
             
             # Parse JSON from response
             import re
@@ -726,4 +734,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

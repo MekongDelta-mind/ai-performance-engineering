@@ -137,6 +137,14 @@ _ROUTES: List[ApiRoute] = [
         meta=True,
     ),
     ApiRoute(
+        "POST",
+        "/api/benchmark/contracts/render-run",
+        "benchmark.contracts.render_run",
+        handlers.benchmark_contracts_render_run,
+        mcp_tool="render_benchmark_run",
+        meta=True,
+    ),
+    ApiRoute(
         "GET",
         "/api/benchmark/data",
         "benchmark.data",

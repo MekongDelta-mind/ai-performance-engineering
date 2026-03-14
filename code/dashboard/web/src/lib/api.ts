@@ -2,6 +2,8 @@
  * API Client - MCP/Engine aligned endpoints only.
  */
 
+import type { BenchmarkContractsSummary, BenchmarkRunGeneratorDefaults, BenchmarkRunRenderResult } from '@/types';
+
 const API_BASE = '/api';
 
 export class APIError extends Error {
@@ -93,7 +95,16 @@ export async function getBenchmarkOverview() {
 }
 
 export async function getBenchmarkContracts() {
-  return fetchAPI('/benchmark/contracts');
+  return fetchAPI<BenchmarkContractsSummary>('/benchmark/contracts');
+}
+
+export async function renderBenchmarkRun(
+  params: Partial<BenchmarkRunGeneratorDefaults>
+) {
+  return fetchAPI<BenchmarkRunRenderResult>('/benchmark/contracts/render-run', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
 }
 
 export async function getBenchmarkHistory() {

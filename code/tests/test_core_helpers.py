@@ -432,6 +432,94 @@ def test_nsight_automation_build_env_adds_startup_stub(tmp_path: Path):
     assert user_stub.exists()
 
 
+def test_profile_nsys_timeout_accepts_late_finalized_report(tmp_path: Path, monkeypatch):
+    import subprocess
+    from core.profiling.nsight_automation import NsightAutomation
+
+    automation = NsightAutomation(tmp_path)
+    automation.nsys_available = True
+
+    class _FakeProcess:
+        def __init__(self) -> None:
+            self.pid = 12345
+            self.returncode = 124
+            self._timed_out = False
+
+        def communicate(self, timeout=None):
+            if not self._timed_out:
+                self._timed_out = True
+                raise subprocess.TimeoutExpired(cmd="nsys", timeout=timeout, output="", stderr="")
+            return ("", "")
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: _FakeProcess())
+    monkeypatch.setattr(
+        automation,
+        "_finalize_timed_out_nsys",
+        lambda process, grace_seconds: {
+            "completed": False,
+            "stdout": "",
+            "stderr": "",
+            "signals": [],
+            "defunct_launcher_detected": False,
+        },
+    )
+
+    def _late_report(output_path: Path, settle_seconds: float = 5.0, poll_interval: float = 0.2) -> bool:
+        output_path.write_text("rep", encoding="utf-8")
+        return True
+
+    monkeypatch.setattr(automation, "_wait_for_output_artifact", _late_report)
+
+    result = automation.profile_nsys(
+        command=[sys.executable, "-c", "print('ok')"],
+        output_name="late_finalize_demo",
+        timeout_seconds=1,
+    )
+
+    assert result == tmp_path / "late_finalize_demo.nsys-rep"
+    assert result.exists()
+    assert automation.last_error is None
+    assert automation.last_run["output"] == str(result)
+
+
+def test_profile_nsys_nonzero_exit_accepts_usable_report(tmp_path: Path, monkeypatch):
+    import subprocess
+    from core.profiling.nsight_automation import NsightAutomation
+
+    automation = NsightAutomation(tmp_path)
+    automation.nsys_available = True
+
+    class _FakeProcess:
+        def __init__(self) -> None:
+            self.pid = 12345
+            self.returncode = 7
+
+        def communicate(self, timeout=None):
+            _ = timeout
+            return ("", "nsys exited oddly")
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: _FakeProcess())
+
+    def _usable_report(output_path: Path, settle_seconds: float = 5.0, poll_interval: float = 0.2) -> bool:
+        _ = settle_seconds, poll_interval
+        output_path.write_text("rep", encoding="utf-8")
+        return True
+
+    monkeypatch.setattr(automation, "_wait_for_output_artifact", _usable_report)
+
+    result = automation.profile_nsys(
+        command=[sys.executable, "-c", "print('ok')"],
+        output_name="nonzero_finalize_demo",
+        timeout_seconds=30,
+    )
+
+    assert result == tmp_path / "nonzero_finalize_demo.nsys-rep"
+    assert result.exists()
+    assert automation.last_error is None
+    assert automation.last_run["output"] == str(result)
+    assert automation.last_run["returncode"] == 7
+
+
 def test_profile_nsys_mcp_schema_includes_safety_defaults():
     schema = mcp_server.TOOLS["profile_nsys"].input_schema
     props = schema["properties"]

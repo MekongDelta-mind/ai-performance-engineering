@@ -5,7 +5,7 @@ from typing import Optional
 
 from pathlib import Path
 
-from core.harness.benchmark_harness import BaseBenchmark
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
 
 
@@ -34,6 +34,12 @@ class BaselineCublasGemmFp4PerchannelBenchmark(CudaBinaryBenchmark):
 
     def get_custom_metrics(self) -> Optional[dict]:
         return None
+
+    def get_config(self) -> BenchmarkConfig:
+        config = super().get_config()
+        # Deep-dive Nsight Systems captures for this binary exceed the default budget.
+        config.nsys_timeout_seconds = 1200
+        return config
 
 
 def get_benchmark() -> BaseBenchmark:

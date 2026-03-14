@@ -32,7 +32,7 @@ class PrefillDecodeDisaggBenchmark(VerificationPayloadMixin, BaseBenchmark):
     """Parameterized benchmark for host-staged or device-local KV handoff."""
 
     multi_gpu_required = False
-    allowed_benchmark_fn_antipatterns: tuple[str, ...] = ("host_transfer",)
+    allowed_benchmark_fn_antipatterns: tuple[str, ...] = ()
 
     def __init__(
         self,
@@ -257,6 +257,8 @@ class HostStagedPrefillDecodeDisaggBenchmark(PrefillDecodeDisaggBenchmark):
 
 class PeerPrefillDecodeDisaggBenchmark(PrefillDecodeDisaggBenchmark):
     """Peer/direct KV handoff benchmark."""
+
+    allowed_benchmark_fn_antipatterns: tuple[str, ...] = ()
 
     def __init__(
         self,

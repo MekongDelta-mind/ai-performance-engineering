@@ -15,6 +15,7 @@ import subprocess
 import json
 import signal
 import tempfile
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Sequence
 
@@ -98,6 +99,23 @@ class NsightAutomation:
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
+
+    @staticmethod
+    def _wait_for_output_artifact(
+        output_path: Path,
+        settle_seconds: float = 5.0,
+        poll_interval: float = 0.2,
+    ) -> bool:
+        """Wait briefly for a late-finalizing profiler artifact to appear."""
+        deadline = time.monotonic() + max(float(settle_seconds), 0.0)
+        while time.monotonic() <= deadline:
+            try:
+                if output_path.exists() and output_path.stat().st_size > 0:
+                    return True
+            except OSError:
+                pass
+            time.sleep(max(float(poll_interval), 0.05))
+        return False
 
     def _available_ncu_sets(self) -> set[str]:
         """Return available Nsight Compute set identifiers (best effort)."""
@@ -429,9 +447,17 @@ class NsightAutomation:
                         "returncode": process.returncode,
                     }
                 )
+                report_ready = False
                 if bool(finalize.get("completed")) and output_path.exists():
+                    report_ready = True
+                elif self._wait_for_output_artifact(
+                    output_path,
+                    settle_seconds=min(max(float(finalize_grace_seconds), 5.0), 30.0),
+                ):
+                    report_ready = True
+                if report_ready:
                     logger.warning(
-                        "Nsight Systems timed out but finalized report during grace window."
+                        "Nsight Systems timed out but produced a usable report during finalization."
                     )
                     self.last_run["output"] = str(output_path)
                     self.last_error = None
@@ -470,6 +496,22 @@ class NsightAutomation:
             # Automatic fallback: drop full_timeline categories and retry once
             self.last_error = e.stderr or e.stdout or str(e)
             logger.error(f"Nsight Systems failed: {self.last_error}")
+            if self._wait_for_output_artifact(output_path, settle_seconds=10.0):
+                logger.warning(
+                    "Nsight Systems returned non-zero status but produced a usable report artifact."
+                )
+                self.last_run.update(
+                    {
+                        "stdout": e.output,
+                        "stderr": e.stderr,
+                        "returncode": e.returncode,
+                        "timeout_hit": False,
+                        "output": str(output_path),
+                        "graceful_finalize_attempted": False,
+                    }
+                )
+                self.last_error = None
+                return output_path
             if sanitize_python_startup and self._is_startup_sanitizer_issue(self.last_error):
                 logger.warning(
                     "Retrying NSYS capture with sanitize_python_startup=False due to "

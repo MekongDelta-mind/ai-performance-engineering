@@ -74,6 +74,11 @@ TOOLS: Dict[str, ToolSpec] = {
         script_path=REPO_ROOT / "core" / "scripts" / "utilities" / "benchmark_contracts.py",
         description="Show the benchmark methodology, warehouse, and BenchmarkRun contract surfaces.",
     ),
+    "benchmark-run-render": ToolSpec(
+        name="benchmark-run-render",
+        script_path=REPO_ROOT / "core" / "scripts" / "utilities" / "render_benchmark_run.py",
+        description="Render BenchmarkRun YAML from the shared backend template and generator fields.",
+    ),
     "roofline": ToolSpec(
         name="roofline",
         script_path=REPO_ROOT / "ch08" / "roofline.py",

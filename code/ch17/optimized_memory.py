@@ -119,6 +119,8 @@ class OptimizedMemoryBenchmark(VerificationPayloadMixin, BaseBenchmark):
         return BenchmarkConfig(
             iterations=200,
             warmup=10,
+            nsys_timeout_seconds=1200,
+            nsys_preset_override="light",
         )
     
     def get_workload_metadata(self) -> Optional[WorkloadMetadata]:

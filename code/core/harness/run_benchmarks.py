@@ -3966,6 +3966,13 @@ def _test_chapter_impl(
 
     from contextlib import ExitStack
 
+    def _is_cuda_wrapper(path: Path) -> bool:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception:
+            return False
+        return "CudaBinaryBenchmark" in text and "cuda_binary_path" in text
+
     with ExitStack() as cleanup_stack:
         if stop_watchdog:
             cleanup_stack.callback(stop_watchdog)

@@ -11,6 +11,19 @@ from typing import Any, Dict, List
 CODE_ROOT = Path(__file__).resolve().parent.parent
 
 
+def _read_json_object(path: Path, *, label: str) -> tuple[Dict[str, Any] | None, str | None]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return None, f"Failed to read {label} JSON from {path}: {exc}"
+    if not isinstance(payload, dict):
+        return None, (
+            f"Failed to read {label} JSON from {path}: expected JSON object, "
+            f"got {type(payload).__name__}"
+        )
+    return payload, None
+
+
 def load_compile_analysis(code_root: Path = CODE_ROOT, benchmarks: List[Dict[str, Any]] | None = None) -> Dict[str, Any]:
     """Aggregate compile analysis from saved reports and benchmark data."""
     compile_data: Dict[str, Any] = {
@@ -23,6 +36,7 @@ def load_compile_analysis(code_root: Path = CODE_ROOT, benchmarks: List[Dict[str
         "graph_breaks_list": [],
         "compile_benchmarks": [],
         "has_real_data": False,
+        "warnings": [],
     }
 
     compile_files = list(code_root.glob("**/compile_report*.json"))
@@ -30,13 +44,17 @@ def load_compile_analysis(code_root: Path = CODE_ROOT, benchmarks: List[Dict[str
     compile_files.extend(code_root.glob("compile_analysis/*.json"))
 
     if compile_files:
+        latest_compile = sorted(compile_files, key=lambda f: f.stat().st_mtime)[-1]
+        compile_data["artifact_path"] = str(latest_compile)
         try:
-            with open(sorted(compile_files, key=lambda f: f.stat().st_mtime)[-1]) as f:
-                data = json.load(f)
+            data, warning = _read_json_object(latest_compile, label="compile analysis")
+            if warning is not None:
+                raise ValueError(warning)
+            assert data is not None
             compile_data.update(data)
             compile_data["has_real_data"] = True
-        except Exception:
-            pass
+        except Exception as exc:
+            compile_data["warnings"].append(str(exc))
 
     # Always compute from benchmark data if available
     if benchmarks is not None:

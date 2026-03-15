@@ -22,6 +22,7 @@ def load_ncu_deepdive(code_root: Path) -> Dict[str, Any]:
         "recommendations": [],
         "source_samples": [],
         "disassembly": [],
+        "warnings": [],
     }
 
     ncu_files: List[Path] = []
@@ -36,6 +37,7 @@ def load_ncu_deepdive(code_root: Path) -> Dict[str, Any]:
         try:
             latest_ncu = sorted(ncu_files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
             ncu_data["latest_file"] = latest_ncu.name
+            ncu_data["latest_file_path"] = str(latest_ncu)
             if latest_ncu.suffix == ".csv":
                 with open(latest_ncu) as f:
                     reader = csv.DictReader(f)
@@ -47,10 +49,14 @@ def load_ncu_deepdive(code_root: Path) -> Dict[str, Any]:
                     from core.profile_insights import _extract_ncu_sources, _extract_ncu_disassembly
                     ncu_data["source_samples"] = _extract_ncu_sources(latest_ncu)
                     ncu_data["disassembly"] = _extract_ncu_disassembly(latest_ncu)
-                except Exception:
+                except Exception as exc:
                     ncu_data["source_samples"] = []
                     ncu_data["disassembly"] = []
+                    ncu_data["warnings"].append(
+                        f"Failed to extract NCU sources/disassembly from {latest_ncu}: {exc}"
+                    )
         except Exception as e:
             ncu_data["parse_error"] = str(e)
+            ncu_data["warnings"].append(str(e))
 
     return ncu_data

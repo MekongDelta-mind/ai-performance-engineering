@@ -9,9 +9,54 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 CODE_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _add_warning(payload: Dict[str, Any], message: str) -> None:
+    warnings = payload.setdefault("warnings", [])
+    if message not in warnings:
+        warnings.append(message)
+
+
+def _read_json_file(path: Path, *, label: str) -> Tuple[Any | None, str | None]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8")), None
+    except Exception as exc:
+        return None, f"Failed to read {label} JSON from {path}: {exc}"
+
+
+def _read_json_object(path: Path, *, label: str) -> Tuple[Dict[str, Any] | None, str | None]:
+    payload, warning = _read_json_file(path, label=label)
+    if warning is not None:
+        return None, warning
+    if not isinstance(payload, dict):
+        return None, (
+            f"Failed to read {label} JSON from {path}: expected JSON object, "
+            f"got {type(payload).__name__}"
+        )
+    return payload, None
+
+
+def _read_trace_events(path: Path, *, label: str) -> Tuple[List[Any] | None, str | None]:
+    payload, warning = _read_json_file(path, label=label)
+    if warning is not None:
+        return None, warning
+    if isinstance(payload, list):
+        return payload, None
+    if isinstance(payload, dict):
+        events = payload.get("traceEvents", [])
+        if isinstance(events, list):
+            return events, None
+        return None, (
+            f"Failed to read {label} JSON from {path}: expected traceEvents list, "
+            f"got {type(events).__name__}"
+        )
+    return None, (
+        f"Failed to read {label} JSON from {path}: expected JSON list or object, "
+        f"got {type(payload).__name__}"
+    )
 
 
 # =============================================================================
@@ -107,14 +152,20 @@ def load_flame_graph_data(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
 
     if trace_files:
         trace_files = sorted(trace_files, key=lambda f: f.stat().st_mtime, reverse=True)
+        trace_path = trace_files[0]
+        flame_data["trace_path"] = str(trace_path)
         try:
-            with open(trace_files[0]) as f:
-                trace = json.load(f)
-
-            events = trace if isinstance(trace, list) else trace.get("traceEvents", [])
+            events, warning = _read_trace_events(trace_path, label="chrome trace")
+            if warning is not None:
+                raise ValueError(warning)
+            assert events is not None
+            ignored_events = 0
 
             kernel_times: Dict[str, Dict[str, float]] = {}
             for event in events:
+                if not isinstance(event, dict):
+                    ignored_events += 1
+                    continue
                 if event.get("ph") == "X" and event.get("dur", 0) > 10:
                     name = event.get("name", "unknown")
                     cat = event.get("cat", "other")
@@ -135,14 +186,20 @@ def load_flame_graph_data(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
                         {"name": k, "value": v, "children": []}
                         for k, v in sorted(kernels.items(), key=lambda x: -x[1])[:20]
                     ],
-                }
+                    }
                 flame_data["children"].append(cat_node)
 
             flame_data["value"] = sum(c["value"] for c in flame_data["children"])
-            flame_data["trace_file"] = str(trace_files[0].name)
+            flame_data["trace_file"] = trace_path.name
+            if ignored_events:
+                _add_warning(
+                    flame_data,
+                    f"Ignored {ignored_events} malformed trace event(s) in {trace_path}",
+                )
 
         except Exception as e:
             flame_data["error"] = str(e)
+            _add_warning(flame_data, str(e))
     else:
         flame_data["message"] = "No profile traces found. Run benchmarks with profiling enabled."
 
@@ -159,6 +216,7 @@ def load_memory_timeline(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
             "peak_allocated_mb": 0,
             "num_allocations": 0,
         },
+        "has_real_data": False,
     }
 
     profile_dirs = _iter_profile_dirs(code_root)
@@ -171,16 +229,25 @@ def load_memory_timeline(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
 
     if memory_files:
         memory_files = sorted(memory_files, key=lambda f: f.stat().st_mtime, reverse=True)
+        memory_path = memory_files[0]
+        memory_data["artifact_path"] = str(memory_path)
         try:
-            if memory_files[0].suffix == ".json":
-                with open(memory_files[0]) as f:
-                    data = json.load(f)
+            if memory_path.suffix == ".json":
+                data, warning = _read_json_object(memory_path, label="memory timeline")
+                if warning is not None:
+                    raise ValueError(warning)
+                assert data is not None
                 memory_data.update(data)
                 memory_data["has_real_data"] = True
+            else:
+                raise ValueError(
+                    f"Unsupported memory timeline artifact format at {memory_path}: "
+                    f"expected .json, got {memory_path.suffix or '<none>'}"
+                )
         except Exception as e:
             memory_data["error"] = str(e)
+            _add_warning(memory_data, str(e))
     else:
-        memory_data["has_real_data"] = False
         memory_data["message"] = "No memory profile data found. Run with: python -m torch.profiler"
 
     return memory_data
@@ -209,16 +276,22 @@ def load_cpu_gpu_timeline(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
 
     if trace_files:
         trace_files = sorted(trace_files, key=lambda f: f.stat().st_mtime, reverse=True)
+        trace_path = trace_files[0]
+        timeline_data["trace_path"] = str(trace_path)
         try:
-            with open(trace_files[0]) as f:
-                trace = json.load(f)
-
-            events = trace if isinstance(trace, list) else trace.get("traceEvents", [])
+            events, warning = _read_trace_events(trace_path, label="cpu/gpu timeline")
+            if warning is not None:
+                raise ValueError(warning)
+            assert events is not None
+            ignored_events = 0
 
             min_ts = float("inf")
             max_ts = 0
 
             for event in events[:500]:  # Limit for performance
+                if not isinstance(event, dict):
+                    ignored_events += 1
+                    continue
                 if event.get("ph") != "X":
                     continue
 
@@ -249,9 +322,17 @@ def load_cpu_gpu_timeline(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
 
             if max_ts > min_ts:
                 timeline_data["summary"]["total_time_ms"] = (max_ts - min_ts) / 1000
+            if ignored_events:
+                _add_warning(
+                    timeline_data,
+                    f"Ignored {ignored_events} malformed trace event(s) in {trace_path}",
+                )
 
         except Exception as e:
             timeline_data["error"] = str(e)
+            _add_warning(timeline_data, str(e))
+    else:
+        timeline_data["message"] = "No profile traces found. Run benchmarks with profiling enabled."
 
     return timeline_data
 
@@ -317,12 +398,17 @@ def load_hta_analysis(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
     hta_files.extend(code_root.glob("**/*hta_analysis*.json"))
 
     if hta_files:
+        hta_path = sorted(hta_files, key=lambda f: f.stat().st_mtime)[-1]
+        hta_data["artifact_path"] = str(hta_path)
         try:
-            with open(sorted(hta_files, key=lambda f: f.stat().st_mtime)[-1]) as f:
-                data = json.load(f)
+            data, warning = _read_json_object(hta_path, label="HTA analysis")
+            if warning is not None:
+                raise ValueError(warning)
+            assert data is not None
             hta_data.update(data)
-        except Exception:
-            hta_data["error"] = "Failed to parse HTA report"
+        except Exception as exc:
+            hta_data["error"] = str(exc)
+            _add_warning(hta_data, str(exc))
     else:
         hta_data["message"] = "No HTA analysis found. Run HTA tooling to generate reports."
 
@@ -338,19 +424,29 @@ def load_torch_profiler(code_root: Path = CODE_ROOT) -> Dict[str, Any]:
         return data
 
     summary_path = max(summary_files, key=lambda f: f.stat().st_mtime)
+    data["summary_path"] = str(summary_path)
     summary: Dict[str, Any] = {}
     try:
-        summary = json.loads(summary_path.read_text())
-        data.update(summary if isinstance(summary, dict) else {})
-        data["summary_path"] = str(summary_path)
-    except Exception:
-        data["error"] = f"Failed to parse {summary_path.name}"
+        summary, warning = _read_json_object(summary_path, label="torch profiler summary")
+        if warning is not None:
+            raise ValueError(warning)
+        assert summary is not None
+        data.update(summary)
+    except Exception as exc:
+        data["error"] = str(exc)
+        _add_warning(data, str(exc))
     meta_path = summary_path.parent / "metadata.json"
     if meta_path.exists():
+        data["metadata_path"] = str(meta_path)
         try:
-            data["metadata"] = json.loads(meta_path.read_text())
-        except Exception:
-            data.setdefault("metadata_error", f"Failed to parse {meta_path.name}")
+            metadata_payload, warning = _read_json_object(meta_path, label="torch profiler metadata")
+            if warning is not None:
+                raise ValueError(warning)
+            assert metadata_payload is not None
+            data["metadata"] = metadata_payload
+        except Exception as exc:
+            data.setdefault("metadata_error", str(exc))
+            _add_warning(data, str(exc))
     trace_path = summary_path.parent / "trace.json"
     if not trace_path.exists():
         alt = summary_path.parent / f"chrome_trace_{summary.get('mode', 'full') if isinstance(summary, dict) else 'full'}.json"

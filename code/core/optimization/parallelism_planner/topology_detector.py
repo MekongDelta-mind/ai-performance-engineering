@@ -465,7 +465,8 @@ class TopologyDetector:
             # Read NUMA node from sysfs
             numa_path = Path(f"/sys/bus/pci/devices/{pci_id}/numa_node")
             if numa_path.exists():
-                return int(numa_path.read_text().strip())
+                value = int(numa_path.read_text().strip())
+                return value if value >= 0 else None
         except Exception:
             pass
         return None

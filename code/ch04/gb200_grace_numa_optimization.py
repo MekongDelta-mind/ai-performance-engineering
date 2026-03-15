@@ -44,6 +44,7 @@ except ImportError:
             os.environ.setdefault("LOCAL_RANK", "0")  # Graceful fallback if arch_config not available
 
 import platform
+import os
 import psutil
 import torch
 import torch.multiprocessing as mp
@@ -168,26 +169,50 @@ def get_numa_topology() -> Dict[int, Dict]:
     except Exception as e:
         print(f"Warning: Could not parse NUMA topology: {e}")
     
-    # Map GPUs to NUMA nodes (heuristic for GB200/GB300)
+    # Map GPUs to NUMA nodes using sysfs when the platform exposes it.
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
-        num_nodes = len(topology)
-        
-        if num_nodes > 0:
-            # Distribute GPUs across NUMA nodes
-            for gpu_id in range(num_gpus):
-                node_id = gpu_id % num_nodes
-                if node_id in topology:
-                    topology[node_id]["gpus"].append(gpu_id)
+        for gpu_id in range(num_gpus):
+            node_id = _gpu_numa_node_from_sysfs(gpu_id)
+            if node_id is not None and node_id in topology:
+                topology[node_id]["gpus"].append(gpu_id)
     
     return topology
+
+
+def _current_cpu_affinity() -> List[int]:
+    try:
+        return sorted(os.sched_getaffinity(0))
+    except Exception:
+        cpu_threads = psutil.cpu_count(logical=True) or 1
+        return list(range(cpu_threads))
+
+
+def _gpu_numa_node_from_sysfs(gpu_id: int) -> Optional[int]:
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "-i", str(gpu_id), "--query-gpu=pci.bus_id", "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return None
+        pci_id = result.stdout.strip().lower()
+        if pci_id.startswith("00000000:"):
+            pci_id = pci_id[4:]
+        numa_path = Path(f"/sys/bus/pci/devices/{pci_id}/numa_node")
+        if not numa_path.exists():
+            return None
+        value = int(numa_path.read_text().strip())
+        return value if value >= 0 else None
+    except Exception:
+        return None
 
 
 def setup_grace_affinity(
     gpu_id: int,
     num_workers: int = 4,
     verbose: bool = True
-) -> Tuple[List[int], int]:
+) -> Tuple[List[int], Optional[int]]:
     """
     Setup optimal CPU affinity for a GPU on Grace-Blackwell.
     
@@ -205,29 +230,21 @@ def setup_grace_affinity(
     info = detect_grace_cpu()
     
     if not info["is_grace"]:
+        current_affinity = _current_cpu_affinity()
         if verbose:
             print(f"Warning: Not running on Grace CPU")
             print(f"  Detected: {info['cpu_arch']}, {info['cpu_count']} cores")
-            print(f"  Affinity optimization will use default settings")
-        # Return a reasonable default
-        cpus_per_gpu = info["cpu_count"] // max(info["gpus"], 1)
-        cpu_start = gpu_id * cpus_per_gpu
-        cpu_list = list(range(cpu_start, min(cpu_start + num_workers, info["cpu_count"])))
-        return cpu_list, 0
+            print(f"  Leaving existing CPU affinity unchanged")
+        return current_affinity, None
     
     # Get NUMA topology
     topology = get_numa_topology()
     
     if not topology:
-        # Fallback: divide CPUs evenly across GPUs
-        cpus_per_gpu = info["cpu_threads"] // info["gpus"]
-        cpu_start = gpu_id * cpus_per_gpu
-        cpu_list = list(range(cpu_start, min(cpu_start + num_workers, info["cpu_threads"])))
-        
+        current_affinity = _current_cpu_affinity()
         if verbose:
-            print(f"GPU {gpu_id}: Using CPUs {cpu_list[0]}-{cpu_list[-1]} (fallback)")
-        
-        return cpu_list, 0
+            print(f"GPU {gpu_id}: NUMA topology unavailable; leaving existing CPU affinity unchanged")
+        return current_affinity, None
     
     # Find NUMA node for this GPU
     numa_node = None
@@ -237,8 +254,10 @@ def setup_grace_affinity(
             break
     
     if numa_node is None:
-        # Assign to closest NUMA node
-        numa_node = gpu_id % len(topology)
+        current_affinity = _current_cpu_affinity()
+        if verbose:
+            print(f"GPU {gpu_id}: NUMA node unavailable; leaving existing CPU affinity unchanged")
+        return current_affinity, None
     
     # Get CPUs from this NUMA node
     available_cpus = topology[numa_node]["cpus"]

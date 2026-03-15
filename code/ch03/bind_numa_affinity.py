@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ctypes
-import glob
 import os
 import re
 import subprocess
@@ -218,34 +217,6 @@ def _gpu_node_from_nvml(device_index: int) -> int | None:
                 return numa_id
         except Exception:
             pass  # explicit NUMA query not available or not supported here
-
-        # Derive from CPU affinity mask
-        cpu_count = psutil.cpu_count(logical=True) or 0
-        elems = (cpu_count + 63) // 64
-        mask = nvml.nvmlDeviceGetCpuAffinity(handle, elems)
-        cpus: List[int] = []
-        for i, chunk in enumerate(mask):
-            chunk = int(chunk)
-            for bit in range(64):
-                if chunk & (1 << bit):
-                    cpu_id = i * 64 + bit
-                    if cpu_id < cpu_count:
-                        cpus.append(cpu_id)
-
-        cpu2node: dict[int, int] = {}
-        for node_path in sorted(glob.glob("/sys/devices/system/node/node*")):
-            node_id = int(os.path.basename(node_path).replace("node", ""))
-            with open(os.path.join(node_path, "cpulist"), "r", encoding="utf-8") as f:
-                for cpu in _parse_cpu_list(f.read().strip()):
-                    cpu2node[cpu] = node_id
-
-        counts: dict[int, int] = {}
-        for cpu in cpus:
-            node = cpu2node.get(cpu)
-            if node is not None:
-                counts[node] = counts.get(node, 0) + 1
-        if counts:
-            return max(counts.items(), key=lambda kv: kv[1])[0]
     except Exception:  # pragma: no cover - NVML optional
         return None
     return None
@@ -263,14 +234,13 @@ def _gpu_node_from_sysfs(device_index: int) -> int | None:
     return None
 
 
-def get_gpu_numa_node(device_index: int) -> int:
-    """Resolve the NUMA node for a GPU: NVML -> sysfs -> current policy."""
+def get_gpu_numa_node(device_index: int) -> int | None:
+    """Resolve the authoritative NUMA node for a GPU: NVML -> sysfs."""
     for resolver in (_gpu_node_from_nvml, _gpu_node_from_sysfs):
         node = resolver(device_index)
         if node is not None:
             return node
-    _, fallback = _current_numa_policy()
-    return fallback
+    return None
 
 
 def bind_process_to_node(node: int) -> List[int]:
@@ -284,13 +254,19 @@ def bind_process_to_node(node: int) -> List[int]:
     return cpus
 
 
-def worker_init_fn(worker_id: int, node: int, cpus: List[int]) -> None:
+def worker_init_fn(worker_id: int, node: int | None, cpus: List[int] | None) -> None:
     """Initialize DataLoader worker without invoking CUDA APIs."""
+    if not cpus:
+        print(f"Worker {worker_id} (PID={os.getpid()}) leaving CPU affinity unchanged")
+        return
     psutil.Process(os.getpid()).cpu_affinity(cpus)
-    if _HAS_LIBNUMA and _libnuma is not None:
+    if node is not None and _HAS_LIBNUMA and _libnuma is not None:
         _libnuma.numa_run_on_node(node)
         _libnuma.numa_set_preferred(node)
-    print(f"Worker {worker_id} (PID={os.getpid()}) bound to NUMA node {node}")
+    if node is None:
+        print(f"Worker {worker_id} (PID={os.getpid()}) applied CPU affinity without NUMA binding")
+    else:
+        print(f"Worker {worker_id} (PID={os.getpid()}) bound to NUMA node {node}")
 
 
 # ---------------------------------------------------------------------------
@@ -330,7 +306,11 @@ def main() -> None:
             device = torch.device("cuda", local_rank)
 
             gpu_node = get_gpu_numa_node(local_rank)
-            cpus = bind_process_to_node(gpu_node)
+            cpus = None
+            if gpu_node is None:
+                print(f"WARNING: GPU {local_rank} NUMA node unavailable; leaving process affinity unchanged")
+            else:
+                cpus = bind_process_to_node(gpu_node)
 
             dataset = DemoDataset()
             loader = DataLoader(
@@ -376,7 +356,11 @@ def main() -> None:
         device = torch.device("cuda", local_rank)
 
         gpu_node = get_gpu_numa_node(local_rank)
-        cpus = bind_process_to_node(gpu_node)
+        cpus = None
+        if gpu_node is None:
+            print(f"WARNING: GPU {local_rank} NUMA node unavailable; leaving process affinity unchanged")
+        else:
+            cpus = bind_process_to_node(gpu_node)
 
         # Quick sanity test
         dataset = DemoDataset(length=32)

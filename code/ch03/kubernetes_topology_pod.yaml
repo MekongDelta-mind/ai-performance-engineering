@@ -19,9 +19,22 @@ spec:
     command: ["bash", "-c"]
     args:
       - |
-        # Set CPU affinity based on GPU NUMA node
-        gpu_numa_node=$(cat /sys/class/pci_bus/$(nvidia-smi --query-gpu=pci.bus_id --format=csv,noheader,nounits | head -1 | cut -d: -f2)/device/*/numa_node | head -1)
-        numactl --cpunodebind=$gpu_numa_node --membind=$gpu_numa_node python train.py
+        # Bind only when the platform exposes a real GPU NUMA node.
+        gpu_bus_id=$(nvidia-smi --query-gpu=pci.bus_id --format=csv,noheader | head -1 | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+        sysfs_bus_id="$gpu_bus_id"
+        if [[ "$sysfs_bus_id" == 00000000:* ]]; then
+          sysfs_bus_id="${sysfs_bus_id:4}"
+        fi
+        gpu_numa_node=""
+        numa_path="/sys/bus/pci/devices/${sysfs_bus_id}/numa_node"
+        if [[ -r "$numa_path" ]]; then
+          gpu_numa_node=$(cat "$numa_path")
+        fi
+        if [[ "$gpu_numa_node" =~ ^[0-9]+$ ]]; then
+          exec numactl --cpunodebind="$gpu_numa_node" --membind="$gpu_numa_node" python train.py
+        fi
+        echo "GPU NUMA node unavailable; running without numactl binding" >&2
+        exec python train.py
     
     resources:
       requests:

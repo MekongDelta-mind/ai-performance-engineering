@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import mock_open
 
 import pytest
 
 import ch03.bind_numa_affinity as bind_numa_affinity
+import ch04.gb200_grace_numa_optimization as grace_numa
+import core.optimization.parallelism_planner.topology_detector as planner_topology_detector
 import labs.dynamic_router.topology as dynamic_router_topology
 
 
@@ -41,7 +43,7 @@ def test_bind_numa_affinity_formats_pci_bus_id_when_torch_exposes_integer_fields
     assert bind_numa_affinity._gpu_pci_bus(0) == "0000:05:00.0"
 
 
-def test_bind_numa_affinity_falls_back_when_explicit_nvml_numa_query_is_unsupported(
+def test_bind_numa_affinity_returns_none_when_explicit_nvml_numa_query_is_unsupported(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _NotSupported(RuntimeError):
@@ -50,16 +52,21 @@ def test_bind_numa_affinity_falls_back_when_explicit_nvml_numa_query_is_unsuppor
     fake_nvml = SimpleNamespace(
         nvmlDeviceGetHandleByPciBusId_v2=lambda pci: "handle",
         nvmlDeviceGetNumaNodeId=lambda handle: (_ for _ in ()).throw(_NotSupported("not supported")),
-        nvmlDeviceGetCpuAffinity=lambda handle, elems: [0b1111],
         NVMLError_NotSupported=_NotSupported,
     )
 
     _configure_bind_nvml(monkeypatch, fake_nvml)
-    monkeypatch.setattr(bind_numa_affinity.psutil, "cpu_count", lambda logical=True: 4)
-    monkeypatch.setattr(bind_numa_affinity.glob, "glob", lambda pattern: ["/sys/devices/system/node/node2"])
-    monkeypatch.setattr("builtins.open", mock_open(read_data="0-3"))
 
-    assert bind_numa_affinity._gpu_node_from_nvml(0) == 2
+    assert bind_numa_affinity._gpu_node_from_nvml(0) is None
+
+
+def test_bind_numa_affinity_does_not_guess_numa_node_from_process_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(bind_numa_affinity, "_gpu_node_from_nvml", lambda _: None)
+    monkeypatch.setattr(bind_numa_affinity, "_gpu_node_from_sysfs", lambda _: None)
+
+    assert bind_numa_affinity.get_gpu_numa_node(0) is None
 
 
 def test_dynamic_router_topology_uses_nvml_numa_node_api(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -79,3 +86,94 @@ def test_dynamic_router_topology_uses_nvml_numa_node_api(monkeypatch: pytest.Mon
         0: {"bus_id": "00000000:17:00.0", "numa_node": 4}
     }
     assert shutdown_calls == [True]
+
+
+def test_dynamic_router_topology_shuts_down_nvml_once_for_multiple_gpus(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    shutdown_calls: list[bool] = []
+    fake_pynvml = SimpleNamespace(
+        nvmlInit=lambda: None,
+        nvmlDeviceGetCount=lambda: 2,
+        nvmlDeviceGetHandleByIndex=lambda idx: f"handle{idx}",
+        nvmlDeviceGetPciInfo=lambda handle: SimpleNamespace(busId=f"00000000:{17 + int(handle[-1]):02d}:00.0".encode()),
+        nvmlDeviceGetNumaNodeId=lambda handle: None,
+        nvmlShutdown=lambda: shutdown_calls.append(True),
+    )
+
+    monkeypatch.setitem(__import__("sys").modules, "pynvml", fake_pynvml)
+
+    assert dynamic_router_topology._nvml_gpu_bus_and_numa(max_gpus=2) == {
+        0: {"bus_id": "00000000:17:00.0", "numa_node": None},
+        1: {"bus_id": "00000000:18:00.0", "numa_node": None},
+    }
+    assert shutdown_calls == [True]
+
+
+def test_dynamic_router_read_int_normalizes_negative_numa_to_none(tmp_path: Path) -> None:
+    numa_node = tmp_path / "numa_node"
+    numa_node.write_text("-1", encoding="utf-8")
+
+    assert dynamic_router_topology._read_int(numa_node) is None
+
+
+def test_dynamic_router_detect_topology_preserves_gpu_slots_without_nvml(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dynamic_router_topology, "_nvml_gpu_bus_and_numa", lambda max_gpus=None: {})
+    monkeypatch.setattr(dynamic_router_topology, "_distance_matrix", lambda: {})
+
+    snapshot = dynamic_router_topology.detect_topology(max_gpus=2)
+
+    assert snapshot.gpu_numa == {0: None, 1: None}
+
+
+def test_planner_topology_detector_ignores_negative_sysfs_numa_node(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    detector = planner_topology_detector.TopologyDetector()
+
+    monkeypatch.setattr(
+        planner_topology_detector.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="00000000:17:00.0\n"),
+    )
+
+    class _FakePath:
+        def __init__(self, path: str) -> None:
+            self.path = path
+
+        def exists(self) -> bool:
+            return True
+
+        def read_text(self) -> str:
+            return "-1"
+
+    monkeypatch.setattr(planner_topology_detector, "Path", _FakePath)
+
+    assert detector._get_gpu_numa_node(0) is None
+
+
+def test_setup_grace_affinity_does_not_guess_numa_node_when_mapping_is_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sched_calls: list[tuple[int, list[int]]] = []
+
+    monkeypatch.setattr(
+        grace_numa,
+        "detect_grace_cpu",
+        lambda: {"is_grace": True, "cpu_arch": "aarch64", "cpu_count": 72, "cpu_threads": 144, "gpus": 1},
+    )
+    monkeypatch.setattr(
+        grace_numa,
+        "get_numa_topology",
+        lambda: {0: {"cpus": [0, 1, 2, 3], "size_gb": 240, "gpus": []}},
+    )
+    monkeypatch.setattr(grace_numa.os, "sched_getaffinity", lambda pid: {4, 5, 6, 7})
+    monkeypatch.setattr(grace_numa.os, "sched_setaffinity", lambda pid, cpus: sched_calls.append((pid, list(cpus))))
+
+    cpu_list, numa_node = grace_numa.setup_grace_affinity(gpu_id=0, num_workers=4, verbose=False)
+
+    assert cpu_list == [4, 5, 6, 7]
+    assert numa_node is None
+    assert sched_calls == []

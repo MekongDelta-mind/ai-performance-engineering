@@ -12,9 +12,10 @@ from typing import Dict, List, Optional
 
 def _read_int(path: Path) -> Optional[int]:
     try:
-        return int(path.read_text().strip())
+        value = int(path.read_text().strip())
     except Exception:
         return None
+    return value if value >= 0 else None
 
 
 def _available_numa_nodes() -> List[int]:
@@ -74,21 +75,25 @@ def _nvml_gpu_bus_and_numa(max_gpus: Optional[int] = None) -> Dict[int, Dict[str
         count = pynvml.nvmlDeviceGetCount()
     except Exception:
         count = 0
-    limit = count if max_gpus is None else min(count, max_gpus)
-    for idx in range(limit):
-        try:
-            handle = pynvml.nvmlDeviceGetHandleByIndex(idx)
-            pci = pynvml.nvmlDeviceGetPciInfo(handle)
-            bus_id = pci.busId.decode() if hasattr(pci.busId, "decode") else str(pci.busId)
+    try:
+        limit = count if max_gpus is None else min(count, max_gpus)
+        for idx in range(limit):
             try:
-                numa_id = pynvml.nvmlDeviceGetNumaNodeId(handle)
+                handle = pynvml.nvmlDeviceGetHandleByIndex(idx)
+                pci = pynvml.nvmlDeviceGetPciInfo(handle)
+                bus_id = pci.busId.decode() if hasattr(pci.busId, "decode") else str(pci.busId)
+                try:
+                    numa_id = pynvml.nvmlDeviceGetNumaNodeId(handle)
+                except Exception:
+                    numa_id = None
+                mapping[idx] = {"bus_id": bus_id, "numa_node": None if numa_id is None or numa_id < 0 else numa_id}
             except Exception:
-                numa_id = None
-            mapping[idx] = {"bus_id": bus_id, "numa_node": None if numa_id is None or numa_id < 0 else numa_id}
+                continue
+    finally:
+        try:
+            pynvml.nvmlShutdown()
         except Exception:
-            continue
-
-        pynvml.nvmlShutdown()
+            pass
     return mapping
 
 
@@ -119,8 +124,14 @@ def detect_topology(max_gpus: Optional[int] = None) -> TopologySnapshot:
                 numa_guess = _sysfs_numa_for_bus(bus)
         gpu_map[idx] = numa_guess
 
-    # Fallback: attempt sysfs based on CUDA_VISIBLE_DEVICES order
+    # If the caller already knows how many GPUs are in play, preserve that shape
+    # even when locality is unavailable.
     if not gpu_map:
+        if max_gpus is not None:
+            for idx in range(max_gpus):
+                gpu_map[idx] = None
+            distance = _distance_matrix()
+            return TopologySnapshot(gpu_numa=gpu_map, distance=distance, timestamp=time.time())
         visible = os.getenv("CUDA_VISIBLE_DEVICES", "").split(",")
         for idx, dev in enumerate(visible):
             dev = dev.strip()

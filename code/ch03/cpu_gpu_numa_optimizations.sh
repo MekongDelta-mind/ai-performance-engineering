@@ -206,19 +206,24 @@ apply_optimizations() {
 #!/bin/bash
 # Helper script to bind process to NUMA node matching GPU
 GPU_ID=${1:-0}
-GPU_COUNT=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | wc -l || echo 1)
-NUMA_NODES=$(numactl --hardware 2>/dev/null | grep "available:" | awk '{print $2}')
-if [[ -z "$NUMA_NODES" || "$NUMA_NODES" -lt 1 ]]; then
-  NUMA_NODES=1
+PCI_BUS=$(nvidia-smi -i "$GPU_ID" --query-gpu=pci.bus_id --format=csv,noheader 2>/dev/null | head -1 | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+SYSFS_BUS="$PCI_BUS"
+if [[ "$SYSFS_BUS" == 00000000:* ]]; then
+  SYSFS_BUS="${SYSFS_BUS:4}"
 fi
-GPUS_PER_NUMA=$(( (GPU_COUNT + NUMA_NODES - 1) / NUMA_NODES ))
-if [[ "$GPUS_PER_NUMA" -lt 1 ]]; then
-  GPUS_PER_NUMA=1
+NUMA_PATH="/sys/bus/pci/devices/${SYSFS_BUS}/numa_node"
+NUMA_NODE=""
+if [[ -r "$NUMA_PATH" ]]; then
+  NUMA_NODE=$(cat "$NUMA_PATH")
 fi
-NUMA_NODE=$((GPU_ID / GPUS_PER_NUMA))
 
-echo "Binding to NUMA node $NUMA_NODE for GPU $GPU_ID"
-exec numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE "${@:2}"
+if [[ "$NUMA_NODE" =~ ^[0-9]+$ ]]; then
+  echo "Binding to NUMA node $NUMA_NODE for GPU $GPU_ID"
+  exec numactl --cpunodebind="$NUMA_NODE" --membind="$NUMA_NODE" "${@:2}"
+fi
+
+echo "GPU $GPU_ID NUMA node unavailable; running without numactl binding" >&2
+exec "${@:2}"
 EOF
     chmod +x /usr/local/bin/numa_bind_gpu.sh
     echo -e "${GREEN}   NUMA binding helper created${NC}"

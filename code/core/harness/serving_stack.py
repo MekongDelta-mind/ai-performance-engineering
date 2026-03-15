@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import site
+import warnings
 from typing import Dict, List, Optional, Sequence, Tuple
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -67,8 +68,15 @@ class ServingStackPins:
 def _read_pinned_version(package_name: str, requirements_path: Path) -> Optional[str]:
     if not requirements_path.exists():
         return None
+    try:
+        lines = requirements_path.read_text(encoding="utf-8").splitlines()
+    except Exception as exc:
+        raise RuntimeError(
+            "FAIL FAST: Unable to read serving stack requirements file. "
+            f"Expected readable file at {requirements_path}: {exc}"
+        ) from exc
     pattern = re.compile(rf"^\s*{re.escape(package_name)}==([^\s#]+)\s*(?:#.*)?$")
-    for raw_line in requirements_path.read_text().splitlines():
+    for raw_line in lines:
         match = pattern.match(raw_line)
         if match:
             return match.group(1).strip()
@@ -81,14 +89,22 @@ def _site_package_roots() -> List[Path]:
         user_site = site.getusersitepackages()
         if user_site:
             roots.append(Path(user_site))
-    except Exception:
-        pass
+    except Exception as exc:
+        warnings.warn(
+            f"Failed to query user site-packages for serving-stack CUDA wheels: {exc}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     try:
         for site_path in site.getsitepackages():
             if site_path:
                 roots.append(Path(site_path))
-    except Exception:
-        pass
+    except Exception as exc:
+        warnings.warn(
+            f"Failed to query system site-packages for serving-stack CUDA wheels: {exc}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     deduped: List[Path] = []
     seen = set()
     for root in roots:

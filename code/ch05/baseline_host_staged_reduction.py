@@ -1,4 +1,4 @@
-"""optimized_distributed.py - Optimized single-GPU reduction without host staging."""
+"""baseline_host_staged_reduction.py - Baseline reduction with full host staging."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from core.benchmark.verification_mixin import VerificationPayloadMixin
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
 
 
-class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
-    """Keep the reduction on the device instead of bouncing through host memory."""
+class BaselineHostStagedReductionBenchmark(VerificationPayloadMixin, BaseBenchmark):
+    """Transfer the full tensor to the CPU before reducing it."""
+
+    allowed_benchmark_fn_antipatterns = ("host_transfer",)
     
     def __init__(self):
         super().__init__()
@@ -23,28 +25,25 @@ class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
         )
     
     def setup(self) -> None:
-        """Setup: Initialize data on the active CUDA device."""
+        """Setup: Initialize data."""
         if not torch.cuda.is_available():
             raise RuntimeError("SKIPPED: requires CUDA")
         torch.manual_seed(42)
-        torch.cuda.manual_seed_all(42)
         self.data = torch.randn(self.num_elements, device=self.device)
         self._synchronize()
     
     def benchmark_fn(self) -> None:
-        """Benchmark: reduce directly on the GPU."""
+        """Benchmark: Single-node operations."""
         assert self.data is not None
-        with self._nvtx_range("optimized_distributed"):
-            result = self.data.sum()
+        with self._nvtx_range("baseline_host_staged_reduction"):
+            cpu_result = self.data.cpu().sum()
+            result = cpu_result.to(self.device)
+            _ = result
         self.output = result.detach().clone()
 
     def capture_verification_payload(self) -> None:
-        if self.data is None:
-            raise RuntimeError("setup() must be called before capture_verification_payload()")
         self._set_verification_payload(
-            inputs={
-                "data": self.data,
-            },
+            inputs={"data": self.data},
             output=self.output,
             batch_size=self.data.shape[0],
             parameter_count=0,
@@ -91,4 +90,4 @@ class OptimizedDistributedBenchmark(VerificationPayloadMixin, BaseBenchmark):
 
 def get_benchmark() -> BaseBenchmark:
     """Factory function for harness discovery."""
-    return OptimizedDistributedBenchmark()
+    return BaselineHostStagedReductionBenchmark()

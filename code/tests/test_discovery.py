@@ -148,6 +148,18 @@ class TestPythonBenchmarkDiscovery:
             assert isinstance(example_name, str)
             assert len(example_name) > 0
 
+    def test_discover_benchmarks_ch05_uses_host_staged_reduction_target(self):
+        """Chapter 5 should expose the precise single-GPU reduction target name."""
+        ch05_dir = repo_root / "ch05"
+        if not ch05_dir.exists():
+            pytest.skip("ch05 directory not found")
+
+        pairs = discover_benchmarks(ch05_dir)
+        names = {example_name for _, _, example_name in pairs}
+
+        assert "host_staged_reduction" in names
+        assert "distributed" not in names
+
 
 class TestCudaBenchmarkDiscovery:
     """Test discovery of CUDA benchmarks."""

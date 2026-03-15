@@ -84,6 +84,7 @@ class NsightAutomation:
         self._ncu_sets_cache: Optional[set[str]] = None
         self._last_resolved_ncu_set: Optional[str] = None
         self._python_startup_stub_dir: Optional[Path] = None
+        self._pending_warnings: List[str] = []
         
         # Check availability
         self.nsys_available = self._check_command("nsys")
@@ -100,22 +101,50 @@ class NsightAutomation:
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
 
-    @staticmethod
     def _wait_for_output_artifact(
+        self,
         output_path: Path,
         settle_seconds: float = 5.0,
         poll_interval: float = 0.2,
     ) -> bool:
         """Wait briefly for a late-finalizing profiler artifact to appear."""
         deadline = time.monotonic() + max(float(settle_seconds), 0.0)
+        warned_os_error = False
         while time.monotonic() <= deadline:
             try:
                 if output_path.exists() and output_path.stat().st_size > 0:
                     return True
-            except OSError:
-                pass
+            except OSError as exc:
+                if not warned_os_error:
+                    self._record_runtime_warning(
+                        f"Profiler artifact poll failed for {output_path}; artifact readiness checks may be incomplete",
+                        exc=exc,
+                    )
+                    warned_os_error = True
             time.sleep(max(float(poll_interval), 0.05))
         return False
+
+    def _record_runtime_warning(
+        self,
+        message: str,
+        *,
+        exc: Optional[BaseException] = None,
+    ) -> str:
+        """Persist a profiler warning in logs and structured run metadata."""
+        detail = f"{message}: {exc}" if exc is not None else message
+        logger.warning(detail)
+        if self.last_run:
+            self.last_run.setdefault("warnings", []).append(detail)
+        else:
+            self._pending_warnings.append(detail)
+        return detail
+
+    def _begin_run(self, metadata: Dict[str, Any]) -> None:
+        """Start a new structured run record and attach any early warnings."""
+        self.last_run = dict(metadata)
+        if self._pending_warnings:
+            self.last_run["warnings"] = list(self._pending_warnings)
+            self._pending_warnings.clear()
 
     def _available_ncu_sets(self) -> set[str]:
         """Return available Nsight Compute set identifiers (best effort)."""
@@ -145,8 +174,12 @@ class NsightAutomation:
                     sets.add(match.group(1).lower())
             self._ncu_sets_cache = sets
             return set(sets)
-        except Exception:
+        except Exception as exc:
             # Keep this best-effort; validation falls back to alias defaults.
+            self._record_runtime_warning(
+                "Failed to enumerate available Nsight Compute metric sets; falling back to alias defaults",
+                exc=exc,
+            )
             self._ncu_sets_cache = set()
             return set()
 
@@ -338,6 +371,8 @@ class NsightAutomation:
             logger.error("Nsight Systems not available")
             return None
         self.last_error = None
+        self.last_run = {}
+        self._pending_warnings = []
         
         output_path = self.output_dir / f"{output_name}.nsys-rep"
         
@@ -395,7 +430,7 @@ class NsightAutomation:
         nsys_cmd.extend(command)
         
         logger.info(f"Running: {' '.join(nsys_cmd)}")
-        self.last_run = {
+        self._begin_run({
             "tool": "nsys",
             "cmd": nsys_cmd,
             "cwd": str(self.run_cwd),
@@ -404,7 +439,7 @@ class NsightAutomation:
             "wait_mode": wait_mode_norm,
             "finalize_grace_seconds": finalize_grace_seconds,
             "sanitize_python_startup": bool(sanitize_python_startup),
-        }
+        })
         
         try:
             process = subprocess.Popen(
@@ -566,7 +601,11 @@ class NsightAutomation:
             if result.returncode != 0:
                 return False
             return self._parse_ps_for_defunct_launcher(result.stdout, parent_pid)
-        except Exception:
+        except Exception as exc:
+            self._record_runtime_warning(
+                "Failed to inspect process table for defunct nsys-launcher children; timeout diagnostics are incomplete",
+                exc=exc,
+            )
             return False
 
     @staticmethod
@@ -589,12 +628,19 @@ class NsightAutomation:
         stdout_accum = ""
         stderr_accum = ""
         completed = False
+        cleanup_warnings: List[str] = []
+
+        def _record_finalize_warning(message: str, exc: BaseException) -> None:
+            cleanup_warnings.append(self._record_runtime_warning(message, exc=exc))
 
         try:
             os.killpg(process.pid, signal.SIGINT)
             signals_sent.append("SIGINT")
-        except Exception:
-            pass
+        except Exception as exc:
+            _record_finalize_warning(
+                "Nsight Systems finalization failed while sending SIGINT to the profiler process group",
+                exc,
+            )
 
         try:
             stdout_chunk, stderr_chunk = process.communicate(timeout=max(1.0, grace_seconds))
@@ -609,8 +655,11 @@ class NsightAutomation:
             try:
                 os.killpg(process.pid, signal.SIGTERM)
                 signals_sent.append("SIGTERM")
-            except Exception:
-                pass
+            except Exception as exc:
+                _record_finalize_warning(
+                    "Nsight Systems finalization failed while sending SIGTERM to the profiler process group",
+                    exc,
+                )
             try:
                 stdout_chunk, stderr_chunk = process.communicate(timeout=5)
                 stdout_accum += stdout_chunk or ""
@@ -624,14 +673,20 @@ class NsightAutomation:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
                 signals_sent.append("SIGKILL")
-            except Exception:
-                pass
+            except Exception as exc:
+                _record_finalize_warning(
+                    "Nsight Systems finalization failed while sending SIGKILL to the profiler process group",
+                    exc,
+                )
             try:
                 stdout_chunk, stderr_chunk = process.communicate(timeout=2)
                 stdout_accum += stdout_chunk or ""
                 stderr_accum += stderr_chunk or ""
-            except Exception:
-                pass
+            except Exception as exc:
+                _record_finalize_warning(
+                    "Nsight Systems finalization failed while collecting trailing profiler output after SIGKILL",
+                    exc,
+                )
 
         defunct_detected = self._detect_nsys_defunct_launcher(process.pid)
         return {
@@ -640,6 +695,7 @@ class NsightAutomation:
             "stderr": stderr_accum,
             "signals": signals_sent,
             "defunct_launcher_detected": defunct_detected,
+            "warnings": cleanup_warnings,
         }
     
     def build_ncu_command(
@@ -739,6 +795,8 @@ class NsightAutomation:
             logger.error("Nsight Compute not available")
             return None
         self.last_error = None
+        self.last_run = {}
+        self._pending_warnings = []
         self._last_resolved_ncu_set = None
 
         output_path = self.output_dir / f"{output_name}.ncu-rep"
@@ -763,7 +821,7 @@ class NsightAutomation:
         )
         
         logger.info(f"Running: {' '.join(ncu_cmd[:6])} ...")
-        self.last_run = {
+        self._begin_run({
             "tool": "ncu",
             "cmd": ncu_cmd,
             "cwd": str(self.run_cwd),
@@ -779,7 +837,7 @@ class NsightAutomation:
             "kernel_name_base": kernel_name_base,
             "nvtx_includes": list(nvtx_includes or []),
             "profile_from_start": profile_from_start,
-        }
+        })
         
         try:
             result = subprocess.run(

@@ -29,11 +29,22 @@ from core.benchmark.hot_path_checks import (
     check_benchmark_fn_antipatterns,
     check_benchmark_fn_sync_calls,
 )
+from core.utils.logger import get_logger
 
 try:
     import torch
 except ImportError:
     torch = None  # type: ignore
+
+
+logger = get_logger(__name__)
+
+
+def _emit_validity_warning(message: str, *, exc: Optional[BaseException] = None) -> None:
+    """Surface degraded validity checks through logs and runtime warnings."""
+    detail = f"{message}: {exc}" if exc is not None else message
+    logger.warning(detail)
+    warnings.warn(detail, RuntimeWarning, stacklevel=2)
 
 
 # =============================================================================
@@ -293,15 +304,21 @@ def reset_cuda_memory_pool(device: Optional[Any] = None) -> None:
     torch.cuda.empty_cache()
     try:
         torch.cuda.ipc_collect()
-    except Exception:
-        pass
+    except Exception as exc:
+        _emit_validity_warning(
+            "Failed to collect CUDA IPC allocations while resetting the memory pool; allocator state may leak across benchmark runs",
+            exc=exc,
+        )
     
     # Best-effort allocator cache reset across PyTorch APIs
     try:
         if hasattr(torch, "_C") and hasattr(torch._C, "_cuda_releasePool"):
             torch._C._cuda_releasePool()
-    except Exception:
-        pass
+    except Exception as exc:
+        _emit_validity_warning(
+            "Failed to release the CUDA allocator pool during memory-pool reset; cached allocations may remain visible to later runs",
+            exc=exc,
+        )
     try:
         if hasattr(torch, "_C") and hasattr(torch._C, "_accelerator_setAllocatorSettings"):
             torch._C._accelerator_setAllocatorSettings("reset_allocator:True")
@@ -309,8 +326,11 @@ def reset_cuda_memory_pool(device: Optional[Any] = None) -> None:
             torch._C._cuda_cudaCachingAllocator_set_allocator_settings("reset_allocator:True")
         elif hasattr(torch.cuda, "memory") and hasattr(torch.cuda.memory, "_set_allocator_settings"):
             torch.cuda.memory._set_allocator_settings("reset_allocator:True")
-    except Exception:
-        pass
+    except Exception as exc:
+        _emit_validity_warning(
+            "Failed to reset CUDA allocator settings during memory-pool cleanup; allocator reuse checks may be degraded",
+            exc=exc,
+        )
     
     # Reset allocator statistics
     if hasattr(torch.cuda, 'reset_peak_memory_stats'):
@@ -320,8 +340,11 @@ def reset_cuda_memory_pool(device: Optional[Any] = None) -> None:
     try:
         if hasattr(torch, "_C") and hasattr(torch._C, "_cuda_resetPeakHostMemoryStats"):
             torch._C._cuda_resetPeakHostMemoryStats()
-    except Exception:
-        pass
+    except Exception as exc:
+        _emit_validity_warning(
+            "Failed to reset CUDA host-memory statistics during memory-pool cleanup; post-run memory telemetry may be stale",
+            exc=exc,
+        )
     torch.cuda.synchronize(device)
     if hasattr(torch.cuda, 'reset_accumulated_memory_stats'):
         torch.cuda.reset_accumulated_memory_stats(device)
@@ -449,7 +472,11 @@ def clear_compile_cache() -> bool:
                 torch._inductor.codecache.clear()
         
         return True
-    except Exception:
+    except Exception as exc:
+        _emit_validity_warning(
+            "Failed to clear torch.compile caches; subsequent runs may inherit prior Dynamo or Inductor state",
+            exc=exc,
+        )
         return False
 
 
@@ -470,8 +497,11 @@ def get_compile_state() -> Dict[str, Any]:
             if hasattr(torch._dynamo, 'utils') and hasattr(torch._dynamo.utils, 'counters'):
                 counters = torch._dynamo.utils.counters
                 state["compile_count"] = counters.get("compile", {}).get("calls", 0)
-    except Exception:
-        pass
+    except Exception as exc:
+        _emit_validity_warning(
+            "Failed to inspect torch.compile state; compile-cache consistency checks may be incomplete",
+            exc=exc,
+        )
     
     return state
 
@@ -1338,7 +1368,11 @@ class StreamAuditor:
         # monkeypatching Stream construction on this runtime.
         try:
             self._orig_stream_cls = torch.cuda.Stream
-        except Exception:
+        except Exception as exc:
+            _emit_validity_warning(
+                "Failed to capture torch.cuda.Stream before starting stream auditing; custom-stream instrumentation will be incomplete",
+                exc=exc,
+            )
             self._orig_stream_cls = None
 
         # Monkeypatch Stream methods to capture stream sync / dependencies
@@ -1352,7 +1386,11 @@ class StreamAuditor:
                     return auditor._orig_stream_synchronize(stream_self, *args, **kwargs)
 
                 self._orig_stream_cls.synchronize = _audited_stream_synchronize  # type: ignore[assignment]
-            except Exception:
+            except Exception as exc:
+                _emit_validity_warning(
+                    "Failed to instrument torch.cuda.Stream.synchronize; stream-auditing sync coverage is degraded",
+                    exc=exc,
+                )
                 self._orig_stream_synchronize = None
 
             try:
@@ -1365,7 +1403,11 @@ class StreamAuditor:
                     return auditor._orig_stream_wait_stream(stream_self, stream, *args, **kwargs)
 
                 self._orig_stream_cls.wait_stream = _audited_stream_wait_stream  # type: ignore[assignment]
-            except Exception:
+            except Exception as exc:
+                _emit_validity_warning(
+                    "Failed to instrument torch.cuda.Stream.wait_stream; dependency tracking between streams is degraded",
+                    exc=exc,
+                )
                 self._orig_stream_wait_stream = None
         
         # Monkeypatch synchronize to capture syncs
@@ -1378,7 +1420,11 @@ class StreamAuditor:
                 return auditor._orig_synchronize(*args, **kwargs)
             
             torch.cuda.synchronize = _audited_synchronize  # type: ignore[assignment]
-        except Exception:
+        except Exception as exc:
+            _emit_validity_warning(
+                "Failed to instrument torch.cuda.synchronize; device-wide sync tracking is degraded",
+                exc=exc,
+            )
             self._orig_synchronize = None
 
         # Monkeypatch torch.cuda.stream to record usage of existing streams
@@ -1391,7 +1437,11 @@ class StreamAuditor:
                 return auditor._orig_stream_fn(stream, *args, **kwargs)
 
             torch.cuda.stream = _audited_stream_fn  # type: ignore[assignment]
-        except Exception:
+        except Exception as exc:
+            _emit_validity_warning(
+                "Failed to instrument torch.cuda.stream; custom-stream context tracking is degraded",
+                exc=exc,
+            )
             self._orig_stream_fn = None
 
         # Monkeypatch torch.cuda.set_stream to capture explicit stream switches
@@ -1404,7 +1454,11 @@ class StreamAuditor:
                 return auditor._orig_set_stream_fn(stream, *args, **kwargs)
 
             torch.cuda.set_stream = _audited_set_stream  # type: ignore[assignment]
-        except Exception:
+        except Exception as exc:
+            _emit_validity_warning(
+                "Failed to instrument torch.cuda.set_stream; explicit stream-switch tracking is degraded",
+                exc=exc,
+            )
             self._orig_set_stream_fn = None
     
     def record_stream_event(self, stream: Any, operation: str = "kernel") -> None:
@@ -1448,28 +1502,43 @@ class StreamAuditor:
             if self._orig_stream_synchronize is not None:
                 try:
                     self._orig_stream_cls.synchronize = self._orig_stream_synchronize  # type: ignore[assignment]
-                except Exception:
-                    pass
+                except Exception as exc:
+                    _emit_validity_warning(
+                        "Failed to restore torch.cuda.Stream.synchronize after stream auditing; CUDA stream state may remain patched",
+                        exc=exc,
+                    )
             if self._orig_stream_wait_stream is not None:
                 try:
                     self._orig_stream_cls.wait_stream = self._orig_stream_wait_stream  # type: ignore[assignment]
-                except Exception:
-                    pass
+                except Exception as exc:
+                    _emit_validity_warning(
+                        "Failed to restore torch.cuda.Stream.wait_stream after stream auditing; CUDA stream state may remain patched",
+                        exc=exc,
+                    )
         if self._orig_synchronize is not None:
             try:
                 torch.cuda.synchronize = self._orig_synchronize  # type: ignore[assignment]
-            except Exception:
-                pass
+            except Exception as exc:
+                _emit_validity_warning(
+                    "Failed to restore torch.cuda.synchronize after stream auditing; device-sync behavior may remain patched",
+                    exc=exc,
+                )
         if self._orig_stream_fn is not None:
             try:
                 torch.cuda.stream = self._orig_stream_fn  # type: ignore[assignment]
-            except Exception:
-                pass
+            except Exception as exc:
+                _emit_validity_warning(
+                    "Failed to restore torch.cuda.stream after stream auditing; stream context behavior may remain patched",
+                    exc=exc,
+                )
         if self._orig_set_stream_fn is not None:
             try:
                 torch.cuda.set_stream = self._orig_set_stream_fn  # type: ignore[assignment]
-            except Exception:
-                pass
+            except Exception as exc:
+                _emit_validity_warning(
+                    "Failed to restore torch.cuda.set_stream after stream auditing; stream-switch behavior may remain patched",
+                    exc=exc,
+                )
     
     def get_info(self) -> StreamUsageInfo:
         """Get stream usage information."""

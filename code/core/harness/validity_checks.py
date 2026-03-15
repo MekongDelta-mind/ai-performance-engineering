@@ -23,12 +23,8 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from core.benchmark.hot_path_checks import (
-    check_benchmark_fn_antipatterns,
-    check_benchmark_fn_sync_calls,
-)
 from core.utils.logger import get_logger
 
 try:
@@ -45,6 +41,28 @@ def _emit_validity_warning(message: str, *, exc: Optional[BaseException] = None)
     detail = f"{message}: {exc}" if exc is not None else message
     logger.warning(detail)
     warnings.warn(detail, RuntimeWarning, stacklevel=2)
+
+
+def check_benchmark_fn_sync_calls(
+    benchmark_fn: Any,
+    *,
+    allowed_codes: Optional[Iterable[str]] = None,
+) -> Tuple[bool, List[str]]:
+    """Lazily proxy to the hot-path sync checker to avoid benchmark package import cycles."""
+    from core.benchmark.hot_path_checks import check_benchmark_fn_sync_calls as _impl
+
+    return _impl(benchmark_fn, allowed_codes=allowed_codes)
+
+
+def check_benchmark_fn_antipatterns(
+    benchmark_fn: Any,
+    *,
+    allowed_codes: Optional[Iterable[str]] = None,
+) -> Tuple[bool, List[str]]:
+    """Lazily proxy to the hot-path anti-pattern checker to avoid benchmark package import cycles."""
+    from core.benchmark.hot_path_checks import check_benchmark_fn_antipatterns as _impl
+
+    return _impl(benchmark_fn, allowed_codes=allowed_codes)
 
 
 # =============================================================================

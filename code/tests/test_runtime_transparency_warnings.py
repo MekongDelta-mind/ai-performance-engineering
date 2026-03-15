@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 import warnings
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -178,3 +180,21 @@ def test_stream_auditor_stop_emits_restore_warnings(monkeypatch) -> None:
     assert any("Failed to restore torch.cuda.synchronize" in item for item in messages)
     assert any("Failed to restore torch.cuda.stream" in item for item in messages)
     assert any("Failed to restore torch.cuda.set_stream" in item for item in messages)
+
+
+def test_direct_validity_checks_import_succeeds_in_fresh_python() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import core.harness.validity_checks as vc; print(vc.__name__)",
+        ],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "core.harness.validity_checks"

@@ -8,6 +8,17 @@ from types import SimpleNamespace
 from typing import Any
 
 
+def _run_fresh_python(code: str) -> subprocess.CompletedProcess[str]:
+    repo_root = Path(__file__).resolve().parents[1]
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
 def test_ncu_set_discovery_records_structured_warning(monkeypatch, tmp_path) -> None:
     from core.profiling.nsight_automation import NsightAutomation
 
@@ -183,18 +194,80 @@ def test_stream_auditor_stop_emits_restore_warnings(monkeypatch) -> None:
 
 
 def test_direct_validity_checks_import_succeeds_in_fresh_python() -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            "import core.harness.validity_checks as vc; print(vc.__name__)",
-        ],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = _run_fresh_python("import core.harness.validity_checks as vc; print(vc.__name__)")
 
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "core.harness.validity_checks"
+
+
+def test_direct_hot_path_checks_import_succeeds_in_fresh_python() -> None:
+    result = _run_fresh_python("import core.hot_path_checks as hp; print(hp.__name__)")
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "core.hot_path_checks"
+
+
+def test_direct_benchmark_contract_import_succeeds_in_fresh_python() -> None:
+    result = _run_fresh_python("import core.benchmark.contract as contract; print(contract.__name__)")
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "core.benchmark.contract"
+
+
+def test_core_benchmark_package_import_stays_lazy_in_fresh_python() -> None:
+    result = _run_fresh_python(
+        "import sys\n"
+        "import core.benchmark as benchmark\n"
+        "assert 'core.benchmark.verify_runner' not in sys.modules\n"
+        "assert 'core.benchmark.contract' not in sys.modules\n"
+        "print(benchmark.__name__)\n"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "core.benchmark"
+
+
+def test_core_benchmark_package_exports_resolve_in_fresh_python() -> None:
+    result = _run_fresh_python(
+        "from core.benchmark import BenchmarkContract, InputSignature, VerifyRunner\n"
+        "print(BenchmarkContract.__module__)\n"
+        "print(InputSignature.__module__)\n"
+        "print(VerifyRunner.__module__)\n"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "core.benchmark.contract",
+        "core.benchmark.verification",
+        "core.benchmark.verify_runner",
+    ]
+
+
+def test_core_common_package_import_stays_lazy_in_fresh_python() -> None:
+    result = _run_fresh_python(
+        "import sys\n"
+        "import core.common as common\n"
+        "assert 'core.common.async_input_pipeline' not in sys.modules\n"
+        "assert 'core.common.moe_parallelism_plan' not in sys.modules\n"
+        "assert 'core.common.device_utils' not in sys.modules\n"
+        "print(common.__name__)\n"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "core.common"
+
+
+def test_core_common_package_exports_resolve_in_fresh_python() -> None:
+    result = _run_fresh_python(
+        "from core.common import ClusterSpec, PipelineConfig, get_preferred_device\n"
+        "print(ClusterSpec.__module__)\n"
+        "print(PipelineConfig.__module__)\n"
+        "print(get_preferred_device.__module__)\n"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "core.common.moe_parallelism_plan",
+        "core.common.async_input_pipeline",
+        "core.common.device_utils",
+    ]

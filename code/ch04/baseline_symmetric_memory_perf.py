@@ -12,6 +12,7 @@ import torch
 from core.benchmark.cuda_event_timing import elapsed_ms
 from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
 from core.benchmark.metrics import compute_memory_transfer_metrics
+from ch04.symmetric_memory_perf_common import build_square_verification_probe
 from ch04.verification_payload_mixin import VerificationPayloadMixin
 
 
@@ -37,10 +38,7 @@ class BaselineSymmetricMemoryPerfBenchmark(VerificationPayloadMixin, BaseBenchma
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
         self.tensor = torch.randn(self.numel, device=self.device, dtype=torch.float32)
-        self._verify_numel = min(self.tensor.numel(), 256 * 256)
-        side = int(self._verify_numel ** 0.5)
-        self._verify_numel = side * side
-        self._verify_input = self.tensor[: self._verify_numel].view(side, side).detach()
+        self._verify_input, self._verify_numel = build_square_verification_probe(self.tensor)
         torch.cuda.synchronize(self.device)
 
     def benchmark_fn(self) -> Optional[Dict[str, float]]:

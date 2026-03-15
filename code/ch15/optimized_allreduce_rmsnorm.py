@@ -1,8 +1,8 @@
-"""Optimized AllReduce + RMSNorm (fused via torch.compile)."""
+"""Optimized AllReduce + RMSNorm (single eager fused reduction)."""
 
 from __future__ import annotations
 
-from typing import Optional, Callable
+from typing import Optional
 
 import torch
 
@@ -16,14 +16,13 @@ from ch15.allreduce_rmsnorm_common import (
 
 
 class OptimizedAllReduceRMSNormBenchmark(VerificationPayloadMixin, BaseBenchmark):
-    """Optimized: compiled all-reduce + RMSNorm fusion."""
+    """Optimized: eager fused all-reduce + RMSNorm with lower launch overhead."""
 
     def __init__(self, cfg: Optional[AllReduceRMSNormConfig] = None) -> None:
         super().__init__()
         self.cfg = cfg or AllReduceRMSNormConfig()
         self.shards: Optional[torch.Tensor] = None
         self.output: Optional[torch.Tensor] = None
-        self._fused_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
         self._workload = WorkloadMetadata(
             requests_per_iteration=float(self.cfg.batch_size),
             tokens_per_iteration=float(self.cfg.tokens_per_iter),
@@ -39,25 +38,16 @@ class OptimizedAllReduceRMSNormBenchmark(VerificationPayloadMixin, BaseBenchmark
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
         self.shards = build_shards(self.device, self.cfg)
-
-        def _fused(shards: torch.Tensor) -> torch.Tensor:
-            return fused_allreduce_rmsnorm(shards, self.cfg.eps)
-
-        try:
-            self._fused_fn = torch.compile(_fused, mode="reduce-overhead")
-        except Exception:
-            self._fused_fn = _fused
-
-        # Warmup compile + kernel caches
+        # Warm the eager kernels once so the timed loop doesn't pay first-use overhead.
         with torch.inference_mode():
-            _ = self._fused_fn(self.shards)
+            _ = fused_allreduce_rmsnorm(self.shards, self.cfg.eps)
         torch.cuda.synchronize(self.device)
 
     def benchmark_fn(self) -> None:
-        if self.shards is None or self._fused_fn is None:
+        if self.shards is None:
             raise RuntimeError("Benchmark not initialized")
         with torch.inference_mode():
-            self.output = self._fused_fn(self.shards)
+            self.output = fused_allreduce_rmsnorm(self.shards, self.cfg.eps)
         if self.output is None:
             raise RuntimeError("benchmark_fn() did not produce output")
 

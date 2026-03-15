@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -147,6 +149,115 @@ def test_render_expectation_rejection_ledger_falls_back_to_stored_provenance(tmp
     markdown = outputs["markdown"].read_text(encoding="utf-8")
     assert "Expectation Rejection Ledger" in markdown
     assert "`ch01:gemm`" in markdown
+
+
+def test_render_expectation_rejection_ledger_surfaces_stored_expectation_warning(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    chapter_dir = repo_root / "ch01"
+    chapter_dir.mkdir(parents=True)
+    (chapter_dir / "expectations_b200.json").write_text("{not-json", encoding="utf-8")
+
+    run_dir = repo_root / "artifacts" / "runs" / "current_run"
+    _write_jsonl(
+        run_dir / "logs" / "benchmark_events.jsonl",
+        [
+            {
+                "event_type": "expectation_update",
+                "chapter": "ch01",
+                "example": "gemm",
+                "goal": "speed",
+                "status": "rejected",
+                "old_score": 2.0,
+                "new_score": 1.2,
+                "delta": -0.8,
+                "delta_pct": -40.0,
+            }
+        ],
+    )
+
+    outputs = render_expectation_rejection_ledger(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        comparison_run_dirs=[],
+        threshold_pct=25.0,
+    )
+
+    rows = json.loads(outputs["json"].read_text(encoding="utf-8"))
+    assert rows[0]["stored_expectation_warning"]
+    assert str(chapter_dir / "expectations_b200.json") in rows[0]["stored_expectation_warning"]
+
+    markdown = outputs["markdown"].read_text(encoding="utf-8")
+    assert "## Warnings" in markdown
+    assert str(chapter_dir / "expectations_b200.json") in markdown
+
+
+def test_render_expectation_rejection_ledger_raises_clear_error_for_malformed_event_log(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    run_dir = repo_root / "artifacts" / "runs" / "current_run"
+    events_path = run_dir / "logs" / "benchmark_events.jsonl"
+    events_path.parent.mkdir(parents=True, exist_ok=True)
+    events_path.write_text("{not-json\n", encoding="utf-8")
+
+    with pytest.raises(ValueError) as excinfo:
+        render_expectation_rejection_ledger(
+            repo_root=repo_root,
+            run_dir=run_dir,
+            comparison_run_dirs=[],
+            threshold_pct=25.0,
+        )
+
+    message = str(excinfo.value)
+    assert "expectation update event log" in message
+    assert str(events_path) in message
+
+
+def test_analyze_expectation_rejections_cli_supports_repo_root_override(tmp_path: Path) -> None:
+    repo_root = tmp_path
+    chapter_dir = repo_root / "ch01"
+    chapter_dir.mkdir(parents=True)
+    (chapter_dir / "expectations_b200.json").write_text("{not-json", encoding="utf-8")
+
+    run_dir = repo_root / "artifacts" / "runs" / "current_run"
+    _write_jsonl(
+        run_dir / "logs" / "benchmark_events.jsonl",
+        [
+            {
+                "event_type": "expectation_update",
+                "chapter": "ch01",
+                "example": "gemm",
+                "goal": "speed",
+                "status": "rejected",
+                "old_score": 2.0,
+                "new_score": 1.2,
+                "delta": -0.8,
+                "delta_pct": -40.0,
+            }
+        ],
+    )
+
+    output_dir = run_dir / "analysis"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "core.analysis.analyze_expectation_rejections",
+            "--repo-root",
+            str(repo_root),
+            "--run-dir",
+            str(run_dir),
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    rows = json.loads((output_dir / "current_run_expectation_rejections.json").read_text(encoding="utf-8"))
+    assert rows[0]["stored_expectation_warning"]
+    assert str(chapter_dir / "expectations_b200.json") in rows[0]["stored_expectation_warning"]
 
 
 def test_render_expectation_rejection_ledger_merges_multiple_comparison_runs(tmp_path: Path) -> None:

@@ -6,13 +6,29 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 
 def _load_rows(path: Path) -> List[Dict[str, Any]]:
-    return list(json.loads(path.read_text(encoding="utf-8")))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"Failed to read expectation rejection ledger {path}: {exc}") from exc
+    if not isinstance(payload, list):
+        raise ValueError(
+            f"Expected JSON list in expectation rejection ledger {path}, got {type(payload).__name__}"
+        )
+    rows: List[Dict[str, Any]] = []
+    for index, row in enumerate(payload):
+        if not isinstance(row, dict):
+            raise ValueError(
+                f"Expected JSON object at expectation rejection ledger {path} index {index}, got {type(row).__name__}"
+            )
+        rows.append(row)
+    return rows
 
 
 def select_candidates(
@@ -110,12 +126,16 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    outputs = write_candidate_outputs(
-        ledger_json=args.ledger_json,
-        output_dir=args.output_dir or args.ledger_json.parent,
-        recommendations=args.recommendation,
-        include_non_material=args.include_non_material,
-    )
+    try:
+        outputs = write_candidate_outputs(
+            ledger_json=args.ledger_json,
+            output_dir=args.output_dir or args.ledger_json.parent,
+            recommendations=args.recommendation,
+            include_non_material=args.include_non_material,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     for name, path in outputs.items():
         print(f"{name}: {path}")
     return 0

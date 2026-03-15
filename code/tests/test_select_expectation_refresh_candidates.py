@@ -1,5 +1,9 @@
 import json
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 from core.analysis.select_expectation_refresh_candidates import (
     select_candidates,
@@ -54,3 +58,46 @@ def test_write_candidate_outputs_materializes_target_list(tmp_path: Path):
     assert summary["selected_count"] == 1
     assert summary["targets"] == ["ch01:gemm"]
     assert outputs["txt"].read_text(encoding="utf-8") == "ch01:gemm\n"
+
+
+def test_write_candidate_outputs_raises_clear_error_for_malformed_ledger(tmp_path: Path):
+    ledger_json = tmp_path / "ledger.json"
+    ledger_json.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(ValueError) as excinfo:
+        write_candidate_outputs(
+            ledger_json=ledger_json,
+            output_dir=tmp_path / "out",
+            recommendations=["update_now"],
+            include_non_material=False,
+        )
+
+    message = str(excinfo.value)
+    assert "expectation rejection ledger" in message
+    assert str(ledger_json) in message
+
+
+def test_select_candidates_cli_reports_clean_error_for_malformed_ledger(tmp_path: Path):
+    ledger_json = tmp_path / "ledger.json"
+    ledger_json.write_text("{not-json", encoding="utf-8")
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "core.analysis.select_expectation_refresh_candidates",
+            "--ledger-json",
+            str(ledger_json),
+            "--recommendation",
+            "update_now",
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert proc.returncode == 1
+    assert "expectation rejection ledger" in proc.stderr
+    assert str(ledger_json) in proc.stderr
+    assert "Traceback" not in proc.stderr

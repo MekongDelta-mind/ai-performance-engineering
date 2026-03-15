@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -13,23 +14,52 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PROVENANCE_INFERENCE_RELATIVE_TOLERANCE = 0.25
 
 
-def _load_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
-    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        if line.strip():
-            yield json.loads(line)
+def _load_jsonl(path: Path, *, label: str) -> Iterable[Dict[str, Any]]:
+    try:
+        content = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception as exc:
+        raise ValueError(f"Failed to read {label} {path}: {exc}") from exc
+    for line_number, line in enumerate(content.splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except Exception as exc:
+            raise ValueError(f"Failed to parse {label} {path} line {line_number}: {exc}") from exc
+        if not isinstance(payload, dict):
+            raise ValueError(
+                f"Expected JSON object in {label} {path} line {line_number}, got {type(payload).__name__}"
+            )
+        yield payload
+
+
+def _load_json_object(path: Path, *, label: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return None, f"Failed to read {label} {path}: {exc}"
+    if not isinstance(payload, dict):
+        return None, f"Expected JSON object in {label} {path}, got {type(payload).__name__}"
+    return payload, None
 
 
 def _example_key(example: str) -> str:
     return example[:-5] if example.endswith("_cuda") else example
 
 
-def _fallback_stored_entry(repo_root: Path, chapter: str, example: str) -> Tuple[Optional[Path], Optional[Dict[str, Any]]]:
+def _fallback_stored_entry(
+    repo_root: Path,
+    chapter: str,
+    example: str,
+) -> Tuple[Optional[Path], Optional[Dict[str, Any]], Optional[str]]:
     expectation_path = repo_root / chapter / "expectations_b200.json"
     if not expectation_path.exists():
-        return None, None
-    data = json.loads(expectation_path.read_text(encoding="utf-8"))
+        return None, None, None
+    data, warning = _load_json_object(expectation_path, label="stored expectations file")
+    if warning:
+        return expectation_path, None, warning
     entry = (data.get("examples") or {}).get(_example_key(example))
-    return expectation_path, entry
+    return expectation_path, entry, None
 
 
 def _stability_bucket(delta_pct: Optional[float]) -> str:
@@ -90,7 +120,7 @@ def _load_expectation_updates(run_dir: Path, repo_root: Path) -> List[Dict[str, 
     events_path = run_dir / "logs" / "benchmark_events.jsonl"
     rows: List[Dict[str, Any]] = []
 
-    for event in _load_jsonl(events_path):
+    for event in _load_jsonl(events_path, label="expectation update event log"):
         if event.get("event_type") != "expectation_update":
             continue
         if event.get("status") != "rejected":
@@ -100,7 +130,7 @@ def _load_expectation_updates(run_dir: Path, repo_root: Path) -> List[Dict[str, 
         example = str(event["example"])
         target = f"{chapter}:{example}"
         validation_issue_types = list(event.get("validation_issue_types") or [])
-        expectation_path, stored_entry = _fallback_stored_entry(repo_root, chapter, example)
+        expectation_path, stored_entry, stored_warning = _fallback_stored_entry(repo_root, chapter, example)
         stored_provenance = event.get("old_provenance") or ((stored_entry or {}).get("provenance") or {})
         new_provenance = event.get("new_provenance") or {}
         provenance_mismatch_fields = list(event.get("provenance_mismatch_fields") or [])
@@ -148,6 +178,7 @@ def _load_expectation_updates(run_dir: Path, repo_root: Path) -> List[Dict[str, 
                 "new_dmi_product_name": new_provenance.get("dmi_product_name"),
                 "new_iterations": new_provenance.get("iterations"),
                 "new_warmup_iterations": new_provenance.get("warmup_iterations"),
+                "stored_expectation_warning": stored_warning,
             }
         )
 
@@ -227,6 +258,7 @@ def _write_markdown(rows: List[Dict[str, Any]], path: Path, threshold_pct: float
     material = [
         row for row in rows if row.get("delta_pct") is not None and abs(float(row["delta_pct"])) >= threshold_pct
     ]
+    warnings = sorted({str(row["stored_expectation_warning"]) for row in rows if row.get("stored_expectation_warning")})
     lines = [
         "# Expectation Rejection Ledger",
         "",
@@ -235,10 +267,18 @@ def _write_markdown(rows: List[Dict[str, Any]], path: Path, threshold_pct: float
         f"- Provenance-linked rejections: `{sum(1 for row in rows if 'provenance' in row['rejection_classification'])}`",
         f"- Comparison rows available: `{sum(1 for row in rows if row['comparison_stability'] != 'pending')}`",
         f"- Stable update-now candidates: `{sum(1 for row in rows if row.get('refresh_recommendation') == 'update_now')}`",
+        f"- Stored expectation warnings: `{len(warnings)}`",
         "",
+    ]
+    if warnings:
+        lines.extend(["## Warnings", ""])
+        for warning in warnings:
+            lines.append(f"- {warning}")
+        lines.append("")
+    lines.extend([
         "| Target | Delta % | Stored -> Observed | Classification | Comparison Stability | Refresh Recommendation |",
         "|---|---:|---:|---|---|---|",
-    ]
+    ])
     for row in sorted(material, key=lambda item: abs(float(item["delta_pct"])), reverse=True)[:60]:
         lines.append(
             f"| `{row['target']}` | {float(row['delta_pct']):+.1f}% | "
@@ -282,6 +322,12 @@ def render_expectation_rejection_ledger(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze rejected expectation updates for a benchmark run.")
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=REPO_ROOT,
+        help="Repository root containing chapter expectation files (default: current repo root)",
+    )
     parser.add_argument("--run-dir", type=Path, required=True, help="Run directory containing logs/benchmark_events.jsonl")
     parser.add_argument(
         "--comparison-run-dir",
@@ -307,13 +353,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    outputs = render_expectation_rejection_ledger(
-        repo_root=REPO_ROOT,
-        run_dir=args.run_dir,
-        comparison_run_dirs=args.comparison_run_dir,
-        output_dir=args.output_dir,
-        threshold_pct=args.threshold_pct,
-    )
+    try:
+        outputs = render_expectation_rejection_ledger(
+            repo_root=args.repo_root.resolve(),
+            run_dir=args.run_dir,
+            comparison_run_dirs=args.comparison_run_dir,
+            output_dir=args.output_dir,
+            threshold_pct=args.threshold_pct,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     for name, path in outputs.items():
         print(f"{name}: {path}")
     return 0
